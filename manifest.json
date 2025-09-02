@@ -1,0 +1,20 @@
+{
+  "short_name": "WellTrack",
+  "name": "WellTrack Gesundheitstagebuch",
+  "start_url": "welltrack.html",
+  "display": "standalone",
+  "background_color": "#FFFBFE",
+  "theme_color": "#6750A4",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

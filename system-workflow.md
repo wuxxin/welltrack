@@ -31,7 +31,7 @@
 ## 📚 Documentation & Explainability
 
 - **Update `README.md`** when new features are added, dependencies change, or setup steps are modified.
-- **Update `README.md`** when encountered problems and the used solutions in section "Problems and Solutions".
+- **Update `README.md`** when encountered problems, append the used solutions in section "Problems and Solutions".
 - **Comment non-obvious code** and ensure everything is understandable to a mid-level developer.
 - When writing complex logic, **add an inline `# Reason:` comment** explaining the why, not just the what.
 
