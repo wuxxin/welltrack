@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gesundheitstagebuch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns/"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <style>
+        :root {
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005D;
+            --md-sys-color-secondary: #625B71;
+            --md-sys-color-on-secondary: #FFFFFF;
+            --md-sys-color-secondary-container: #E8DEF8;
+            --md-sys-color-on-secondary-container: #1D192B;
+            --md-sys-color-tertiary: #7D5260;
+            --md-sys-color-on-tertiary: #FFFFFF;
+            --md-sys-color-tertiary-container: #FFD8E4;
+            --md-sys-color-on-tertiary-container: #31111D;
+            --md-sys-color-error: #B3261E;
+            --md-sys-color-on-error: #FFFFFF;
+            --md-sys-color-error-container: #F9DEDC;
+            --md-sys-color-on-error-container: #410E0B;
+            --md-sys-color-background: #FFFBFE;
+            --md-sys-color-on-background: #1C1B1F;
+            --md-sys-color-surface: #FFFBFE;
+            --md-sys-color-on-surface: #1C1B1F;
+            --md-sys-color-surface-variant: #E7E0EC;
+            --md-sys-color-on-surface-variant: #49454F;
+            --md-sys-color-outline: #79747E;
+            --md-sys-color-surface-container-highest: #E6E0E9;
+            --md-sys-color-surface-container-low: #F7F2FA;
+        }
+
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--md-sys-color-background);
+            color: var(--md-sys-color-on-background);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: bottom;
+        }
+        .filled-icon {
+             font-variation-settings: 'FILL' 1;
+        }
+        .card {
+            background-color: var(--md-sys-color-surface-container-low);
+            border: 1px solid var(--md-sys-color-surface-variant);
+            border-radius: 1.5rem; /* 24px */
+            padding: 1.5rem; /* 24px */
+            margin-bottom: 1.5rem; /* 24px */
+        }
+        .fab {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            border-radius: 1.5rem; /* 24px */
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px 3px rgba(0,0,0,.15), 0 1px 3px rgba(0,0,0,.3);
+            transition: all 0.2s ease-in-out;
+        }
+        .fab:hover {
+             box-shadow: 0 6px 12px 4px rgba(0,0,0,.15), 0 2px 4px rgba(0,0,0,.3);
+             transform: translateY(-2px);
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-primary { background-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); }
+        .btn-primary:hover { background-color: #5a4293; }
+        .btn-secondary { background-color: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+        .btn-tertiary { border: 1px solid var(--md-sys-color-outline); color: var(--md-sys-color-primary); }
+        .btn-warning { background-color: #fb923c; color: white; }
+        .btn-warning:hover { background-color: #f97316; }
+        .btn-success { background-color: #22c55e; color: white; }
+        .btn-success:hover { background-color: #16a34a; }
+        
+        .day-btn.selected { background-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); border-color: var(--md-sys-color-primary); }
+        .view-toggle-btn.active { background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); border-color: var(--md-sys-color-primary-container); z-index: 10; }
+        
+        .body-part { fill: var(--md-sys-color-surface-container-highest); stroke: var(--md-sys-color-outline); stroke-width: 0.5; cursor: pointer; transition: fill 0.2s ease-in-out; }
+        .body-part:hover { fill: var(--md-sys-color-primary-container); }
+        .svg-label { font-size: 8px; font-family: 'Roboto', sans-serif; fill: var(--md-sys-color-on-surface-variant); pointer-events: none; text-anchor: middle; }
+        
+        .nav-btn {
+            padding: 8px;
+            border-radius: 99px;
+            transition: all 0.2s;
+        }
+        .nav-btn.active {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+        .nav-btn:not(.active):hover {
+             background-color: var(--md-sys-color-surface-container-low);
+        }
+
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200">
+        <div class="container mx-auto max-w-4xl px-4 py-3 flex justify-between items-center">
+             <div class="flex items-center gap-2">
+                <button id="nav-entry" onclick="TagebuchApp.events.showPage('entry')" class="text-gray-700 hover:text-blue-600 flex items-center gap-2 nav-btn active">
+                    <span class="material-symbols-outlined text-3xl">edit_note</span>
+                    <h1 class="text-2xl font-bold text-gray-800">Tagebuch</h1>
+                </button>
+            </div>
+            <div class="flex items-center gap-2">
+                 <nav>
+                    <button id="nav-log" onclick="TagebuchApp.events.showPage('log')" class="nav-btn p-2 rounded-full" title="Verlauf">
+                        <span class="material-symbols-outlined">timeline</span>
+                    </button>
+                </nav>
+                <button onclick="TagebuchApp.render.modal.showSettings()" class="text-gray-500 hover:text-blue-600 ml-2 p-2 rounded-full" title="Einstellungen">
+                    <span class="material-symbols-outlined">settings</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="app-container" class="container mx-auto max-w-4xl p-4 md:p-6">
+        <!-- Page content will be dynamically inserted here -->
+    </main>
+    
+    <!-- Floating Action Button for Scroll to Top -->
+    <div class="fixed bottom-6 right-6 z-10">
+        <button id="scroll-to-top" onclick="TagebuchApp.utils.scrollToTop()" class="fab opacity-0 transform translate-y-4 transition-all duration-300">
+            <span class="material-symbols-outlined">arrow_upward</span>
+        </button>
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="modal-container" onclick="if (event.target === this) { TagebuchApp.render.modal.hide() }" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div id="modal-content" class="bg-white rounded-3xl p-6 shadow-xl w-full max-w-md">
+            <!-- Modal content will be dynamically inserted here -->
+        </div>
+    </div>
+
+<script>
+const TagebuchApp = {
+    // --- STATE ---
+    state: {
+        activePage: 'entry',
+        currentPainPart: null,
+        charts: { pain: null, training: null },
+        currentPage: 1,
+        tempSelectedDays: [],
+        tempDuration: 30,
+        currentEditingTraining: null,
+        timeRange: 7,
+    },
+
+    // --- CONFIGURATION ---
+    config: {
+        ENTRIES_PER_PAGE: 10,
+        DEFAULT_BODY_COLOR: '#E6E0E9',
+        PAIN_LEVELS: {
+            0: { label: "Kein Schmerz", short: "-", color: "#86efac" }, 
+            1: { label: "Leicht", short: "L", color: "#bfdbfe" },
+            2: { label: "Unangenehm", short: "U", color: "#fde047" }, 3: { label: "Stark", short: "S", color: "#fb923c" },
+            4: { label: "Fürchterlich", short: "F", color: "#ef4444" }, 5: { label: "Vernichtend", short: "X", color: "#9333ea" },
+        },
+        DAY_NAMES: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
+        DAY_DISPLAY_ORDER: [
+            { name: 'Mo', index: 1 }, { name: 'Di', index: 2 }, { name: 'Mi', index: 3 }, { name: 'Do', index: 4 },
+            { name: 'Fr', index: 5 }, { name: 'Sa', index: 6 }, { name: 'So', index: 0 }
+        ],
+        CHART_FONT_OPTIONS: {
+            font: {
+                size: 12,
+                weight: 'bold'
+            }
+        },
+        DEFAULT_TRAININGS_JSON: `[
+            {"name": "Mit Rolli gehen", "activity": "rollator_walking", "days": [], "duration": 30},
+            {"name": "Radfahren", "activity": "cycling", "days": [], "duration": 30},
+            {"name": "Rückenmuskelaufbau", "activity": "back_muscle_building", "days": [1, 2, 3, 4, 5], "duration": 15}
+        ]`
+    },
+
+    // --- INITIALIZATION ---
+    init() {
+        document.addEventListener('DOMContentLoaded', () => {
+            this.events.showPage(this.state.activePage);
+            this.events.initEventListeners();
+            this.utils.updateLastEntryTime();
+            setInterval(this.utils.updateLastEntryTime, 5000);
+        });
+    },
+
+    // --- DATA MANAGEMENT ---
+    data: {
+        getData() { return JSON.parse(localStorage.getItem('tagebuchData')) || []; },
+        saveData(data) {
+            localStorage.setItem('tagebuchData', JSON.stringify(data));
+            localStorage.setItem('tagebuchLastEntry', new Date().toISOString());
+            TagebuchApp.utils.updateLastEntryTime();
+            if (TagebuchApp.state.activePage === 'log') {
+                TagebuchApp.render.charts.pain();
+                TagebuchApp.render.charts.training();
+            }
+        },
+        getTrainings() {
+            const trainings = localStorage.getItem('tagebuchTrainings');
+            // MODIFICATION: Load default trainings if none exist
+            if (trainings) {
+                return JSON.parse(trainings);
+            } else {
+                const defaultTrainings = JSON.parse(TagebuchApp.config.DEFAULT_TRAININGS_JSON);
+                this.saveTrainings(defaultTrainings);
+                return defaultTrainings;
+            }
+        },
+        saveTrainings(trainings) { localStorage.setItem('tagebuchTrainings', JSON.stringify(trainings)); },
+        loadTodaysState() {
+            if (TagebuchApp.state.activePage !== 'entry') return;
+            document.querySelectorAll('.body-part').forEach(part => {
+                part.style.fill = TagebuchApp.config.DEFAULT_BODY_COLOR;
+                delete part.dataset.level;
+            });
+            const todaysPainMetrics = this.getData().filter(e => e.metric.startsWith('pain_') && TagebuchApp.utils.isToday(new Date(e.timestamp)));
+            todaysPainMetrics.forEach(metric => {
+                const partElement = document.getElementById(metric.labels.body_part);
+                if (partElement) {
+                    partElement.style.fill = TagebuchApp.config.PAIN_LEVELS[metric.value].color;
+                    partElement.dataset.level = metric.value;
+                }
+            });
+        },
+        exportData() {
+            const dataToExport = {
+                metrics: this.getData(),
+                trainings: this.getTrainings()
+            };
+            const dataStr = JSON.stringify(dataToExport, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `tagebuch_export_${new Date().toISOString().split('T')[0]}.json`;
+            a.click(); URL.revokeObjectURL(url);
+        },
+        importData(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.metrics && imported.trainings) {
+                         TagebuchApp.render.modal.showConfirmation('Daten importieren', 'Möchtest du die aktuellen Daten wirklich überschreiben? Diese Aktion kann nicht rückgängig gemacht werden.',
+                            () => { this.saveData(imported.metrics); this.saveTrainings(imported.trainings); location.reload(); });
+                    } else { TagebuchApp.render.modal.showAlert('Fehler', 'Die Importdatei hat ein ungültiges Format.'); }
+                } catch (err) { TagebuchApp.render.modal.showAlert('Fehler', 'Die Datei konnte nicht gelesen werden.'); }
+            };
+            reader.readAsText(file); event.target.value = '';
+        },
+    },
+
+    // --- UI RENDERING ---
+    render: {
+        entryPage() {
+            const container = document.getElementById('app-container');
+            container.innerHTML = this.components.entrySection();
+            this.todaysEntries();
+            TagebuchApp.data.loadTodaysState();
+             document.querySelectorAll('.body-part').forEach(part => part.addEventListener('click', (e) => TagebuchApp.events.handleBodyPartClick(e)));
+        },
+        logPage() {
+            const container = document.getElementById('app-container');
+            container.innerHTML = this.components.logSection();
+            this.log();
+            this.charts.pain();
+            this.charts.training();
+        },
+        todaysEntries() {
+            const container = document.getElementById('todays-entry-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const today = new Date().getDay();
+            const todaysData = TagebuchApp.data.getData();
+            const todaysTrainingsDone = todaysData.filter(e => e.metric.startsWith('training_') && TagebuchApp.utils.isToday(new Date(e.timestamp)));
+            
+            const trainingItems = TagebuchApp.data.getTrainings().map(training => {
+                const todaysEntry = todaysTrainingsDone.find(t => t.labels.activity === training.activity);
+                const duration = todaysEntry ? todaysEntry.value : 0;
+                const isScheduledToday = training.days.includes(today);
+                return {
+                    isPending: isScheduledToday && duration < training.duration,
+                    data: training,
+                    duration: duration
+                };
+            });
+
+            trainingItems.sort((a, b) => b.isPending - a.isPending);
+
+            trainingItems.forEach(item => {
+                const div = document.createElement('div');
+                div.id = `training-item-${item.data.activity}`;
+                div.className = `p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 ${item.isPending ? 'bg-red-50 border-l-4 border-red-400' : 'bg-gray-100'}`;
+                div.innerHTML = this.components.trainingItem(item.data, item.duration, item.isPending);
+                container.appendChild(div);
+            });
+        },
+        log(page = 1) {
+            TagebuchApp.state.currentPage = page;
+            const container = document.getElementById('log-entries-container');
+            if (!container) return;
+            container.innerHTML = '';
+            const groupedData = {};
+            TagebuchApp.data.getData().forEach(metric => {
+                const date = new Date(metric.timestamp).toLocaleDateString('de-DE');
+                if (!groupedData[date]) groupedData[date] = [];
+                groupedData[date].push(metric);
+            });
+            const sortedDates = Object.keys(groupedData).sort((a, b) => new Date(b.split('.').reverse().join('-')) - new Date(a.split('.').reverse().join('-')));
+            if (sortedDates.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">Noch keine Einträge vorhanden.</p>';
+                document.getElementById('log-pagination').innerHTML = ''; return;
+            }
+            const startIndex = (page - 1) * TagebuchApp.config.ENTRIES_PER_PAGE;
+            const endIndex = page * TagebuchApp.config.ENTRIES_PER_PAGE;
+            const paginatedDates = sortedDates.slice(startIndex, endIndex);
+            paginatedDates.forEach(date => {
+                const div = document.createElement('div');
+                div.className = 'bg-white p-4 rounded-xl border border-gray-200';
+                div.innerHTML = this.components.logEntry(date, groupedData[date]);
+                container.appendChild(div);
+            });
+            this.pagination(sortedDates.length);
+        },
+        pagination(totalItems) {
+            const paginationContainer = document.getElementById('log-pagination');
+            if(!paginationContainer) return;
+            const totalPages = Math.ceil(totalItems / TagebuchApp.config.ENTRIES_PER_PAGE);
+            if (totalPages <= 1) { paginationContainer.innerHTML = ''; return; }
+            paginationContainer.innerHTML = this.components.paginationControls(TagebuchApp.state.currentPage, totalPages);
+        },
+        manageTrainingList() {
+            const container = document.getElementById('manage-training-list');
+            if (!container) return;
+            container.innerHTML = '';
+            TagebuchApp.data.getTrainings().forEach((training, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between bg-gray-100 p-3 rounded-lg';
+                div.innerHTML = this.components.manageTrainingItem(training, index);
+                container.appendChild(div);
+            });
+        },
+        charts: {
+            pain() {
+                const ctx = document.getElementById('painChart')?.getContext('2d');
+                if (!ctx) return;
+                const data = TagebuchApp.data.getData();
+                const timeRangeDays = TagebuchApp.state.timeRange || 7;
+                const startDate = new Date(); startDate.setHours(0,0,0,0); startDate.setDate(startDate.getDate() - (timeRangeDays -1));
+                const painData = data.filter(entry => entry.metric.startsWith('pain_') && new Date(entry.timestamp) >= startDate);
+                
+                const dailyTotals = painData.reduce((acc, entry) => {
+                    const dayKey = new Date(entry.timestamp).setHours(0,0,0,0);
+                    if (!acc[dayKey]) acc[dayKey] = {};
+                    const partName = entry.labels.name;
+                    if (!acc[dayKey][partName]) acc[dayKey][partName] = 0;
+                    acc[dayKey][partName] += entry.value;
+                    return acc;
+                }, {});
+                const allPartNames = [...new Set(painData.map(p => p.labels.name))];
+                const datasets = allPartNames.map(partName => ({
+                    label: partName,
+                    data: Object.entries(dailyTotals).map(([timestamp, parts]) => ({ x: parseInt(timestamp), y: parts[partName] || 0 })),
+                    backgroundColor: TagebuchApp.utils.generateColorFromHash(partName),
+                }));
+                const yAxisOptions = { beginAtZero: true, stacked: true, title: { display: true, text: 'Schmerzintensität (Summe)', ...TagebuchApp.config.CHART_FONT_OPTIONS }, ticks: { ...TagebuchApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 6 } };
+                
+                const tooltipOptions = {
+                    callbacks: {
+                        label: (context) => `${context.dataset.label}: ${context.raw.y}`,
+                        title: (tooltipItems) => {
+                            const timestamp = tooltipItems[0].parsed.x;
+                            const date = new Date(timestamp);
+                            const day = String(date.getDate());
+                            const month = String(date.getMonth() + 1);
+                            const year = date.getFullYear();
+                            const currentYear = new Date().getFullYear();
+                            return year === currentYear ? `${day}.${month}.` : `${day}.${month}.${year}`;
+                        }
+                    }
+                };
+
+                if (TagebuchApp.state.charts.pain) { TagebuchApp.state.charts.pain.destroy(); }
+                TagebuchApp.state.charts.pain = new Chart(ctx, { type: 'bar', data: { datasets: datasets }, options: { plugins: { legend: { position: 'bottom', labels: {...TagebuchApp.config.CHART_FONT_OPTIONS} }, tooltip: tooltipOptions }, scales: { x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd.MM' } }, stacked: true, grid: { display: false }, ticks: {...TagebuchApp.config.CHART_FONT_OPTIONS} }, y: yAxisOptions } } });
+            },
+            training() {
+                const ctx = document.getElementById('trainingChart')?.getContext('2d');
+                if (!ctx) return;
+                const data = TagebuchApp.data.getData();
+                const timeRangeDays = TagebuchApp.state.timeRange || 7;
+                const startDate = new Date(); startDate.setHours(0,0,0,0); startDate.setDate(startDate.getDate() - (timeRangeDays -1));
+                
+                const trainingData = data.filter(entry => entry.metric.startsWith('training_') && (new Date(entry.timestamp) >= startDate));
+                
+                const datasets = Object.values(trainingData.reduce((acc, entry) => {
+                    const label = entry.labels.name;
+                    if (!acc[label]) { acc[label] = { label: label, data: [], backgroundColor: TagebuchApp.utils.generateColorFromHash(label), barPercentage: 0.8 }; }
+                    const dateKey = new Date(entry.timestamp).setHours(0,0,0,0);
+                    acc[label].data.push({ x: dateKey, y: entry.value });
+                    return acc;
+                }, {}));
+
+                const tooltipOptions = {
+                    callbacks: {
+                        title: (tooltipItems) => {
+                            const timestamp = tooltipItems[0].parsed.x;
+                            const date = new Date(timestamp);
+                            const day = String(date.getDate());
+                            const month = String(date.getMonth() + 1);
+                            const year = date.getFullYear();
+                            const currentYear = new Date().getFullYear();
+                            return year === currentYear ? `${day}.${month}.` : `${day}.${month}.${year}`;
+                        }
+                    }
+                };
+                
+                if(TagebuchApp.state.charts.training) { TagebuchApp.state.charts.training.destroy(); }
+                TagebuchApp.state.charts.training = new Chart(ctx, { 
+                    type: 'bar', 
+                    data: { datasets: datasets }, 
+                    options: { 
+                        plugins: { legend: { position: 'bottom', labels: {...TagebuchApp.config.CHART_FONT_OPTIONS} }, tooltip: tooltipOptions }, 
+                        scales: { 
+                            x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd.MM' } }, stacked: true, grid: { display: false }, ticks: {...TagebuchApp.config.CHART_FONT_OPTIONS} }, 
+                            y: { stacked: true, title: { display: true, text: 'Trainingsdauer (Minuten)', ...TagebuchApp.config.CHART_FONT_OPTIONS }, ticks: {...TagebuchApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 6 }, min: 0 } 
+                        },
+                    } 
+                });
+            }
+        },
+        modal: {
+            show(content) {
+                document.getElementById('modal-content').innerHTML = content;
+                document.getElementById('modal-container').classList.remove('hidden');
+            },
+            hide() {
+                document.getElementById('modal-container').classList.add('hidden');
+                document.getElementById('modal-content').innerHTML = '';
+            },
+            showPainSelector(part) {
+                TagebuchApp.state.currentPainPart = part;
+                const content = TagebuchApp.render.components.painModalContent(part.dataset.name);
+                this.show(content);
+            },
+            showDaysSelector(training = null) {
+                TagebuchApp.state.currentEditingTraining = training;
+                TagebuchApp.state.tempSelectedDays = training ? [...training.days] : [];
+                TagebuchApp.state.tempDuration = training ? training.duration : 30;
+                const content = TagebuchApp.render.components.daysModalContent(training);
+                this.show(content);
+                const slider = document.getElementById('duration-slider');
+                const label = document.getElementById('duration-label');
+                if(slider && label) { slider.oninput = () => { label.textContent = slider.value; }; }
+            },
+            showSettings() {
+                const content = TagebuchApp.render.components.settingsSection();
+                this.show(content);
+                TagebuchApp.render.manageTrainingList();
+            },
+            showAlert(title, message) {
+                const content = `<h3 class="text-xl font-medium mb-4">${title}</h3><p class="mb-6">${message}</p><div class="flex justify-end"><button onclick="TagebuchApp.render.modal.hide()" class="btn btn-primary">OK</button></div>`;
+                this.show(content);
+            },
+            showConfirmation(title, message, onConfirm) {
+                 const content = `<h3 class="text-xl font-medium mb-4">${title}</h3><p class="mb-6">${message}</p><div class="flex justify-end gap-4"><button onclick="TagebuchApp.render.modal.hide()" class="btn btn-tertiary">Abbrechen</button><button id="confirm-action-btn" class="btn btn-primary">Bestätigen</button></div>`;
+                this.show(content);
+                document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); this.hide(); };
+            }
+        },
+        components: {
+            entrySection: () => {
+                const today = new Date();
+                const dateString = `(${today.getDate()}.${today.getMonth() + 1}.)`;
+                return `
+                <div class="card"><h2 class="text-2xl font-semibold mb-4 text-gray-700">Heutiger Tag <span class="text-lg font-normal text-gray-500">${dateString}</span></h2><div id="todays-entry-container" class="space-y-4"></div></div>
+                <div class="card">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+                        <h2 id="pain-section-title" class="text-xl md:text-2xl font-semibold text-gray-700">Rückenseite</h2>
+                        <div class="inline-flex rounded-full shadow-sm" role="group">
+                            <button type="button" onclick="TagebuchApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100">Vorderseite</button>
+                            <button type="button" onclick="TagebuchApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100 active">Rückenseite</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-center">
+                        <svg id="pain-figure" viewBox="0 0 130 210" xmlns="http://www.w3.org/2000/svg">
+                           <g id="body-front" transform="translate(5, 0)" class="hidden">
+                                <circle id="head_front" data-name="Kopf" class="body-part" cx="60" cy="25" r="15"/>
+                                <rect id="torso_chest_left" data-name="Brust (L)" class="body-part" x="40" y="40" width="15" height="30" rx="2"/>
+                                <rect id="torso_chest_right" data-name="Brust (R)" class="body-part" x="65" y="40" width="15" height="30" rx="2"/>
+                                <rect id="torso_abdomen_left" data-name="Bauch (L)" class="body-part" x="40" y="72" width="15" height="28" rx="2"/>
+                                <rect id="torso_abdomen_right" data-name="Bauch (R)" class="body-part" x="65" y="72" width="15" height="28" rx="2"/>
+                                <line x1="60" y1="40" x2="60" y2="100" stroke="#9ca3af" stroke-width="0.5"/>
+                                <rect id="arm_left_front" data-name="Linker Arm" class="body-part" x="20" y="42" width="15" height="70" rx="5"/>
+                                <rect id="hand_left_front" data-name="Hand (L)" class="body-part" x="17" y="112" width="21" height="15" rx="3"/>
+                                <rect id="arm_right_front" data-name="Rechter Arm" class="body-part" x="85" y="42" width="15" height="70" rx="5"/>
+                                <rect id="hand_right_front" data-name="Hand (R)" class="body-part" x="82" y="112" width="21" height="15" rx="3"/>
+                                <rect id="leg_left_front" data-name="Linkes Bein" class="body-part" x="41" y="105" width="13" height="80" rx="5"/>
+                                <rect id="foot_left_front" data-name="Fuß (L)" class="body-part" x="38" y="185" width="19" height="12" rx="3"/>
+                                <rect id="leg_right_front" data-name="Rechtes Bein" class="body-part" x="66" y="105" width="13" height="80" rx="5"/>
+                                <rect id="foot_right_front" data-name="Fuß (R)" class="body-part" x="63" y="185" width="19" height="12" rx="3"/>
+                                <text x="60" y="28" class="svg-label">Kopf</text><text x="60" y="58" class="svg-label">Brust</text><text x="60" y="88" class="svg-label">Bauch</text>
+                            </g>
+                            <g id="body-back" transform="translate(5, 0)">
+                                <circle id="head_back" data-name="Hinterkopf" class="body-part" cx="60" cy="25" r="15"/>
+                                <rect id="back_cervical_left" data-name="HWS (L)" class="body-part" x="40" y="40" width="15" height="20" rx="2"/>
+                                <rect id="back_cervical_right" data-name="HWS (R)" class="body-part" x="65" y="40" width="15" height="20" rx="2"/>
+                                <rect id="back_thoracic_left" data-name="BWS (L)" class="body-part" x="40" y="62" width="15" height="20" rx="2"/>
+                                <rect id="back_thoracic_right" data-name="BWS (R)" class="body-part" x="65" y="62" width="15" height="20" rx="2"/>
+                                <rect id="back_lumbar_left" data-name="LWS (L)" class="body-part" x="40" y="84" width="15" height="16" rx="2"/>
+                                <rect id="back_lumbar_right" data-name="LWS (R)" class="body-part" x="65" y="84" width="15" height="16" rx="2"/>
+                                <line x1="60" y1="40" x2="60" y2="100" stroke="#9ca3af" stroke-width="0.5"/>
+                                <rect id="arm_left_back" data-name="Linker Arm (h)" class="body-part" x="20" y="42" width="15" height="70" rx="5"/>
+                                <rect id="hand_left_back" data-name="Hand (L,h)" class="body-part" x="17" y="112" width="21" height="15" rx="3"/>
+                                <rect id="arm_right_back" data-name="Rechter Arm (h)" class="body-part" x="85" y="42" width="15" height="70" rx="5"/>
+                                <rect id="hand_right_back" data-name="Hand (R,h)" class="body-part" x="82" y="112" width="21" height="15" rx="3"/>
+                                <rect id="glute_left_back" data-name="Gesäß (L)" class="body-part" x="41" y="105" width="13" height="20" rx="3"/>
+                                <rect id="glute_right_back" data-name="Gesäß (R)" class="body-part" x="66" y="105" width="13" height="20" rx="3"/>
+                                <rect id="leg_left_back" data-name="Linkes Bein (h)" class="body-part" x="41" y="127" width="13" height="58" rx="5"/>
+                                <rect id="foot_left_back" data-name="Fuß (L,h)" class="body-part" x="38" y="185" width="19" height="12" rx="3"/>
+                                <rect id="leg_right_back" data-name="Rechtes Bein (h)" class="body-part" x="66" y="127" width="13" height="58" rx="5"/>
+                                <rect id="foot_right_back" data-name="Fuß (R,h)" class="body-part" x="63" y="185" width="19" height="12" rx="3"/>
+                                <text x="60" y="52" class="svg-label">HWS</text><text x="60" y="74" class="svg-label">BWS</text><text x="60" y="94" class="svg-label">LWS</text>
+                            </g>
+                        </svg>
+                    </div>
+                </div>`;
+            },
+            logSection: () => `
+                <div class="card">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                        <h2 id="log-title" class="text-2xl font-semibold text-gray-700">Verlauf</h2>
+                        <div class="flex items-center gap-4">
+                            <select id="time-range-selector" onchange="TagebuchApp.events.handleTimeRangeChange(event)" class="border border-gray-300 rounded-full text-sm focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5">
+                                <option value="7" selected>Letzte 7 Tage</option><option value="30">Letzte 30 Tage</option><option value="180">Letzte 6 Monate</option>
+                            </select>
+                        </div>
+                    </div>
+                    <canvas id="painChart" class="mb-8"></canvas><canvas id="trainingChart"></canvas>
+                </div>
+                <div class="card"><h2 class="text-2xl font-semibold mb-4 text-gray-700">Protokoll</h2><div id="log-entries-container" class="space-y-4"></div><div id="log-pagination" class="mt-6 flex justify-between items-center"></div></div>`,
+            settingsSection: () => `
+                <div>
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Trainings verwalten</h2><div id="manage-training-list" class="space-y-2"></div>
+                    <div class="mt-4"><button onclick="TagebuchApp.render.modal.showDaysSelector(null)" class="btn btn-primary w-full"><span class="material-symbols-outlined mr-2">add</span>Neues Training hinzufügen</button></div>
+                </div>
+                <hr class="my-6">
+                <div><h2 class="text-2xl font-semibold mb-4 text-gray-700">Daten Importieren und Exportieren</h2><div class="flex flex-col md:flex-row gap-4">
+                    <label class="btn btn-secondary flex-1 cursor-pointer"><span class="material-symbols-outlined mr-2">upload</span><span>Daten importieren</span><input type="file" id="import-file" class="hidden" onchange="TagebuchApp.data.importData(event)"></label>
+                    <button onclick="TagebuchApp.data.exportData()" class="btn btn-secondary flex-1"><span class="material-symbols-outlined mr-2">download</span> Daten exportieren</button>
+                </div></div>`,
+            trainingItem: (training, duration, isMissed) => `
+                <span class="text-lg font-medium text-gray-800 flex-1 flex items-center gap-2">${training.name} ${isMissed ? `<span class="material-symbols-outlined text-red-500" title="Heute geplant!">priority_high</span>` : ''}</span>
+                <div class="flex items-center gap-3">
+                    <button onclick="TagebuchApp.events.handleTrainingIncrement('${training.activity}', -15)" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full text-2xl">-</button>
+                    <span id="duration-${training.activity}" class="text-2xl font-semibold w-20 text-center">${duration} min</span>
+                    <button onclick="TagebuchApp.events.handleTrainingIncrement('${training.activity}', 15)" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full text-2xl">+</button>
+                </div>`,
+            logEntry: (date, metrics) => {
+                let content = `<h3 class="font-bold mb-2">${date}</h3><div class="space-y-2">`;
+                const painMetrics = metrics.filter(m => m.metric.startsWith('pain_'));
+                if (painMetrics.length > 0) { content += `<div><strong>Schmerz:</strong> ${painMetrics.map(p => `${p.labels.name} <span class="inline-block w-4 h-4 rounded-full align-middle" style="background-color:${TagebuchApp.config.PAIN_LEVELS[p.value]?.color || '#ccc'}; border: 1px solid #666;"></span>`).join(', ')}</div>`; }
+                const trainingMetrics = metrics.filter(m => m.metric.startsWith('training_'));
+                if (trainingMetrics.length > 0) { content += `<div><strong>Training:</strong> ${trainingMetrics.map(t => `${t.labels.name} (${t.value} Min.)`).join(', ')}</div>`; }
+                return content + `</div>`;
+            },
+            paginationControls: (currentPage, totalPages) => `<button onclick="TagebuchApp.events.handleChangePage(-1)" class="btn btn-tertiary" ${currentPage === 1 ? 'disabled' : ''}>Zurück</button><span class="text-sm text-gray-700">Seite ${currentPage} von ${totalPages}</span><button onclick="TagebuchApp.events.handleChangePage(1)" class="btn btn-tertiary" ${currentPage === totalPages ? 'disabled' : ''}>Weiter</button>`,
+            manageTrainingItem: (training, index) => {
+                const scheduledDays = training.days.length > 0 ? training.days.map(d => TagebuchApp.config.DAY_NAMES[d]).join(', ') : 'jederzeit';
+                const durationText = training.duration ? `(${training.duration} min)` : '';
+                return `
+                    <div class="flex items-center gap-3 flex-grow">
+                        <button onclick="TagebuchApp.render.modal.showDaysSelector(TagebuchApp.data.getTrainings()[${index}])" class="text-blue-500 hover:text-blue-700">
+                            <span class="material-symbols-outlined">edit</span>
+                        </button>
+                        <div>
+                            <span>${training.name} <span class="text-xs text-gray-400">(${training.activity})</span></span>
+                            <span class="text-xs text-gray-500 block">${scheduledDays} ${durationText}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <button onclick="TagebuchApp.events.handleRemoveTraining(${index})" class="text-red-400 hover:text-red-600">
+                            <span class="material-symbols-outlined">delete</span>
+                        </button>
+                    </div>`;
+            },
+            painModalContent: (partName) => {
+                let buttons = '';
+                for (const [level, props] of Object.entries(TagebuchApp.config.PAIN_LEVELS)) { buttons += `<button onclick="TagebuchApp.events.handleSetPainLevel(${level})" class="btn w-full text-lg font-bold py-4 px-4 rounded-xl" style="background-color:${props.color}; color: ${parseInt(level) > 2 && parseInt(level) < 6 ? 'white' : 'black'}">${props.short} (${props.label})</button>`; }
+                return `<h3 class="text-2xl font-semibold mb-6 text-center">Schmerz in: ${partName}</h3><div class="grid grid-cols-1 gap-4">${buttons}</div><button onclick="TagebuchApp.render.modal.hide()" class="mt-8 text-gray-500 hover:text-gray-700 w-full">Abbrechen</button>`;
+            },
+            daysModalContent: (training = null) => {
+                const isEditing = training !== null;
+                const duration = isEditing ? training.duration : 30;
+                const selectedDays = isEditing ? training.days : [];
+                const name = isEditing ? training.name : '';
+                const activity = isEditing ? training.activity : '';
+
+                let dayButtons = '';
+                TagebuchApp.config.DAY_DISPLAY_ORDER.forEach(day => {
+                    const isSelected = selectedDays.includes(day.index);
+                    dayButtons += `<button onclick="TagebuchApp.events.handleToggleDay(${day.index}, this)" class="day-btn p-2 border rounded-md ${isSelected ? 'selected' : ''}">${day.name}</button>`;
+                });
+                return `
+                    <h3 class="text-2xl font-semibold mb-6">${isEditing ? 'Training bearbeiten' : 'Neues Training'}</h3>
+                    <div class="space-y-4 text-left">
+                        <div><label for="training-name" class="block mb-1 text-sm font-medium text-gray-900">Bezeichnung</label><input id="training-name" type="text" value="${name}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="z.B. Rad fahren"></div>
+                        <div><label for="training-activity" class="block mb-1 text-sm font-medium text-gray-900">Aktivität-ID</label><input id="training-activity" type="text" value="${activity}" ${isEditing ? 'disabled' : ''} class="w-full p-2 border border-gray-300 rounded-lg ${isEditing ? 'bg-gray-100' : ''}" placeholder="z.B. radfahren"></div>
+                        <div><label for="duration-slider" class="block mb-2 text-sm font-medium text-gray-900">Geplante Dauer: <span id="duration-label">${duration}</span> min</label><input id="duration-slider" type="range" min="15" max="60" step="5" value="${duration}" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
+                        <div><label class="block mb-2 text-sm font-medium text-gray-900">Tage</label><div class="grid grid-cols-7 gap-1 text-center">${dayButtons}</div></div>
+                    </div>
+                    <div class="flex gap-4 mt-6">
+                        <button onclick="TagebuchApp.render.modal.showSettings()" class="btn btn-tertiary flex-1">Abbrechen</button>
+                        <button onclick="TagebuchApp.events.handleSaveTraining()" class="btn btn-primary flex-1">Speichern</button>
+                    </div>`;
+            }
+        }
+    },
+
+    // --- EVENT HANDLING ---
+    events: {
+        showPage(pageName) {
+            TagebuchApp.state.activePage = pageName;
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            const navButton = document.getElementById(`nav-${pageName}`);
+            if (navButton) {
+                navButton.classList.add('active');
+            }
+
+            if (pageName === 'entry') {
+                TagebuchApp.render.entryPage();
+            } else if (pageName === 'log') {
+                TagebuchApp.render.logPage();
+            }
+        },
+        initEventListeners() {
+            const observer = new IntersectionObserver((entries) => {
+                const btn = document.getElementById('scroll-to-top');
+                if (entries[0].boundingClientRect.y < 0) { btn.classList.remove('opacity-0', 'translate-y-4'); } 
+                else { btn.classList.add('opacity-0', 'translate-y-4'); }
+            }, { threshold: 0.1 });
+            observer.observe(document.querySelector('header'));
+        },
+        handleBodyPartClick(event) { TagebuchApp.render.modal.showPainSelector(event.target); },
+        handleSetPainLevel(level) {
+            const part = TagebuchApp.state.currentPainPart; if (!part) return;
+            if (level === 0) { part.style.fill = TagebuchApp.config.DEFAULT_BODY_COLOR; delete part.dataset.level; } 
+            else { part.style.fill = TagebuchApp.config.PAIN_LEVELS[level].color; part.dataset.level = level; }
+            this.saveOrUpdatePainEntry();
+            TagebuchApp.render.modal.hide();
+        },
+        saveOrUpdatePainEntry() {
+            let data = TagebuchApp.data.getData();
+            data = data.filter(e => !(e.metric.startsWith('pain_') && TagebuchApp.utils.isToday(new Date(e.timestamp))));
+            const currentPainPoints = Array.from(document.querySelectorAll('.body-part[data-level]')).map(part => ({
+                metric: `pain_${part.id}_level`,
+                timestamp: new Date().toISOString(),
+                labels: { body_part: part.id, name: part.dataset.name }, 
+                value: parseInt(part.dataset.level, 10)
+            }));
+            if (currentPainPoints.length > 0) { data.push(...currentPainPoints); }
+            TagebuchApp.data.saveData(data);
+            TagebuchApp.utils.showSaveIndicator();
+            if (TagebuchApp.state.activePage === 'log') { TagebuchApp.render.log(TagebuchApp.state.currentPage); }
+        },
+        handleTrainingIncrement(activity, increment) {
+            const training = TagebuchApp.data.getTrainings().find(t => t.activity === activity);
+            if (!training) return;
+            
+            const data = TagebuchApp.data.getData();
+            let todaysEntry = data.find(e => e.metric === `training_${activity}_duration_min` && TagebuchApp.utils.isToday(new Date(e.timestamp)));
+            let newDuration = 0;
+
+            if (todaysEntry) {
+                todaysEntry.value = Math.max(0, todaysEntry.value + increment);
+                newDuration = todaysEntry.value;
+                if (todaysEntry.value === 0) { data.splice(data.findIndex(e => e.timestamp === todaysEntry.timestamp), 1); }
+            } else if (increment > 0) {
+                newDuration = increment;
+                data.push({ 
+                    metric: `training_${activity}_duration_min`, 
+                    timestamp: new Date().toISOString(), 
+                    labels: { activity: training.activity, name: training.name }, 
+                    value: newDuration 
+                });
+            } else { return; }
+            
+            const durationSpan = document.getElementById(`duration-${activity}`);
+            if (durationSpan) { durationSpan.textContent = `${newDuration} min`; }
+
+            TagebuchApp.data.saveData(data);
+            TagebuchApp.utils.showSaveIndicator();
+
+            if (training && newDuration >= training.duration) {
+                const itemDiv = document.getElementById(`training-item-${activity}`);
+                if (itemDiv) {
+                    itemDiv.className = 'p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-100';
+                    const icon = itemDiv.querySelector('.material-symbols-outlined.text-red-500');
+                    if (icon) { icon.remove(); }
+                }
+            }
+        },
+        handleChangePage(direction) {
+            const totalPages = Math.ceil(Object.keys(TagebuchApp.data.getData().reduce((acc, metric) => { acc[new Date(metric.timestamp).toLocaleDateString('de-DE')] = true; return acc; }, {})).length / TagebuchApp.config.ENTRIES_PER_PAGE);
+            const newPage = TagebuchApp.state.currentPage + direction;
+            if (newPage >= 1 && newPage <= totalPages) { TagebuchApp.render.log(newPage); }
+        },
+        handleViewToggle(view) {
+            const titleEl = document.getElementById('pain-section-title');
+            const btnFront = document.getElementById('btn-view-front'); const btnBack = document.getElementById('btn-view-back');
+            const bodyFront = document.getElementById('body-front'); const bodyBack = document.getElementById('body-back');
+            if (view === 'front') {
+                titleEl.textContent = 'Vorderseite'; bodyFront.classList.remove('hidden'); bodyBack.classList.add('hidden');
+                btnFront.classList.add('active'); btnBack.classList.remove('active');
+            } else {
+                titleEl.textContent = 'Rückenseite'; bodyFront.classList.add('hidden'); bodyBack.classList.remove('hidden');
+                btnFront.classList.remove('active'); btnBack.classList.add('active');
+            }
+        },
+        handleTimeRangeChange(event) {
+            const newRange = parseInt(event.target.value, 10);
+            TagebuchApp.state.timeRange = newRange;
+            const titleEl = document.getElementById('log-title');
+            if(titleEl) {
+                const rangeText = { 7: 'Letzte 7 Tage', 30: 'Letzte 30 Tage', 180: 'Letzte 6 Monate'}[newRange];
+                titleEl.textContent = `Verlauf (${rangeText})`;
+            }
+            TagebuchApp.render.charts.pain(); TagebuchApp.render.charts.training();
+        },
+        handleRemoveTraining(index) {
+            const trainings = TagebuchApp.data.getTrainings();
+            const trainingNameToDelete = trainings[index].name;
+            const message = `Möchtest du das Training "${trainingNameToDelete}" wirklich entfernen?`;
+            
+            TagebuchApp.render.modal.showConfirmation('Training löschen', message, () => {
+                trainings.splice(index, 1);
+                TagebuchApp.data.saveTrainings(trainings);
+                TagebuchApp.render.modal.showSettings();
+                TagebuchApp.render.todaysEntries();
+            });
+        },
+        handleToggleDay(dayIndex, buttonElement) {
+            buttonElement.classList.toggle('selected');
+            const index = TagebuchApp.state.tempSelectedDays.indexOf(dayIndex);
+            if (index > -1) { TagebuchApp.state.tempSelectedDays.splice(index, 1); } 
+            else { TagebuchApp.state.tempSelectedDays.push(dayIndex); }
+        },
+        handleSaveTraining() {
+            const name = document.getElementById('training-name').value.trim();
+            const activityInput = document.getElementById('training-activity');
+            // MODIFICATION: Use slugify utility for consistent ID generation
+            const activity = TagebuchApp.utils.slugify(activityInput.value.trim());
+
+            if (!name || !activity) {
+                TagebuchApp.render.modal.showAlert('Fehler', 'Bezeichnung und Aktivität-ID sind erforderlich.');
+                return;
+            }
+            
+            const trainings = TagebuchApp.data.getTrainings();
+            const isEditing = !!TagebuchApp.state.currentEditingTraining;
+
+            if (!isEditing && trainings.some(t => t.activity === activity)) {
+                TagebuchApp.render.modal.showAlert('Fehler', 'Diese Aktivität-ID wird bereits verwendet.');
+                return;
+            }
+            
+            const newTrainingData = {
+                name: name,
+                activity: activity,
+                days: TagebuchApp.state.tempSelectedDays,
+                duration: parseInt(document.getElementById('duration-slider').value, 10)
+            };
+
+            if (isEditing) {
+                const index = trainings.findIndex(t => t.activity === TagebuchApp.state.currentEditingTraining.activity);
+                if (index > -1) {
+                    trainings[index] = newTrainingData;
+                }
+            } else {
+                trainings.push(newTrainingData);
+            }
+
+            TagebuchApp.data.saveTrainings(trainings);
+            TagebuchApp.render.modal.showSettings();
+            TagebuchApp.render.todaysEntries();
+        }
+    },
+
+    // --- UTILITIES ---
+    utils: {
+        isToday(date) {
+            const today = new Date();
+            return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+        },
+        updateLastEntryTime() {
+            const display = document.getElementById('last-entry-display'); if (!display) return;
+            const lastEntryTimestamp = localStorage.getItem('tagebuchLastEntry'); if (!lastEntryTimestamp) { display.innerHTML = ''; return; }
+            const lastDate = new Date(lastEntryTimestamp); const now = new Date();
+            const diffSeconds = Math.round((now - lastDate) / 1000);
+            let timeText = '';
+            if (diffSeconds < 60) timeText = `jetzt`;
+            else if (diffSeconds < 3600) timeText = `vor ${Math.floor(diffSeconds / 60)} Min.`;
+            else timeText = `${lastDate.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})}`;
+        },
+        showSaveIndicator() {
+            // This function is intentionally left empty.
+        },
+        scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); },
+        // MODIFICATION: slugify now uses underscores
+        slugify(text) {
+            return text.toString().toLowerCase()
+                .replace(/\s+/g, '_')       // Replace spaces with _
+                .replace(/[^\w_]+/g, '')    // Remove all non-word chars except _
+                .replace(/__+/g, '_')       // Replace multiple _ with single _
+                .replace(/^_+/, '')         // Trim _ from start of text
+                .replace(/_+$/, '');        // Trim _ from end of text
+        },
+        simpleHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) { const char = str.charCodeAt(i); hash = (hash << 5) - hash + char; hash |= 0; }
+            return Math.abs(hash);
+        },
+        generateColorFromHash(str) {
+            const hash = this.simpleHash(str);
+            const r = (hash & 0xFF0000) >> 16; const g = (hash & 0x00FF00) >> 8; const b = hash & 0x0000FF;
+            return `rgba(${r}, ${g}, ${b}, 0.7)`;
+        }
+    }
+};
+
+TagebuchApp.init();
+
+</script>
+</body>
+</html>
