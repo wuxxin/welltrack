@@ -120,37 +120,47 @@
         }
         
         /* Mood Slider Styles */
-        .mood-slider-container {
+        .mood-slider-wrapper {
             position: relative;
-            height: 24px;
-            display: flex;
-            align-items: center;
+            height: 40px; /* Increased height for easier clicking */
+            cursor: pointer;
         }
         .mood-slider-ruler {
             position: absolute;
             height: 8px;
-            width: calc(100% - 24px);
-            left: 12px;
-            background: var(--md-sys-color-surface-variant);
+            width: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            background-image: linear-gradient(to right, #ef4444, #f97316, #fbbf24 49%, #bfdbfe 51%, #60a5fa, #22c55e);
             border-radius: 4px;
+        }
+        .mood-slider-tick-container {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 24px;
+            width: calc(100% - 4px);
+            left: 2px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-        .mood-slider-ruler::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(to right, #ef4444, #f97316, #fde047, #bfdbfe, #86efac, #22c55e);
-            border-radius: 4px;
-            opacity: 0.8;
+            pointer-events: none;
         }
         .mood-slider-tick {
-            width: 2px;
-            background-color: var(--md-sys-color-outline);
-            opacity: 0.5;
-            position: relative;
-            z-index: 1;
+            width: 4px;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.6);
+            border-radius: 2px;
+        }
+        .mood-slider-default-indicator {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            color: #facc15;
+            display: none;
+            z-index: 3;
+            pointer-events: none;
         }
         input[type=range].mood-slider {
             -webkit-appearance: none;
@@ -159,27 +169,44 @@
             position: relative;
             z-index: 2;
             margin: 0;
+            height: 100%;
+        }
+        input[type=range].mood-slider.is-default + .mood-slider-default-indicator {
+            display: inline-block;
+        }
+        input[type=range].mood-slider.is-default {
+            pointer-events: none;
         }
         input[type=range].mood-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            height: 24px;
-            width: 24px;
+            height: 32px;
+            width: 32px;
             border-radius: 50%;
             background: var(--md-sys-color-primary);
             cursor: pointer;
-            border: 4px solid white;
+            border: 5px solid white;
             box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            transition: opacity 0.2s ease-in-out;
         }
-        input[type=range].mood-slider::-moz-range-thumb {
-            height: 24px;
-            width: 24px;
-            border-radius: 50%;
-            background: var(--md-sys-color-primary);
-            cursor: pointer;
-            border: 4px solid white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        input[type=range].mood-slider.is-default::-webkit-slider-thumb {
+            opacity: 0;
+            pointer-events: none;
         }
 
+        input[type=range].mood-slider::-moz-range-thumb {
+            height: 32px;
+            width: 32px;
+            border-radius: 50%;
+            background: var(--md-sys-color-primary);
+            cursor: pointer;
+            border: 5px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            transition: opacity 0.2s ease-in-out;
+        }
+        input[type=range].mood-slider.is-default::-moz-range-thumb {
+            opacity: 0;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -187,16 +214,15 @@
     <!-- Header -->
     <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200">
         <div class="container mx-auto max-w-4xl px-4 py-3 flex justify-between items-center">
-             <div class="flex items-center gap-2">
-                <button id="nav-today" onclick="WellTrackApp.events.showPage('today')" class="text-gray-700 flex items-center gap-2 nav-btn active">
-                    <span class="material-symbols-outlined text-3xl">edit_note</span>
-                    <h1 class="text-2xl font-bold text-gray-800">Tagebuch</h1>
+            <div id="header-left">
+                <button id="nav-today" onclick="WellTrackApp.events.showPage('today')" class="nav-btn">
+                    <span class="material-symbols-outlined text-3xl">home</span>
                 </button>
             </div>
-            <div class="flex items-center gap-2">
+            <div id="header-right">
                  <nav id="main-nav" class="flex items-center gap-2">
-                    <button id="nav-training" onclick="WellTrackApp.events.showPage('training')" class="nav-btn rounded-full" title="Training eintragen">
-                        <span class="material-symbols-outlined">fitness_center</span>
+                    <button id="nav-event" onclick="WellTrackApp.events.showPage('event')" class="nav-btn rounded-full" title="Ereignis eintragen">
+                        <span class="material-symbols-outlined">checklist</span>
                     </button>
                      <button id="nav-mood" onclick="WellTrackApp.events.showPage('mood')" class="nav-btn rounded-full" title="Stimmung eintragen">
                         <span class="material-symbols-outlined">sentiment_satisfied</span>
@@ -211,7 +237,7 @@
                     <button id="nav-log" onclick="WellTrackApp.events.showPage('log')" class="nav-btn rounded-full" title="Protokoll">
                         <span class="material-symbols-outlined">history</span>
                     </button>
-                    <button id="nav-settings" onclick="WellTrackApp.render.modal.showSettings()" class="nav-btn rounded-full" title="Einstellungen">
+                    <button id="nav-settings" onclick="WellTrackApp.events.showPage('settings')" class="nav-btn rounded-full" title="Einstellungen">
                         <span class="material-symbols-outlined">settings</span>
                     </button>
                 </nav>
@@ -244,14 +270,15 @@ const WellTrackApp = {
     // --- STATE ---
     // Holds the dynamic state of the application
     state: {
-        activePage: 'today', // today, training, mood, pain, history, log
+        activePage: 'today', // today, event, mood, pain, history, log, settings
         currentPainPart: null,
-        charts: { pain: null, training: null, mood: null },
+        charts: { pain: null, event: null, mood: null },
         currentPage: 1,
-        currentEditingTraining: null,
+        currentEditingEvent: null,
         timeRange: 7,
         notificationPermission: Notification.permission,
         activeMoodGroup: 'arousal_level',
+        activeHistoryTab: 'event',
     },
 
     // --- CONFIGURATION ---
@@ -275,10 +302,10 @@ const WellTrackApp = {
         CHART_FONT_OPTIONS: {
             font: { size: 12, weight: 'bold' }
         },
-        DEFAULT_TRAININGS_JSON: `[
-            {"name": "Mit Rolli gehen", "activity": "rollator_walking", "days": [], "duration": 30},
-            {"name": "Radfahren", "activity": "cycling", "days": [], "duration": 30},
-            {"name": "Rückenmuskelaufbau", "activity": "back_muscle_building", "days": [1, 2, 3, 4, 5], "duration": 15}
+        DEFAULT_EVENTS_JSON: `[
+            {"name": "Spaziergang", "activity": "walking", "days": [], "increment": 15, "unitType": "min"},
+            {"name": "Tassen Kaffee", "activity": "coffee_cups", "days": [], "increment": 1, "unitType": ""},
+            {"name": "Rückenübungen", "activity": "back_exercises", "days": [1, 2, 3, 4, 5], "increment": 15, "unitType": "min"}
         ]`,
         MOOD_GROUPS: {
             'arousal_level': {
@@ -288,9 +315,8 @@ const WellTrackApp = {
                     { id: 'motivation', name: 'Motivation', negative: 'Lethargisch', positive: 'Motiviert' },
                     { id: 'inner_drive', name: 'Innere Unruhe', negative: 'Getrieben', positive: 'Zentriert' },
                     { id: 'temperament', name: 'Temperament', negative: 'Geladen/Gereizt', positive: 'Gelassen' },
-                    { id: 'anxiety', name: 'Angst', negative: 'Ängstlich', positive: 'Ruhig' },
-                    { id: 'focus', name: 'Fokus', negative: 'Abgelenkt', positive: 'Fokussiert' },
-                    { id: 'self_control', name: 'Selbstkontrolle', negative: 'Impulsiv', positive: 'Kontrolliert' }
+                    { id: 'anxiety', name: 'Angst-freiheit', negative: 'Ängstlich', positive: 'Ruhig/Frei' },
+                    { id: 'focus', name: 'Fokus', negative: 'Abgelenkt', positive: 'Fokussiert' }
                 ]
             },
             'affective_state': {
@@ -303,7 +329,8 @@ const WellTrackApp = {
                     { id: 'social_connection', name: 'Soziale Verbindung', negative: 'Zurückgezogen', positive: 'Engagiert' }
                 ]
             }
-        }
+        },
+        MOOD_VALUE_MAP: [-3, -2, -1, 1, 2, 3]
     },
 
     // --- INITIALIZATION ---
@@ -320,26 +347,25 @@ const WellTrackApp = {
         getData() { return JSON.parse(localStorage.getItem('wellTrackData')) || []; },
         saveData(data) {
             localStorage.setItem('wellTrackData', JSON.stringify(data));
-            // Re-render today's log if it's visible on any of the entry pages
-            if (['today', 'training', 'mood', 'pain'].includes(WellTrackApp.state.activePage)) {
+            if (['today'].includes(WellTrackApp.state.activePage)) {
                  if(document.getElementById('todays-log-container')) WellTrackApp.render.todaysLog();
             } else if (WellTrackApp.state.activePage === 'history') {
                 WellTrackApp.render.charts.pain();
-                WellTrackApp.render.charts.training();
+                WellTrackApp.render.charts.event();
                 WellTrackApp.render.charts.mood();
             }
         },
-        getTrainings() {
-            const trainings = localStorage.getItem('wellTrackTrainings');
-            if (trainings) {
-                return JSON.parse(trainings);
+        getEvents() {
+            const events = localStorage.getItem('wellTrackEvents');
+            if (events) {
+                return JSON.parse(events);
             } else {
-                const defaultTrainings = JSON.parse(WellTrackApp.config.DEFAULT_TRAININGS_JSON);
-                this.saveTrainings(defaultTrainings);
-                return defaultTrainings;
+                const defaultEvents = JSON.parse(WellTrackApp.config.DEFAULT_EVENTS_JSON);
+                this.saveEvents(defaultEvents);
+                return defaultEvents;
             }
         },
-        saveTrainings(trainings) { localStorage.setItem('wellTrackTrainings', JSON.stringify(trainings)); },
+        saveEvents(events) { localStorage.setItem('wellTrackEvents', JSON.stringify(events)); },
         loadTodaysState() {
             const page = WellTrackApp.state.activePage;
 
@@ -364,18 +390,26 @@ const WellTrackApp = {
                         const slider = document.getElementById(`mood-slider-${q.id}`);
                         if(slider){
                             const entry = todaysMoodMetrics.find(m => m.labels.mood_id === q.id);
-                            slider.value = entry ? entry.value : 0; // Default to 0
+                            const sliderValue = entry ? WellTrackApp.config.MOOD_VALUE_MAP.indexOf(entry.value) : -1;
+                            
+                            if (sliderValue !== -1) {
+                                slider.value = sliderValue;
+                                slider.classList.remove('is-default');
+                            } else {
+                                slider.value = 2.5; // Visually center it, but it's hidden
+                                slider.classList.add('is-default');
+                            }
                         }
                     });
                 }
-            } else if (page === 'training') {
-                 WellTrackApp.render.trainingList();
+            } else if (page === 'event') {
+                WellTrackApp.render.eventList();
             }
         },
         exportData() {
             const dataToExport = {
                 metrics: this.getData(),
-                trainings: this.getTrainings(),
+                events: this.getEvents(),
                 settings: {
                     reminderTime: localStorage.getItem('wellTrackReminderTime')
                 }
@@ -393,11 +427,13 @@ const WellTrackApp = {
             reader.onload = (e) => {
                 try {
                     const imported = JSON.parse(e.target.result);
-                    if (imported.metrics && imported.trainings) {
+                    // Legacy support for 'trainings' key
+                    const eventsToImport = imported.events || imported.trainings;
+                    if (imported.metrics && eventsToImport) {
                          WellTrackApp.render.modal.showConfirmation('Daten importieren', 'Möchtest du die aktuellen Daten wirklich überschreiben? Diese Aktion kann nicht rückgängig gemacht werden.',
                             () => { 
                                 this.saveData(imported.metrics); 
-                                this.saveTrainings(imported.trainings); 
+                                this.saveEvents(eventsToImport); 
                                 if(imported.settings && imported.settings.reminderTime) {
                                     localStorage.setItem('wellTrackReminderTime', imported.settings.reminderTime);
                                 }
@@ -417,25 +453,33 @@ const WellTrackApp = {
             container.innerHTML = this.components.todaySection();
             this.todaysLog();
         },
-        trainingPage() {
-            document.getElementById('app-container').innerHTML = this.components.trainingCard();
-            this.trainingList();
+        eventPage() {
+            const container = document.getElementById('app-container');
+            container.innerHTML = this.components.eventSection();
+            WellTrackApp.data.loadTodaysState();
         },
         moodPage() {
-            document.getElementById('app-container').innerHTML = this.components.moodCard();
+            const container = document.getElementById('app-container');
+            container.innerHTML = this.components.moodSection();
             WellTrackApp.data.loadTodaysState();
         },
         painPage() {
-            document.getElementById('app-container').innerHTML = this.components.painCard();
+            const container = document.getElementById('app-container');
+            container.innerHTML = this.components.painSection();
             document.querySelectorAll('.body-part').forEach(part => part.addEventListener('click', (e) => WellTrackApp.events.handleBodyPartClick(e)));
             WellTrackApp.data.loadTodaysState();
+        },
+        settingsPage() {
+            document.getElementById('app-container').innerHTML = this.components.settingsSection();
+            this.manageEventList();
         },
         historyPage() {
             const container = document.getElementById('app-container');
             container.innerHTML = this.components.historySection();
-            this.charts.pain();
-            this.charts.training();
+            this.charts.event();
             this.charts.mood();
+            this.charts.pain();
+            WellTrackApp.events.handleHistoryTabClick(WellTrackApp.state.activeHistoryTab, false);
         },
         fullLogPage(page = 1) {
             const container = document.getElementById('app-container');
@@ -467,30 +511,26 @@ const WellTrackApp = {
             });
             this.pagination(sortedDates.length);
         },
-        trainingList() {
-            const trainingContainer = document.getElementById('todays-training-container');
-            if (!trainingContainer) return;
+        eventList() {
+            const eventContainer = document.getElementById('todays-event-container');
+            if (!eventContainer) return;
             
-            const today = new Date().getDay();
             const todaysData = WellTrackApp.data.getData();
-            const todaysTrainingsDone = todaysData.filter(e => e.metric.startsWith('training_') && WellTrackApp.utils.isToday(new Date(e.timestamp)));
+            const todaysEventsDone = todaysData.filter(e => e.metric.startsWith('event_') && WellTrackApp.utils.isToday(new Date(e.timestamp)));
             
-            const trainingItems = WellTrackApp.data.getTrainings().map(training => {
-                const todaysEntry = todaysTrainingsDone.find(t => t.labels.activity === training.activity);
-                const duration = todaysEntry ? todaysEntry.value : 0;
-                const isScheduledToday = training.days.includes(today);
-                return { isPending: isScheduledToday && duration < training.duration, data: training, duration: duration };
+            const eventItems = WellTrackApp.data.getEvents().map(event => {
+                const todaysEntry = todaysEventsDone.find(t => t.labels.activity === event.activity);
+                const value = todaysEntry ? todaysEntry.value : 0;
+                return { data: event, value: value };
             });
-
-            trainingItems.sort((a, b) => b.isPending - a.isPending);
             
-            trainingContainer.innerHTML = ''; // Clear previous items
-            trainingItems.forEach(item => {
+            eventContainer.innerHTML = ''; // Clear previous items
+            eventItems.forEach(item => {
                 const div = document.createElement('div');
-                div.id = `training-item-${item.data.activity}`;
-                div.className = `p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 ${item.isPending ? 'bg-red-50 border-l-4 border-red-400' : 'bg-gray-100'}`;
-                div.innerHTML = WellTrackApp.render.components.trainingItem(item.data, item.duration, item.isPending);
-                trainingContainer.appendChild(div);
+                div.id = `event-item-${item.data.activity}`;
+                div.className = `p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 bg-gray-100`;
+                div.innerHTML = WellTrackApp.render.components.eventItem(item.data, item.value);
+                eventContainer.appendChild(div);
             });
         },
         todaysLog(){
@@ -507,17 +547,17 @@ const WellTrackApp = {
 
             // Calculate totals for today
             const todaysTotalPain = todaysMetrics.filter(m => m.metric.startsWith('pain_')).reduce((sum, m) => sum + m.value, 0);
-            const todaysTotalTraining = todaysMetrics.filter(m => m.metric.startsWith('training_')).reduce((sum, m) => sum + m.value, 0);
+            const todaysTotalEvent = todaysMetrics.filter(m => m.metric.startsWith('event_') && m.labels.unitType === 'min').reduce((sum, m) => sum + m.value, 0);
             const todaysTotalMood = todaysMetrics.filter(m => m.metric.startsWith('mood_')).reduce((sum, m) => sum + m.value, 0);
 
             // Calculate totals for yesterday
             const yesterdaysTotalPain = yesterdaysMetrics.filter(m => m.metric.startsWith('pain_')).reduce((sum, m) => sum + m.value, 0);
-            const yesterdaysTotalTraining = yesterdaysMetrics.filter(m => m.metric.startsWith('training_')).reduce((sum, m) => sum + m.value, 0);
+            const yesterdaysTotalEvent = yesterdaysMetrics.filter(m => m.metric.startsWith('event_') && m.labels.unitType === 'min').reduce((sum, m) => sum + m.value, 0);
             const yesterdaysTotalMood = yesterdaysMetrics.filter(m => m.metric.startsWith('mood_')).reduce((sum, m) => sum + m.value, 0);
 
             // Generate comparison text
             const painDelta = todaysTotalPain - yesterdaysTotalPain;
-            const trainingDelta = todaysTotalTraining - yesterdaysTotalTraining;
+            const eventDelta = todaysTotalEvent - yesterdaysTotalEvent;
             const moodDelta = todaysTotalMood - yesterdaysTotalMood;
 
             const renderDelta = (delta, unit = '', higherIsWorse = true) => {
@@ -533,9 +573,9 @@ const WellTrackApp = {
 
             let summaryHtml = `
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-white p-4 rounded-lg text-center"><p class="text-sm text-gray-600">Schmerz Gesamt</p><p class="text-2xl font-bold">${todaysTotalPain}</p>${renderDelta(painDelta, '', true)}</div>
-                    <div class="bg-white p-4 rounded-lg text-center"><p class="text-sm text-gray-600">Training Gesamt</p><p class="text-2xl font-bold">${todaysTotalTraining} <span class="text-lg">min</span></p>${renderDelta(trainingDelta, ' min', false)}</div>
+                    <div class="bg-white p-4 rounded-lg text-center"><p class="text-sm text-gray-600">Ereignis Gesamt</p><p class="text-2xl font-bold">${todaysTotalEvent} <span class="text-lg">min</span></p>${renderDelta(eventDelta, ' min', false)}</div>
                     <div class="bg-white p-4 rounded-lg text-center"><p class="text-sm text-gray-600">Stimmung Gesamt</p><p class="text-2xl font-bold">${todaysTotalMood}</p>${renderDelta(moodDelta, '', false)}</div>
+                    <div class="bg-white p-4 rounded-lg text-center"><p class="text-sm text-gray-600">Schmerz Gesamt</p><p class="text-2xl font-bold">${todaysTotalPain}</p>${renderDelta(painDelta, '', true)}</div>
                 </div>
             `;
 
@@ -559,14 +599,14 @@ const WellTrackApp = {
             if (totalPages <= 1) { paginationContainer.innerHTML = ''; return; }
             paginationContainer.innerHTML = this.components.paginationControls(WellTrackApp.state.currentPage, totalPages);
         },
-        manageTrainingList() {
-            const container = document.getElementById('manage-training-list');
+        manageEventList() {
+            const container = document.getElementById('manage-event-list');
             if (!container) return;
             container.innerHTML = '';
-            WellTrackApp.data.getTrainings().forEach((training, index) => {
+            WellTrackApp.data.getEvents().forEach((event, index) => {
                 const div = document.createElement('div');
                 div.className = 'flex items-center justify-between bg-gray-100 p-3 rounded-lg';
-                div.innerHTML = this.components.manageTrainingItem(training, index);
+                div.innerHTML = this.components.manageEventItem(event, index);
                 container.appendChild(div);
             });
         },
@@ -593,21 +633,25 @@ const WellTrackApp = {
                     data: Object.entries(dailyTotals).map(([timestamp, parts]) => ({ x: parseInt(timestamp), y: parts[partName] || 0 })),
                     backgroundColor: WellTrackApp.utils.generateColorFromHash(partName),
                 }));
-                const yAxisOptions = { beginAtZero: true, stacked: true, title: { display: true, text: 'Schmerzintensität (Summe)', ...WellTrackApp.config.CHART_FONT_OPTIONS }, ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 } };
+                const yAxisOptions = { beginAtZero: true, stacked: true, title: { display: true, text: 'Schmerzintensität', ...WellTrackApp.config.CHART_FONT_OPTIONS }, ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 } };
                 
                 if (WellTrackApp.state.charts.pain) { WellTrackApp.state.charts.pain.destroy(); }
                 WellTrackApp.state.charts.pain = new Chart(ctx, { type: 'bar', data: { datasets: datasets }, options: { plugins: { legend: { position: 'bottom', labels: {...WellTrackApp.config.CHART_FONT_OPTIONS} } }, scales: { x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd.MM' } }, stacked: true, grid: { display: false }, ticks: {...WellTrackApp.config.CHART_FONT_OPTIONS} }, y: yAxisOptions } } });
             },
-            training() {
-                const ctx = document.getElementById('trainingChart')?.getContext('2d');
+            event() {
+                const ctx = document.getElementById('eventChart')?.getContext('2d');
                 if (!ctx) return;
                 const data = WellTrackApp.data.getData();
                 const timeRangeDays = WellTrackApp.state.timeRange || 7;
                 const startDate = new Date(); startDate.setHours(0,0,0,0); startDate.setDate(startDate.getDate() - (timeRangeDays -1));
                 
-                const trainingData = data.filter(entry => entry.metric.startsWith('training_') && (new Date(entry.timestamp) >= startDate));
+                const eventData = data.filter(entry => 
+                    entry.metric.startsWith('event_') && 
+                    new Date(entry.timestamp) >= startDate &&
+                    entry.labels.unitType === 'min'
+                );
                 
-                const datasets = Object.values(trainingData.reduce((acc, entry) => {
+                const datasets = Object.values(eventData.reduce((acc, entry) => {
                     const label = entry.labels.name;
                     if (!acc[label]) { acc[label] = { label: label, data: [], backgroundColor: WellTrackApp.utils.generateColorFromHash(label), barPercentage: 0.8 }; }
                     const dateKey = new Date(entry.timestamp).setHours(0,0,0,0);
@@ -615,15 +659,15 @@ const WellTrackApp = {
                     return acc;
                 }, {}));
                 
-                if(WellTrackApp.state.charts.training) { WellTrackApp.state.charts.training.destroy(); }
-                WellTrackApp.state.charts.training = new Chart(ctx, { 
+                if(WellTrackApp.state.charts.event) { WellTrackApp.state.charts.event.destroy(); }
+                WellTrackApp.state.charts.event = new Chart(ctx, { 
                     type: 'bar', 
                     data: { datasets: datasets }, 
                     options: { 
                         plugins: { legend: { position: 'bottom', labels: {...WellTrackApp.config.CHART_FONT_OPTIONS} } }, 
                         scales: { 
                             x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd.MM' } }, stacked: true, grid: { display: false }, ticks: {...WellTrackApp.config.CHART_FONT_OPTIONS} }, 
-                            y: { stacked: true, title: { display: true, text: 'Trainingsdauer (Minuten)', ...WellTrackApp.config.CHART_FONT_OPTIONS }, ticks: {...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }, min: 0 } 
+                            y: { stacked: true, title: { display: true, text: 'Dauer (Minuten)', ...WellTrackApp.config.CHART_FONT_OPTIONS }, ticks: {...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }, min: 0 } 
                         },
                     } 
                 });
@@ -653,9 +697,8 @@ const WellTrackApp = {
                 }));
 
                 const yAxisOptions = {
-                    beginAtZero: true,
                     stacked: true,
-                    title: { display: true, text: 'Stimmung (Summe)', ...WellTrackApp.config.CHART_FONT_OPTIONS },
+                    title: { display: true, text: 'Stimmungswert', ...WellTrackApp.config.CHART_FONT_OPTIONS },
                     ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }
                 };
                 
@@ -687,16 +730,6 @@ const WellTrackApp = {
                 const content = WellTrackApp.render.components.painModalContent(part.dataset.name);
                 this.show(content);
             },
-            showDaysSelector(training = null) {
-                WellTrackApp.state.currentEditingTraining = training;
-                const content = WellTrackApp.render.components.daysModalContent(training);
-                this.show(content);
-            },
-            showSettings() {
-                const content = WellTrackApp.render.components.settingsSection();
-                this.show(content);
-                WellTrackApp.render.manageTrainingList();
-            },
             showAlert(title, message) {
                 const content = `<h3 class="text-xl font-medium mb-4">${title}</h3><p class="mb-6">${message}</p><div class="flex justify-end"><button onclick="WellTrackApp.render.modal.hide()" class="btn btn-primary">OK</button></div>`;
                 this.show(content);
@@ -712,18 +745,22 @@ const WellTrackApp = {
                 const today = new Date();
                 const dateString = today.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
                 return `
-                <div class="card"><h2 class="text-2xl font-semibold mb-4 text-gray-700">Einträge für Heute <span class="text-lg font-normal text-gray-500">${dateString}</span></h2><div id="todays-log-container"></div></div>
-                `;
-            },
-            trainingCard: () => {
-                 return `
-                    <div class="card">
-                        <h2 class="text-2xl font-semibold mb-4 text-gray-700">Training</h2>
-                        <div id="todays-training-container" class="space-y-4"></div>
+                <div class="card">
+                    <div class="mb-4">
+                         <h2 class="text-2xl font-semibold text-gray-700">Übersicht für Heute</h2>
+                         <p class="text-2xl font-semibold text-gray-500">${dateString}</p>
                     </div>
+                    <div id="todays-log-container"></div>
+                </div>
                 `;
             },
-            moodCard: () => {
+            eventSection: () => `
+                <div class="card">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Ereignisse</h2>
+                    <div id="todays-event-container" class="space-y-4"></div>
+                </div>
+            `,
+            moodSection: () => {
                 const moodGroups = WellTrackApp.config.MOOD_GROUPS;
                 const activeGroupKey = WellTrackApp.state.activeMoodGroup;
                 const activeGroup = moodGroups[activeGroupKey];
@@ -742,8 +779,7 @@ const WellTrackApp = {
                     <div id="mood-container" class="space-y-8">${activeGroup.questions.map(q => WellTrackApp.render.components.moodSlider(q)).join('')}</div>
                 </div>`;
             },
-            painCard: () => {
-                return `
+            painSection: () => `
                 <div class="card">
                     <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
                         <h2 id="pain-section-title" class="text-xl md:text-2xl font-semibold text-gray-700">Rückenseite</h2>
@@ -794,34 +830,46 @@ const WellTrackApp = {
                             </g>
                         </svg>
                     </div>
-                </div>`;
-            },
-            historySection: () => `
+                </div>`,
+            historySection: () => {
+                const activeTab = WellTrackApp.state.activeHistoryTab;
+                return `
                 <div class="card">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <h2 id="log-title" class="text-2xl font-semibold text-gray-700">Verlauf</h2>
                         <div class="flex items-center gap-4">
                             <select id="time-range-selector" onchange="WellTrackApp.events.handleTimeRangeChange(event)" class="border border-gray-300 rounded-full text-sm focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5">
-                                <option value="7" selected>Letzte 7 Tage</option><option value="30">Letzte 30 Tage</option><option value="180">Letzte 6 Monate</option>
+                                <option value="7" ${WellTrackApp.state.timeRange === 7 ? 'selected' : ''}>Letzte 7 Tage</option>
+                                <option value="30" ${WellTrackApp.state.timeRange === 30 ? 'selected' : ''}>Letzte 30 Tage</option>
+                                <option value="180" ${WellTrackApp.state.timeRange === 180 ? 'selected' : ''}>Letzte 6 Monate</option>
                             </select>
                         </div>
                     </div>
-                    <canvas id="moodChart" class="mb-8 h-48"></canvas>
-                    <canvas id="painChart" class="mb-8"></canvas>
-                    <canvas id="trainingChart"></canvas>
-                </div>`,
+                     <div class="border-b border-gray-200 mb-4">
+                        <nav id="history-tabs" class="-mb-px flex space-x-6" aria-label="Tabs">
+                            <button onclick="WellTrackApp.events.handleHistoryTabClick('event')" class="history-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="event">Ereignisse</button>
+                            <button onclick="WellTrackApp.events.handleHistoryTabClick('mood')" class="history-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="mood">Stimmung</button>
+                            <button onclick="WellTrackApp.events.handleHistoryTabClick('pain')" class="history-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="pain">Schmerz</button>
+                        </nav>
+                    </div>
+                    <div id="chart-container-event" class="chart-container"><canvas id="eventChart"></canvas></div>
+                    <div id="chart-container-mood" class="chart-container hidden"><canvas id="moodChart"></canvas></div>
+                    <div id="chart-container-pain" class="chart-container hidden"><canvas id="painChart"></canvas></div>
+                </div>`;
+            },
             fullLogSection: () => `
                 <div class="card"><h2 class="text-2xl font-semibold mb-4 text-gray-700">Protokoll</h2><div id="log-entries-container" class="space-y-4"></div><div id="log-pagination" class="mt-6 flex justify-between items-center"></div></div>`,
             settingsSection: () => {
                 const reminderTime = localStorage.getItem('wellTrackReminderTime') || '';
                 const perm = WellTrackApp.state.notificationPermission;
                 return `
-                <div>
-                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Trainings verwalten</h2><div id="manage-training-list" class="space-y-2"></div>
-                    <div class="mt-4"><button onclick="WellTrackApp.render.modal.showDaysSelector(null)" class="btn btn-primary w-full"><span class="material-symbols-outlined mr-2">add</span>Neues Training hinzufügen</button></div>
+                <div class="card">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Ereignisse verwalten</h2>
+                    <div id="manage-event-list" class="space-y-2 mb-4"></div>
+                    <div id="edit-event-form-container"></div>
+                    <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-primary w-full"><span class="material-symbols-outlined mr-2">add</span>Neues Ereignis hinzufügen</button></div>
                 </div>
-                <hr class="my-6">
-                <div>
+                <div class="card">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">Erinnerungen</h2>
                     <div id="reminder-section" class="space-y-4">
                          <p class="text-sm text-gray-600">Status: <span class="font-bold">${perm === 'granted' ? 'Erlaubt' : (perm === 'denied' ? 'Blockiert' : 'Nicht festgelegt')}</span></p>
@@ -836,20 +884,19 @@ const WellTrackApp = {
                          ${perm === 'denied' ? '<p class="text-sm text-red-600">Sie müssen die Berechtigung in den Browser-Einstellungen ändern, um Benachrichtigungen zu erhalten.</p>' : ''}
                     </div>
                 </div>
-                <hr class="my-6">
-                <div>
+                <div class="card">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">Daten Import & Export</h2><div class="flex flex-col md:flex-row gap-4">
                     <label class="btn btn-secondary flex-1 cursor-pointer"><span class="material-symbols-outlined mr-2">upload</span><span>Daten importieren</span><input type="file" id="import-file" class="hidden" onchange="WellTrackApp.data.importData(event)"></label>
                     <button onclick="WellTrackApp.data.exportData()" class="btn btn-secondary flex-1"><span class="material-symbols-outlined mr-2">download</span> Daten exportieren</button>
                 </div></div>
                 `
             },
-            trainingItem: (training, duration, isMissed) => `
-                <span class="text-lg font-medium text-gray-800 flex-1 flex items-center gap-2">${training.name} ${isMissed ? `<span class="material-symbols-outlined text-red-500" title="Heute geplant!">priority_high</span>` : ''}</span>
+            eventItem: (event, value) => `
+                <span class="text-lg font-medium text-gray-800 flex-1 flex items-center gap-2">${event.name}</span>
                 <div class="flex items-center gap-3">
-                    <button onclick="WellTrackApp.events.handleTrainingIncrement('${training.activity}', -15)" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full text-2xl">-</button>
-                    <span id="duration-${training.activity}" class="text-2xl font-semibold w-20 text-center">${duration} min</span>
-                    <button onclick="WellTrackApp.events.handleTrainingIncrement('${training.activity}', 15)" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full text-2xl">+</button>
+                    <button onclick="WellTrackApp.events.handleEventIncrement('${event.activity}', -${event.increment})" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full text-2xl">-</button>
+                    <span id="value-${event.activity}" class="text-2xl font-semibold w-24 text-center">${value} ${event.unitType}</span>
+                    <button onclick="WellTrackApp.events.handleEventIncrement('${event.activity}', ${event.increment})" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full text-2xl">+</button>
                 </div>`,
             todaysLogEntry: (metric) => {
                 const time = new Date(metric.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
@@ -858,16 +905,38 @@ const WellTrackApp = {
                     const color = WellTrackApp.config.PAIN_LEVELS[level]?.color || '#ccc';
                     return `(${time}) Schmerz in ${metric.labels.name}: <span class="font-bold">Stufe ${level}</span> <span class="inline-block w-4 h-4 rounded-full align-middle" style="background-color:${color}; border: 1px solid #666;"></span>`;
                 }
-                if (metric.metric.startsWith('training_')) {
-                    return `(${time}) Training ${metric.labels.name}: <span class="font-bold">${metric.value} Minuten</span>`;
+                if (metric.metric.startsWith('event_')) {
+                    return `(${time}) Ereignis ${metric.labels.name}: <span class="font-bold">${metric.value} ${metric.labels.unitType || ''}</span>`;
                 }
                 if (metric.metric.startsWith('mood_')) {
-                    return `(${time}) Stimmung ${metric.labels.name}: <span class="font-bold">${metric.value} / 5</span>`;
+                    const colorClass = metric.value > 0 ? 'text-green-600' : 'text-red-600';
+                    return `(${time}) Stimmung ${metric.labels.name}: <span class="font-bold ${colorClass}">${metric.value > 0 ? '+' : ''}${metric.value}</span>`;
                 }
                 return `(${time}) Unbekannter Eintrag`;
             },
             logEntry: (date, metrics) => {
                 let content = `<h3 class="font-bold mb-2">${date}</h3><div class="space-y-3">`;
+                
+                // Events
+                const eventMetrics = metrics.filter(m => m.metric.startsWith('event_'));
+                if (eventMetrics.length > 0) {
+                     content += `<div><strong>Ereignisse:</strong><div class="text-xs text-gray-600">${eventMetrics.map(t => `${t.labels.name} (${t.value} ${t.labels.unitType || ''})`).join(', ')}</div></div>`;
+                }
+                
+                // Mood
+                const moodMetrics = metrics.filter(m => m.metric.startsWith('mood_'));
+                const totalMood = moodMetrics.reduce((sum, m) => sum + m.value, 0);
+                if (moodMetrics.length > 0) {
+                    let moodDetails = moodMetrics.map(m => {
+                        const color = WellTrackApp.utils.generateColorFromHash(m.labels.name);
+                        const valueColorClass = m.value > 0 ? 'text-green-600' : 'text-red-600';
+                        return `<span class="inline-flex items-center gap-1 text-xs text-gray-600 mr-2">
+                                    <span class="w-3 h-3 rounded-full" style="background-color: ${color}"></span>
+                                    ${m.labels.name} (<span class="font-semibold ${valueColorClass}">${m.value > 0 ? '+' : ''}${m.value}</span>)
+                                </span>`;
+                    }).join('');
+                    content += `<div><strong>Stimmung Insgesamt: ${totalMood}</strong><div class="mt-1 flex flex-wrap">${moodDetails}</div></div>`;
+                }
 
                 // Pain
                 const painMetrics = metrics.filter(m => m.metric.startsWith('pain_'));
@@ -876,44 +945,24 @@ const WellTrackApp = {
                     content += `<div><strong>Schmerz Insgesamt: ${totalPain}</strong><div class="text-xs text-gray-600">${painMetrics.map(p => `${p.labels.name} (${p.value})`).join(', ')}</div></div>`;
                 }
 
-                // Training
-                const trainingMetrics = metrics.filter(m => m.metric.startsWith('training_'));
-                const totalTraining = trainingMetrics.reduce((sum, m) => sum + m.value, 0);
-                if (trainingMetrics.length > 0) {
-                     content += `<div><strong>Training Insgesamt: ${totalTraining} min</strong><div class="text-xs text-gray-600">${trainingMetrics.map(t => `${t.labels.name} (${t.value} Min.)`).join(', ')}</div></div>`;
-                }
-
-                // Mood
-                const moodMetrics = metrics.filter(m => m.metric.startsWith('mood_'));
-                const totalMood = moodMetrics.reduce((sum, m) => sum + m.value, 0);
-                if (moodMetrics.length > 0) {
-                    let moodDetails = moodMetrics.map(m => {
-                        const color = WellTrackApp.utils.generateColorFromHash(m.labels.name);
-                        return `<span class="inline-flex items-center gap-1 text-xs text-gray-600 mr-2">
-                                    <span class="w-3 h-3 rounded-full" style="background-color: ${color}"></span>
-                                    ${m.labels.name} (${m.value})
-                                </span>`;
-                    }).join('');
-                    content += `<div><strong>Stimmung Insgesamt: ${totalMood}</strong><div class="mt-1 flex flex-wrap">${moodDetails}</div></div>`;
-                }
                 return content + `</div>`;
             },
             paginationControls: (currentPage, totalPages) => `<button onclick="WellTrackApp.events.handleChangePage(-1)" class="btn btn-tertiary" ${currentPage === 1 ? 'disabled' : ''}>Zurück</button><span class="text-sm text-gray-700">Seite ${currentPage} von ${totalPages}</span><button onclick="WellTrackApp.events.handleChangePage(1)" class="btn btn-tertiary" ${currentPage === totalPages ? 'disabled' : ''}>Weiter</button>`,
-            manageTrainingItem: (training, index) => {
-                const scheduledDays = training.days.length > 0 ? training.days.map(d => WellTrackApp.config.DAY_NAMES[d]).join(', ') : 'jederzeit';
-                const durationText = training.duration ? `(${training.duration} min)` : '';
+            manageEventItem: (event, index) => {
+                const scheduledDays = event.days.length > 0 ? event.days.map(d => WellTrackApp.config.DAY_NAMES[d]).join(', ') : 'Täglich';
+                const detailsText = `+${event.increment} ${event.unitType || ''}`;
                 return `
                     <div class="flex items-center gap-3 flex-grow">
-                        <button onclick="WellTrackApp.render.modal.showDaysSelector(WellTrackApp.data.getTrainings()[${index}])" class="text-blue-500 hover:text-blue-700">
+                        <button onclick="WellTrackApp.events.handleShowEventForm(WellTrackApp.data.getEvents()[${index}])" class="text-blue-500 hover:text-blue-700">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <div>
-                            <span>${training.name} <span class="text-xs text-gray-400">(${training.activity})</span></span>
-                            <span class="text-xs text-gray-500 block">${scheduledDays} ${durationText}</span>
+                            <span>${event.name} <span class="text-xs text-gray-400">(${detailsText})</span></span>
+                            <span class="text-xs text-gray-500 block">${scheduledDays}</span>
                         </div>
                     </div>
                     <div class="flex items-center">
-                        <button onclick="WellTrackApp.events.handleRemoveTraining(${index})" class="text-red-400 hover:text-red-600">
+                        <button onclick="WellTrackApp.events.handleRemoveEvent(${index})" class="text-red-400 hover:text-red-600">
                             <span class="material-symbols-outlined">delete</span>
                         </button>
                     </div>`;
@@ -923,42 +972,53 @@ const WellTrackApp = {
                 for (const [level, props] of Object.entries(WellTrackApp.config.PAIN_LEVELS)) { buttons += `<button onclick="WellTrackApp.events.handleSetPainLevel(${level})" class="btn w-full text-lg font-bold py-4 px-4 rounded-xl" style="background-color:${props.color}; color: ${parseInt(level) > 2 && parseInt(level) < 6 ? 'white' : 'black'}">${props.short} (${props.label})</button>`; }
                 return `<h3 class="text-2xl font-semibold mb-6 text-center">Schmerz in: ${partName}</h3><div class="grid grid-cols-1 gap-4">${buttons}</div><button onclick="WellTrackApp.render.modal.hide()" class="mt-8 text-gray-500 hover:text-gray-700 w-full">Abbrechen</button>`;
             },
-            daysModalContent: (training = null) => {
-                const isEditing = training !== null;
-                const duration = isEditing ? training.duration : 30;
-                const name = isEditing ? training.name : '';
-                const activity = isEditing ? training.activity : '';
+            eventForm: (event = null) => {
+                const isEditing = event !== null;
+                const name = isEditing ? event.name : '';
+                const activity = isEditing ? event.activity : '';
+                const increment = isEditing ? event.increment : 1;
+                const unitType = isEditing ? event.unitType : '';
 
                 let dayButtons = '';
                 WellTrackApp.config.DAY_DISPLAY_ORDER.forEach(day => {
-                    const isSelected = isEditing && training.days.includes(day.index);
+                    const isSelected = isEditing && event.days.includes(day.index);
                     dayButtons += `<button data-day-index="${day.index}" class="day-btn p-2 border rounded-md ${isSelected ? 'selected' : ''}">${day.name}</button>`;
                 });
+
                 return `
-                    <h3 class="text-2xl font-semibold mb-6">${isEditing ? 'Training bearbeiten' : 'Neues Training'}</h3>
+                <div class="p-4 border rounded-lg bg-white mt-4">
+                    <h3 class="text-xl font-semibold mb-4">${isEditing ? 'Ereignis bearbeiten' : 'Neues Ereignis'}</h3>
                     <div class="space-y-4 text-left">
-                        <div><label for="training-name" class="block mb-1 text-sm font-medium text-gray-900">Bezeichnung</label><input id="training-name" type="text" value="${name}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="z.B. Rad fahren"></div>
-                        <div><label for="training-activity" class="block mb-1 text-sm font-medium text-gray-900">Aktivität-ID</label><input id="training-activity" type="text" value="${activity}" ${isEditing ? 'disabled' : ''} class="w-full p-2 border border-gray-300 rounded-lg ${isEditing ? 'bg-gray-100' : ''}" placeholder="z.B. radfahren"></div>
-                        <div><label for="duration-slider" class="block mb-2 text-sm font-medium text-gray-900">Geplante Dauer: <span id="duration-label">${duration}</span> min</label><input id="duration-slider" type="range" min="15" max="60" step="5" value="${duration}" oninput="document.getElementById('duration-label').textContent = this.value" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"></div>
-                        <div><label class="block mb-2 text-sm font-medium text-gray-900">Tage</label><div id="day-selector-container" class="grid grid-cols-7 gap-1 text-center" onclick="WellTrackApp.events.handleToggleDay(event)">${dayButtons}</div></div>
+                        <div><label for="event-name" class="block mb-1 text-sm font-medium">Bezeichnung</label><input id="event-name" type="text" value="${name}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="z.B. Tassen Kaffee"></div>
+                        <div><label for="event-activity" class="block mb-1 text-sm font-medium">Aktivität-ID</label><input id="event-activity" type="text" value="${activity}" ${isEditing ? 'disabled' : ''} class="w-full p-2 border border-gray-300 rounded-lg ${isEditing ? 'bg-gray-100' : ''}" placeholder="z.B. kaffee_tassen"></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label for="event-increment" class="block mb-1 text-sm font-medium">Inkrement</label><input id="event-increment" type="number" value="${increment}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="1"></div>
+                            <div><label for="event-unit" class="block mb-1 text-sm font-medium">Einheit</label><input id="event-unit" type="text" value="${unitType}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="min, x, etc."></div>
+                        </div>
+                        <div><label class="block mb-2 text-sm font-medium">Tage (optional)</label><div id="day-selector-container" class="grid grid-cols-7 gap-1 text-center" onclick="WellTrackApp.events.handleToggleDay(event)">${dayButtons}</div><p class="text-xs text-gray-500 mt-1">Wenn keine Tage gewählt sind, ist das Ereignis immer sichtbar.</p></div>
                     </div>
                     <div class="flex gap-4 mt-6">
-                        <button onclick="WellTrackApp.render.modal.showSettings()" class="btn btn-tertiary flex-1">Abbrechen</button>
-                        <button onclick="WellTrackApp.events.handleSaveTraining()" class="btn btn-primary flex-1">Speichern</button>
-                    </div>`;
+                        <button onclick="WellTrackApp.events.handleHideEventForm()" class="btn btn-tertiary flex-1">Abbrechen</button>
+                        <button onclick="WellTrackApp.events.handleSaveEvent()" class="btn btn-primary flex-1">Speichern</button>
+                    </div>
+                </div>`;
             },
-             moodSlider: (question) => `
+            moodSlider: (question) => `
                 <div>
                     <div class="flex justify-between items-center text-center mb-3">
                         <span class="w-1/3 text-sm text-gray-600 text-left font-medium">${question.negative}</span>
                         <label class="w-1/3 text-gray-800 font-semibold">${question.name}</label>
                         <span class="w-1/3 text-sm text-gray-600 text-right font-medium">${question.positive}</span>
                     </div>
-                    <div class="mood-slider-container">
-                        <div class="mood-slider-ruler">
-                            ${Array.from({length: 6}).map((_, i) => `<div class="mood-slider-tick" style="height: ${i % 2 === 0 ? '12px' : '8px'};"></div>`).join('')}
+                    <div class="mood-slider-wrapper" onclick="WellTrackApp.events.handleMoodRulerClick(event, '${question.id}')">
+                        <div class="mood-slider-ruler"></div>
+                        <div class="mood-slider-tick-container">
+                            ${Array.from({length: 6}).map(() => `<div class="mood-slider-tick"></div>`).join('')}
                         </div>
-                        <input type="range" min="0" max="5" step="1" value="0" class="mood-slider w-full" id="mood-slider-${question.id}" onchange="WellTrackApp.events.handleMoodChange('${question.id}')">
+                        <input type="range" min="0" max="5" step="1" value="2.5" class="mood-slider w-full is-default" id="mood-slider-${question.id}" oninput="this.classList.remove('is-default')" onchange="WellTrackApp.events.handleMoodChange('${question.id}')">
+                        <div class="mood-slider-default-indicator">
+                             <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1">star</span>
+                        </div>
                     </div>
                 </div>`
         }
@@ -980,32 +1040,18 @@ const WellTrackApp = {
         showPage(pageName) {
             WellTrackApp.state.activePage = pageName;
             
-            // Update nav button active states
-            document.querySelectorAll('#main-nav .nav-btn').forEach(btn => {
+            document.querySelectorAll('#header-left .nav-btn, #main-nav .nav-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.id === `nav-${pageName}`);
             });
-            document.getElementById('nav-today').classList.toggle('active', ['today', 'training', 'mood', 'pain'].includes(pageName));
-
 
             switch(pageName) {
-                case 'today':
-                    WellTrackApp.render.todayPage();
-                    break;
-                case 'training':
-                    WellTrackApp.render.trainingPage();
-                    break;
-                case 'mood':
-                    WellTrackApp.render.moodPage();
-                    break;
-                case 'pain':
-                    WellTrackApp.render.painPage();
-                    break;
-                case 'history':
-                    WellTrackApp.render.historyPage();
-                    break;
-                case 'log':
-                    WellTrackApp.render.fullLogPage();
-                    break;
+                case 'today': WellTrackApp.render.todayPage(); break;
+                case 'event': WellTrackApp.render.eventPage(); break;
+                case 'mood': WellTrackApp.render.moodPage(); break;
+                case 'pain': WellTrackApp.render.painPage(); break;
+                case 'settings': WellTrackApp.render.settingsPage(); break;
+                case 'history': WellTrackApp.render.historyPage(); break;
+                case 'log': WellTrackApp.render.fullLogPage(); break;
             }
         },
         initEventListeners() {
@@ -1037,36 +1083,30 @@ const WellTrackApp = {
             if (currentPainPoints.length > 0) { data.push(...currentPainPoints); }
             WellTrackApp.data.saveData(data);
         },
-        handleTrainingIncrement(activity, increment) {
-            const training = WellTrackApp.data.getTrainings().find(t => t.activity === activity);
-            if (!training) return;
+        handleEventIncrement(activity, increment) {
+            const event = WellTrackApp.data.getEvents().find(t => t.activity === activity);
+            if (!event) return;
             
             const data = WellTrackApp.data.getData();
-            let todaysEntry = data.find(e => e.metric === `training_${activity}_duration_min` && WellTrackApp.utils.isToday(new Date(e.timestamp)));
-            let newDuration = 0;
+            let todaysEntry = data.find(e => e.metric === `event_${activity}_value` && WellTrackApp.utils.isToday(new Date(e.timestamp)));
+            let newValue = 0;
 
             if (todaysEntry) {
                 todaysEntry.value = Math.max(0, todaysEntry.value + increment);
-                newDuration = todaysEntry.value;
+                newValue = todaysEntry.value;
                 if (todaysEntry.value === 0) { data.splice(data.findIndex(e => e.timestamp === todaysEntry.timestamp), 1); }
             } else if (increment > 0) {
-                newDuration = increment;
+                newValue = increment;
                 data.push({ 
-                    metric: `training_${activity}_duration_min`, 
+                    metric: `event_${activity}_value`, 
                     timestamp: new Date().toISOString(), 
-                    labels: { activity: training.activity, name: training.name }, 
-                    value: newDuration 
+                    labels: { activity: event.activity, name: event.name, unitType: event.unitType }, 
+                    value: newValue 
                 });
             } else { return; }
             
-            document.getElementById(`duration-${activity}`).textContent = `${newDuration} min`;
+            document.getElementById(`value-${activity}`).textContent = `${newValue} ${event.unitType}`;
             WellTrackApp.data.saveData(data);
-            
-            const itemDiv = document.getElementById(`training-item-${activity}`);
-            if (itemDiv) {
-                const isPending = training.days.includes(new Date().getDay()) && newDuration < training.duration;
-                itemDiv.className = `p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 ${isPending ? 'bg-red-50 border-l-4 border-red-400' : 'bg-gray-100'}`;
-            }
         },
         handleChangePage(direction) {
             const totalItems = Object.keys(WellTrackApp.data.getData().reduce((acc, metric) => { acc[new Date(metric.timestamp).toLocaleDateString('de-DE')] = true; return acc; }, {})).length;
@@ -1084,17 +1124,17 @@ const WellTrackApp = {
         handleTimeRangeChange(event) {
             WellTrackApp.state.timeRange = parseInt(event.target.value, 10);
             WellTrackApp.render.charts.pain(); 
-            WellTrackApp.render.charts.training();
+            WellTrackApp.render.charts.event();
             WellTrackApp.render.charts.mood();
         },
-        handleRemoveTraining(index) {
-            const trainings = WellTrackApp.data.getTrainings();
-            const trainingNameToDelete = trainings[index].name;
-            WellTrackApp.render.modal.showConfirmation('Training löschen', `Möchtest du das Training "${trainingNameToDelete}" wirklich entfernen?`, () => {
-                trainings.splice(index, 1);
-                WellTrackApp.data.saveTrainings(trainings);
-                WellTrackApp.render.modal.showSettings();
-                if(WellTrackApp.state.activePage === 'training') WellTrackApp.render.trainingList();
+        handleRemoveEvent(index) {
+            const events = WellTrackApp.data.getEvents();
+            const eventNameToDelete = events[index].name;
+            WellTrackApp.render.modal.showConfirmation('Ereignis löschen', `Möchtest du das Ereignis "${eventNameToDelete}" wirklich entfernen?`, () => {
+                events.splice(index, 1);
+                WellTrackApp.data.saveEvents(events);
+                WellTrackApp.render.settingsPage();
+                if(['event', 'mood', 'pain'].includes(WellTrackApp.state.activePage)) WellTrackApp.render.eventList();
             });
         },
         handleToggleDay(event) {
@@ -1103,19 +1143,21 @@ const WellTrackApp = {
                 button.classList.toggle('selected');
             }
         },
-        handleSaveTraining() {
-            const name = document.getElementById('training-name').value.trim();
-            const activity = WellTrackApp.utils.slugify(document.getElementById('training-activity').value.trim());
+        handleSaveEvent() {
+            const name = document.getElementById('event-name').value.trim();
+            const activity = WellTrackApp.utils.slugify(document.getElementById('event-activity').value.trim());
+            const increment = parseInt(document.getElementById('event-increment').value, 10) || 1;
+            const unitType = document.getElementById('event-unit').value.trim();
 
             if (!name || !activity) {
                 WellTrackApp.render.modal.showAlert('Fehler', 'Bezeichnung und Aktivität-ID sind erforderlich.');
                 return;
             }
             
-            const trainings = WellTrackApp.data.getTrainings();
-            const isEditing = !!WellTrackApp.state.currentEditingTraining;
+            const events = WellTrackApp.data.getEvents();
+            const isEditing = !!WellTrackApp.state.currentEditingEvent;
 
-            if (!isEditing && trainings.some(t => t.activity === activity)) {
+            if (!isEditing && events.some(t => t.activity === activity)) {
                 WellTrackApp.render.modal.showAlert('Fehler', 'Diese Aktivität-ID wird bereits verwendet.');
                 return;
             }
@@ -1123,44 +1165,66 @@ const WellTrackApp = {
             const selectedDays = Array.from(document.querySelectorAll('#day-selector-container .day-btn.selected'))
                 .map(btn => parseInt(btn.dataset.dayIndex, 10));
 
-            const newTrainingData = {
-                name: name,
-                activity: activity,
-                days: selectedDays,
-                duration: parseInt(document.getElementById('duration-slider').value, 10)
-            };
+            const newEventData = { name, activity, days: selectedDays, increment, unitType };
 
             if (isEditing) {
-                const index = trainings.findIndex(t => t.activity === WellTrackApp.state.currentEditingTraining.activity);
-                if (index > -1) { trainings[index] = newTrainingData; }
+                const index = events.findIndex(t => t.activity === WellTrackApp.state.currentEditingEvent.activity);
+                if (index > -1) { events[index] = newEventData; }
             } else {
-                trainings.push(newTrainingData);
+                events.push(newEventData);
             }
 
-            WellTrackApp.data.saveTrainings(trainings);
-            WellTrackApp.render.modal.showSettings();
-            if(WellTrackApp.state.activePage === 'training') WellTrackApp.render.trainingList();
+            WellTrackApp.data.saveEvents(events);
+            this.handleHideEventForm();
+            WellTrackApp.render.manageEventList();
+            if(['event', 'mood', 'pain'].includes(WellTrackApp.state.activePage)) WellTrackApp.render.eventList();
+        },
+        handleShowEventForm(event = null) {
+            WellTrackApp.state.currentEditingEvent = event;
+            document.getElementById('edit-event-form-container').innerHTML = WellTrackApp.render.components.eventForm(event);
+            document.getElementById('add-new-event-btn').classList.add('hidden');
+        },
+        handleHideEventForm() {
+            WellTrackApp.state.currentEditingEvent = null;
+            document.getElementById('edit-event-form-container').innerHTML = '';
+            document.getElementById('add-new-event-btn').classList.remove('hidden');
+        },
+        handleMoodRulerClick(event, moodId) {
+            if (event.target.type === 'range') return; 
+            const slider = document.getElementById(`mood-slider-${moodId}`);
+            const rect = event.currentTarget.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const width = rect.width;
+            
+            const clickPercentage = clickX / width;
+            
+            const step = Math.round(clickPercentage * 5);
+
+            slider.value = step;
+            slider.classList.remove('is-default');
+            
+            const changeEvent = new Event('change');
+            slider.dispatchEvent(changeEvent);
         },
         handleMoodChange(moodId) {
             const slider = document.getElementById(`mood-slider-${moodId}`);
             if (!slider) return;
 
-            const value = parseFloat(slider.value);
+            const sliderValue = parseInt(slider.value, 10);
+            const value = WellTrackApp.config.MOOD_VALUE_MAP[sliderValue];
             
             let data = WellTrackApp.data.getData();
-            data = data.filter(e => !(e.metric === `mood_${moodId}_level` && WellTrackApp.utils.isToday(new Date(e.timestamp))));
-
-            // Find the question details from config
+            const entryIndex = data.findIndex(e => e.metric === `mood_${moodId}_level` && WellTrackApp.utils.isToday(new Date(e.timestamp)));
+            if (entryIndex > -1) {
+                data.splice(entryIndex, 1);
+            }
+            
             let question;
             for (const groupKey in WellTrackApp.config.MOOD_GROUPS) {
                 const found = WellTrackApp.config.MOOD_GROUPS[groupKey].questions.find(q => q.id === moodId);
-                if (found) {
-                    question = found;
-                    break;
-                }
+                if (found) { question = found; break; }
             }
             if(!question) return;
-
 
             data.push({
                 metric: `mood_${moodId}_level`,
@@ -1168,16 +1232,32 @@ const WellTrackApp = {
                 labels: { mood_id: moodId, name: question.name },
                 value: value
             });
+            
             WellTrackApp.data.saveData(data);
         },
         handleMoodGroupToggle(groupId) {
             WellTrackApp.state.activeMoodGroup = groupId;
             WellTrackApp.render.moodPage();
         },
+        handleHistoryTabClick(tabName, shouldAnimate = true) {
+            WellTrackApp.state.activeHistoryTab = tabName;
+            
+            document.querySelectorAll('.history-tab').forEach(tab => {
+                const isSelected = tab.dataset.tab === tabName;
+                tab.classList.toggle('border-indigo-500', isSelected);
+                tab.classList.toggle('text-indigo-600', isSelected);
+                tab.classList.toggle('border-transparent', !isSelected);
+                tab.classList.toggle('text-gray-500', !isSelected);
+            });
+            
+            document.querySelectorAll('.chart-container').forEach(container => {
+                container.classList.toggle('hidden', container.id !== `chart-container-${tabName}`);
+            });
+        },
         async requestNotificationPermission() {
             const permission = await Notification.requestPermission();
             WellTrackApp.state.notificationPermission = permission;
-            WellTrackApp.render.modal.showSettings(); // Re-render modal to show new state
+            WellTrackApp.render.settingsPage(); // Re-render page to show new state
         },
         saveReminderTime(time) {
             if (time) {
