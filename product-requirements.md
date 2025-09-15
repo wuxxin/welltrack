@@ -54,4 +54,3 @@ The app is structured into several main pages for clear separation of concerns:
 * **Interactive Data Visualization:** Chart.js is used to generate interactive and customizable bar charts.
 * **Prometheus-like Data Format:** Data is stored as an array of metric objects, each with a metric name, timestamp, value, and descriptive labels.
 * **Implementation Architecture** The entire JavaScript code is encapsulated in a single global object, WellTrackApp, structured into logical sub-objects (state, config, data, render, events, utils).
-

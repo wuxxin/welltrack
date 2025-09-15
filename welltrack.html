@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WellTrack Gesundheitstagebuch</title>
 
-    <!-- PWA Manifest and Theme Color -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6750A4">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -304,7 +303,7 @@ const WellTrackApp = {
         },
         DEFAULT_EVENTS_JSON: `[
             {"name": "Spaziergang", "activity": "walking", "days": [], "increment": 15, "unitType": "min"},
-            {"name": "Tassen Kaffee", "activity": "coffee_cups", "days": [], "increment": 1, "unitType": ""},
+            {"name": "Kaffee Tassen", "activity": "coffee_cups", "days": [], "increment": 1, "unitType": ""},
             {"name": "Rückenübungen", "activity": "back_exercises", "days": [1, 2, 3, 4, 5], "increment": 15, "unitType": "min"}
         ]`,
         MOOD_GROUPS: {
@@ -315,7 +314,7 @@ const WellTrackApp = {
                     { id: 'motivation', name: 'Motivation', negative: 'Lethargisch', positive: 'Motiviert' },
                     { id: 'inner_drive', name: 'Innere Unruhe', negative: 'Getrieben', positive: 'Zentriert' },
                     { id: 'temperament', name: 'Temperament', negative: 'Geladen/Gereizt', positive: 'Gelassen' },
-                    { id: 'anxiety', name: 'Angst-freiheit', negative: 'Ängstlich', positive: 'Ruhig/Frei' },
+                    { id: 'anxiety', name: 'Angstfreiheit', negative: 'Ängstlich', positive: 'Ruhig/Frei' },
                     { id: 'focus', name: 'Fokus', negative: 'Abgelenkt', positive: 'Fokussiert' }
                 ]
             },
@@ -427,8 +426,7 @@ const WellTrackApp = {
             reader.onload = (e) => {
                 try {
                     const imported = JSON.parse(e.target.result);
-                    // Legacy support for 'trainings' key
-                    const eventsToImport = imported.events || imported.trainings;
+                    const eventsToImport = imported.events;
                     if (imported.metrics && eventsToImport) {
                          WellTrackApp.render.modal.showConfirmation('Daten importieren', 'Möchtest du die aktuellen Daten wirklich überschreiben? Diese Aktion kann nicht rückgängig gemacht werden.',
                             () => { 
@@ -561,21 +559,21 @@ const WellTrackApp = {
             const moodDelta = todaysTotalMood - yesterdaysTotalMood;
 
             const renderDelta = (delta, unit = '', higherIsWorse = true) => {
-                if (yesterdaysMetrics.length === 0) return `<span class="text-xs text-gray-500">Keine Daten vom Vortag</span>`;
+                if (yesterdaysMetrics.length === 0) return `<span class="text-xs text-gray-500">Keine Vortag Daten</span>`;
                 if (delta === 0) return `<span class="text-xs text-gray-500">(Keine Änderung)</span>`;
                 
                 const isWorse = higherIsWorse ? delta > 0 : delta < 0;
                 const color = isWorse ? 'text-red-500' : 'text-green-500';
                 const sign = delta > 0 ? '+' : '';
                 
-                return `<span class="text-xs ${color} font-semibold">(${sign}${delta}${unit} vs. Vortag)</span>`;
+                return `<span class="text-xs ${color} font-semibold">(${sign}${delta}${unit})</span>`;
             };
 
             let summaryHtml = `
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-white p-4 rounded-lg text-center"><p class="text-sm text-gray-600">Ereignis Gesamt</p><p class="text-2xl font-bold">${todaysTotalEvent} <span class="text-lg">min</span></p>${renderDelta(eventDelta, ' min', false)}</div>
-                    <div class="bg-white p-4 rounded-lg text-center"><p class="text-sm text-gray-600">Stimmung Gesamt</p><p class="text-2xl font-bold">${todaysTotalMood}</p>${renderDelta(moodDelta, '', false)}</div>
-                    <div class="bg-white p-4 rounded-lg text-center"><p class="text-sm text-gray-600">Schmerz Gesamt</p><p class="text-2xl font-bold">${todaysTotalPain}</p>${renderDelta(painDelta, '', true)}</div>
+                    <div class="bg-white p-4 rounded-lg text-center"><p class="text-sm text-gray-600">Zeit Ereignisse</p><p class="text-2xl font-bold">${todaysTotalEvent} <span class="text-lg">min</span></p>${renderDelta(eventDelta, ' min', false)}</div>
+                    <div class="bg-white p-4 rounded-lg text-center"><p class="text-sm text-gray-600">Stimmung</p><p class="text-2xl font-bold">${todaysTotalMood}</p>${renderDelta(moodDelta, '', false)}</div>
+                    <div class="bg-white p-4 rounded-lg text-center"><p class="text-sm text-gray-600">Schmerz</p><p class="text-2xl font-bold">${todaysTotalPain}</p>${renderDelta(painDelta, '', true)}</div>
                 </div>
             `;
 
@@ -735,7 +733,7 @@ const WellTrackApp = {
                 this.show(content);
             },
             showConfirmation(title, message, onConfirm) {
-                 const content = `<h3 class="text-xl font-medium mb-4">${title}</h3><p class="mb-6">${message}</p><div class="flex justify-end gap-4"><button onclick="WellTrackApp.render.modal.hide()" class="btn btn-tertiary">Abbrechen</button><button id="confirm-action-btn" class="btn btn-primary">Bestätigen</button></div>`;
+                 const content = `<h3 class="text-xl font-medium mb-4">${title}</h3><p class="mb-6">${message}</p><div class="flex justify-end gap-4"><button onclick="WellTrackApp.render.modal.hide()" class="btn btn-tertiary">Abbrechen</button><button id="confirm-action-btn" class="btn btn-primary">Löschen</button></div>`;
                 this.show(content);
                 document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); this.hide(); };
             }
@@ -747,8 +745,7 @@ const WellTrackApp = {
                 return `
                 <div class="card">
                     <div class="mb-4">
-                         <h2 class="text-2xl font-semibold text-gray-700">Übersicht für Heute</h2>
-                         <p class="text-2xl font-semibold text-gray-500">${dateString}</p>
+                         <h2 class="text-2xl font-semibold text-gray-700">Übersicht für Heute (${dateString})</h2>
                     </div>
                     <div id="todays-log-container"></div>
                 </div>
@@ -782,14 +779,14 @@ const WellTrackApp = {
             painSection: () => `
                 <div class="card">
                     <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
-                        <h2 id="pain-section-title" class="text-xl md:text-2xl font-semibold text-gray-700">Rückenseite</h2>
+                        <h2 id="pain-section-title" class="text-xl md:text-2xl font-semibold text-gray-700">Rückseite</h2>
                         <div class="inline-flex rounded-full shadow-sm" role="group">
                             <button type="button" onclick="WellTrackApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100">Vorderseite</button>
-                            <button type="button" onclick="WellTrackApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100 active">Rückenseite</button>
+                            <button type="button" onclick="WellTrackApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100 active">Rückseite</button>
                         </div>
                     </div>
                     <div class="flex justify-center">
-                        <svg id="pain-figure" viewBox="0 0 130 210" xmlns="http://www.w3.org/2000/svg">
+                        <svg id="pain-figure" viewBox="0 0 130 200" xmlns="http://www.w3.org/2000/svg">
                            <g id="body-front" transform="translate(5, 0)" class="hidden">
                                 <circle id="head_front" data-name="Kopf" class="body-part" cx="60" cy="25" r="15"/>
                                 <rect id="torso_chest_left" data-name="Brust (L)" class="body-part" x="40" y="40" width="15" height="30" rx="2"/>
@@ -864,10 +861,10 @@ const WellTrackApp = {
                 const perm = WellTrackApp.state.notificationPermission;
                 return `
                 <div class="card">
-                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Ereignisse verwalten</h2>
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Ereignisarten</h2>
                     <div id="manage-event-list" class="space-y-2 mb-4"></div>
                     <div id="edit-event-form-container"></div>
-                    <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-primary w-full"><span class="material-symbols-outlined mr-2">add</span>Neues Ereignis hinzufügen</button></div>
+                    <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-primary w-full"><span class="material-symbols-outlined mr-2">add</span>Neue hinzufügen</button></div>
                 </div>
                 <div class="card">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">Erinnerungen</h2>
@@ -935,14 +932,14 @@ const WellTrackApp = {
                                     ${m.labels.name} (<span class="font-semibold ${valueColorClass}">${m.value > 0 ? '+' : ''}${m.value}</span>)
                                 </span>`;
                     }).join('');
-                    content += `<div><strong>Stimmung Insgesamt: ${totalMood}</strong><div class="mt-1 flex flex-wrap">${moodDetails}</div></div>`;
+                    content += `<div><strong>Stimmung: ${totalMood}</strong><div class="mt-1 flex flex-wrap">${moodDetails}</div></div>`;
                 }
 
                 // Pain
                 const painMetrics = metrics.filter(m => m.metric.startsWith('pain_'));
                 const totalPain = painMetrics.reduce((sum, m) => sum + m.value, 0);
                 if (painMetrics.length > 0) {
-                    content += `<div><strong>Schmerz Insgesamt: ${totalPain}</strong><div class="text-xs text-gray-600">${painMetrics.map(p => `${p.labels.name} (${p.value})`).join(', ')}</div></div>`;
+                    content += `<div><strong>Schmerz: ${totalPain}</strong><div class="text-xs text-gray-600">${painMetrics.map(p => `${p.labels.name} (${p.value})`).join(', ')}</div></div>`;
                 }
 
                 return content + `</div>`;
@@ -987,7 +984,7 @@ const WellTrackApp = {
 
                 return `
                 <div class="p-4 border rounded-lg bg-white mt-4">
-                    <h3 class="text-xl font-semibold mb-4">${isEditing ? 'Ereignis bearbeiten' : 'Neues Ereignis'}</h3>
+                    <h3 class="text-xl font-semibold mb-4">${isEditing ? 'Ereignisart bearbeiten' : 'Neue Ereignisart'}</h3>
                     <div class="space-y-4 text-left">
                         <div><label for="event-name" class="block mb-1 text-sm font-medium">Bezeichnung</label><input id="event-name" type="text" value="${name}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="z.B. Tassen Kaffee"></div>
                         <div><label for="event-activity" class="block mb-1 text-sm font-medium">Aktivität-ID</label><input id="event-activity" type="text" value="${activity}" ${isEditing ? 'disabled' : ''} class="w-full p-2 border border-gray-300 rounded-lg ${isEditing ? 'bg-gray-100' : ''}" placeholder="z.B. kaffee_tassen"></div>
@@ -1115,7 +1112,7 @@ const WellTrackApp = {
             if (newPage >= 1 && newPage <= totalPages) { WellTrackApp.render.fullLogPage(newPage); }
         },
         handleViewToggle(view) {
-            document.getElementById('pain-section-title').textContent = view === 'front' ? 'Vorderseite' : 'Rückenseite';
+            document.getElementById('pain-section-title').textContent = view === 'front' ? 'Vorderseite' : 'Rückseite';
             document.getElementById('body-front').classList.toggle('hidden', view !== 'front');
             document.getElementById('body-back').classList.toggle('hidden', view === 'front');
             document.getElementById('btn-view-front').classList.toggle('active', view === 'front');
