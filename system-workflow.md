@@ -15,7 +15,7 @@
 ## Documentation & Explainability
 
 - **Update `README.md`** when new features are added, dependencies change, or setup steps are modified.
-- **Update `README.md`** when encountered problems, append the used solutions in section "Problems and Solutions".
+- **Update `tasks.md`** when encountered problems, append the used solutions in section "Resolved Problems and Solutions".
 - **Comment non-obvious code** and ensure everything is understandable to a mid-level developer.
 - When writing complex logic, **add an inline `# Reason:` comment** explaining the why, not just the what.
 - **Update `product-requirements.md`** and `planning.md` if tasks done expand or modify `product-requirements.md` or `planning.md`
@@ -29,9 +29,10 @@
 
 ## Code Structure & Modularity
 
-- **Never create a file longer than 800 lines of code, except for single file applications.** If a file approaches this limit, refactor by splitting it into modules or helper files.
+- **Never create a file longer than 800 lines of code, except for single file applications.**
+    - If a file approaches this limit, refactor by splitting it into modules or helper files.
 - **Organize code into clearly separated modules**, grouped by feature or responsibility.
-- **Use clear, consistent imports** (prefer relative imports within packages).
+- **Use clear, consistent imports**, prefer relative imports within packages.
 
 ## Python Style & Conventions
 

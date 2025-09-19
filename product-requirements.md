@@ -49,8 +49,9 @@ The app is structured into several main pages for clear separation of concerns:
 * **Progressive Web App (PWA):** The application includes a Service Worker and a Web App Manifest, allowing it to be "installed" on a mobile device and function offline. It also includes the basic framework for push notifications.
 * **Single-Page Application (SPA):** The entire application is loaded in a single HTML file. Navigation between pages is handled dynamically with JavaScript without page reloads.
 * **Local Data Storage:** All user data is stored in the browser's localStorage, enabling fast, offline-capable usage without a backend.
+* **Prometheus-like Data Format:** Data is stored as an array of metric objects, each with a metric name, timestamp, value, and descriptive labels.
+* **Easy Update:** All user data stored in the browser's localStorage is equivalent to the Prometheus-like Data Format used for import and export, allowing seamless upgrade of the single HTML file.
 * **Dependencies via CDN:** All external libraries (Tailwind CSS, Chart.js, date-fns) are included via a Content Delivery Network (CDN), simplifying setup.
 * **Responsive UI:** The layout, built with Tailwind CSS, adapts to various screen sizes and is designed as mobile first.
 * **Interactive Data Visualization:** Chart.js is used to generate interactive and customizable bar charts.
-* **Prometheus-like Data Format:** Data is stored as an array of metric objects, each with a metric name, timestamp, value, and descriptive labels.
 * **Implementation Architecture** The entire JavaScript code is encapsulated in a single global object, WellTrackApp, structured into logical sub-objects (state, config, data, render, events, utils).
