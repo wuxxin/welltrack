@@ -22,29 +22,3 @@ This document lists the implementation status of features and refactorings for t
 
 
 ## **Planned Tasks**
-
-* make the local storage data equal to the export data, so on every keypress, the data that would be created on export will be stored to local storage,
-so an update to the underlying webpage, can read the local storage because its equal to an import
-
-* Add a new button (checkmark and +1) next to "Stimmung" on mood entry tab, and next to Vorderseite/Rückseite on pain tab, that is greyed out if no data is entered so far, but can be pressed, once any mood or pain data is entered. if pressed, the last entries are finished and a new entry (for the same day, but different data) is begun.
-  this is in addition to the reset values on day change automatic, where all values (events, mood, pain) reset. This does not change the events counted for this day.
-
-* make the "verlauf" subtab buttons look and behave like the mood-subtab buttons
-
-* events get a new feature: if increment = 0 it becomes a timestamp only button (with an "undo" function and a "reload" function) for eg. Medication Intake , where only time and that it happens is important, in the event entry page. Reload can only be pressed if it is already pressed for today, and makes a new press possible. undo is only pressable if already pressed, and undos the last pressing.
-* event types are getting a group type (default empty).
-
-* create sub Events tabs like sub mood tabs.
-    * for every group type, list all events of this group type with naming if grouptype
-    * add "*" for events without (empty) grouptype
-
-* Verlauf Page:
-    * Add a (cummulative) chart for events on of same grouptype and unittype
-    * Add a chart for every other grouptype and equal unittype
-    * Add single charts for all other events
-
-* change all verlauf diagrams from bars to linechar, make a good looking moving average. mavg for 7 days should be 3 , mavg for 30 should be 7 , mavg for 180 shoould be 28
-
-* make verlauf mood only display the culmulative Candle with all the negativ cummulativ and the positive cumulative together.
-    * the tooltip should reveal the mood detault data of the cumulative data bar.
-
