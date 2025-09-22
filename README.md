@@ -3,7 +3,7 @@
 
 WellTrack ist ein persönliches und 100 % privates Gesundheitstagebuch, das dabei hilft, Zusammenhänge zwischen Gewohnheiten, dem eigenen Befinden und der allgemeinen Gesundheit zu erkennen. Als offline-fähige Progressive Web App (PWA) bleiben dabei alle Daten ausschließlich auf dem eigenen Gerät – es gibt keinen Server und keine Cloud. Das ermöglicht vollständige Kontrolle, eine schnelle Nutzung, auch ohne Internetverbindung, auf jeden belibigen Gerät.
 
-Diese **App** ist ein ***Vibecoding - Projekt***. Das bedeutet, sie wurde komplett durch natürliche Sprache mit einer KI erstellt, um für eine Person eine einfache Möglichkeit zu schaffen ihre täglichen Schmerzen, Stimmungen und Trainingszyklen niederschwellig festzuhalten.
+Diese *App* ist ein ***Vibecoding - Projekt***. Das bedeutet, sie wurde komplett durch natürliche Sprache mit einer KI erstellt, um für eine Person eine einfache Möglichkeit zu schaffen ihre täglichen Schmerzen, Stimmungen und Trainingszyklen niederschwellig festzuhalten.
 
 Der Code ist nicht, oder nur schwer für menschliche Wartung zugänglich. Eine größere Veränderung oder Erweiterung des Codes ist in der momentanen Form nicht empfehlenswert.
 
