@@ -1165,6 +1165,15 @@ const WellTrackApp = {
                     <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-primary w-full"><span class="material-symbols-outlined mr-2">add</span>Neue hinzufügen</button></div>
                 </div>
                 <div class="card">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Datenverwaltung</h2>
+                    <p class="text-sm text-gray-600 mb-4">Sie können Ihre Daten als JSON-Datei exportieren oder eine zuvor exportierte Datei wieder importieren.</p>
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <button onclick="WellTrackApp.data.exportData()" class="btn btn-secondary flex-1"><span class="material-symbols-outlined mr-2">download</span> Daten exportieren</button>
+                        <label class="btn btn-error flex-1 cursor-pointer"><span class="material-symbols-outlined mr-2">upload</span><span>Daten importieren</span><input type="file" id="import-file" class="hidden" accept=".json" onchange="WellTrackApp.data.importData(event)"></label>
+                        <button onclick="WellTrackApp.events.handleDeleteAllData()" class="btn btn-error flex-1"><span class="material-symbols-outlined mr-2">delete_forever</span> Alle Daten löschen</button>
+                    </div>
+                </div>
+                <div class="card hidden">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">Erinnerungen</h2>
                     <div id="reminder-section" class="space-y-4">
                          <p class="text-sm text-gray-600">Status: <span class="font-bold">${perm === 'granted' ? 'Erlaubt' : (perm === 'denied' ? 'Blockiert' : 'Nicht festgelegt')}</span></p>
@@ -1178,19 +1187,7 @@ const WellTrackApp = {
                          `: ''}
                          ${perm === 'denied' ? '<p class="text-sm text-red-600">Sie müssen die Berechtigung in den Browser-Einstellungen ändern, um Benachrichtigungen zu erhalten.</p>' : ''}
                     </div>
-                </div>
-                <div class="card">
-                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Datenverwaltung</h2>
-                    <p class="text-sm text-gray-600 mb-4">Sie können Ihre Daten als JSON-Datei exportieren oder eine zuvor exportierte Datei wieder importieren.</p>
-                    <div class="flex flex-col md:flex-row gap-4">
-                        <label class="btn btn-error flex-1 cursor-pointer"><span class="material-symbols-outlined mr-2">upload</span><span>Daten importieren</span><input type="file" id="import-file" class="hidden" accept=".json" onchange="WellTrackApp.data.importData(event)"></label>
-                        <button onclick="WellTrackApp.data.exportData()" class="btn btn-secondary flex-1"><span class="material-symbols-outlined mr-2">download</span> Daten exportieren</button>
-                    </div>
-                    <div class="border-t my-4 border-gray-300"></div>
-                     <div class="flex flex-col md:flex-row gap-4">
-                        <button onclick="WellTrackApp.events.handleDeleteAllData()" class="btn btn-error-primary flex-1"><span class="material-symbols-outlined mr-2">delete_forever</span> Alle Daten löschen</button>
-                    </div>
-                </div>
+                </div>                
                 `
             },
             eventItemIncrement: (event, value) => `

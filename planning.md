@@ -39,8 +39,9 @@ The UI is built with Tailwind CSS for responsive, mobile-first design, following
     * Events, Mood, Pain: Dedicated data entry pages.
     * History: Chart visualization page.
     * Log: A paginated view of all historical data.
+    * Settings: Edit Eventtypes, Import and Export Data.
 
-* **Modals:** A single modal structure is used for various interactions, such as settings, pain level selection, and training management, to maintain a consistent user experience.
+* **Modals:** A single modal structure is used for various interactions, such as pain level selection, to maintain a consistent user experience.
 * **Dynamic Rendering:** Page content and components are generated as HTML strings within the WellTrackApp.render.components object and injected into the DOM using innerHTML. While simple, this approach will be refactored in the future.
 
 ## **File Structure**
