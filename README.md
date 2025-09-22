@@ -1,11 +1,14 @@
 # **WellTrack Gesundheitstagebuch**
 ![WellTrack Logo](icon-192.png)
 
-WellTrack ist ein persönliches und 100 % privates Gesundheitstagebuch, das dabei hilft, Zusammenhänge zwischen Gewohnheiten, dem eigenen Befinden und der allgemeinen Gesundheit zu erkennen. Als offline-fähige Progressive Web App (PWA) bleiben dabei alle Daten ausschließlich auf dem eigenen Gerät – es gibt keinen Server und keine Cloud. Das ermöglicht vollständige Kontrolle, eine schnelle Nutzung, auch ohne Internetverbindung, auf jeden belibigen Gerät.
+WellTrack ist ein persönliches und 100 % privates Gesundheitstagebuch, das dabei hilft, Zusammenhänge zwischen Gewohnheiten, dem eigenen Befinden und der allgemeinen Gesundheit zu erkennen.
 
-Diese *App* ist ein ***Vibecoding - Projekt***. Das bedeutet, sie wurde komplett durch natürliche Sprache mit einer KI erstellt, um für eine Person eine einfache Möglichkeit zu schaffen ihre täglichen Schmerzen, Stimmungen und Trainingszyklen niederschwellig festzuhalten.
+Als offline-fähige Progressive Web App (PWA) bleiben dabei alle Daten ausschließlich auf dem eigenen Gerät – es gibt keinen Server und keine Cloud. Das ermöglicht vollständige Kontrolle, eine schnelle Nutzung, auch ohne Internetverbindung, auf jeden belibigen Gerät.
 
-Der Code ist nicht, oder nur schwer für menschliche Wartung zugänglich. Eine größere Veränderung oder Erweiterung des Codes ist in der momentanen Form nicht empfehlenswert.
+Diese Web App ist ein ***Vibecoding - Projekt***. Das bedeutet, sie wurde komplett durch natürliche Sprache mit einer KI erstellt, um für eine Person eine einfache Möglichkeit zu schaffen ihre täglichen Schmerzen, Stimmungen und Trainingszyklen niederschwellig festzuhalten.
+
+Der Code ist nicht oder nur schwer für menschliche Wartung zugänglich.
+Eine größere Veränderung oder Erweiterung des Codes ist - in der momentanen Form - nicht empfehlenswert.
 
 ## **Funktionen**
 
@@ -17,7 +20,7 @@ Die Startseite bietet eine Zusammenfassung des aktuellen Tages, einschließlich 
 
 ### **Ereignisse eintragen**
 
-Protokollieren Sie ganz einfach tägliche Aktivitäten wie Spaziergänge, die Einnahme von Medikamenten oder den Kaffeekonsum. Die Ereignistypen können in den Einstellungen vollständig angepasst werden.
+Protokollieren Sie tägliche Aktivitäten wie Spaziergänge, die Einnahme von Medikamenten oder den Kaffeekonsum. Die Ereignistypen können in den Einstellungen angepasst werden.
 
 ![WellTrack Event](screenshots/welltrack-event-entry.png)
 
@@ -29,25 +32,25 @@ Erfassen Sie Ihre Stimmung mithilfe intuitiver Schieberegler für verschiedene A
 
 ### **Schmerzen festhalten**
 
-Auf einer interaktiven Darstellung des menschlichen Körpers können Sie bestimmte Körperteile auswählen und die Schmerzintensität auf einer Skala von 0 bis 5 bewerten.
+Auf einer interaktiven Darstellung des menschlichen Körpers können Sie bestimmte Körperteile auswählen und die Schmerzintensität auf einer Skala von 0 (kein), 1 (leicht), 2 (unangenehm), 3 (stark) 4(fürchterlich) bis 5 (vernichtend) bewerten.
 
 ![WellTrack Pain](screenshots/welltrack-pain-entry.png)
 
 ### **Verlauf & Diagramme**
 
-Visualisieren Sie Ihre gesammelten Daten in übersichtlichen Diagrammen. Analysieren Sie Trends für Ereignisse, Stimmungen und Schmerzen über verschiedene Zeiträume (7, 30 oder 180 Tage).
+Visualisieren Sie Ihre gesammelten Daten in übersichtlichen Diagrammen. Analysieren Sie Trends für Ereignisse, Stimmungen und Schmerzen über verschiedene Zeiträume (1 Woche, 1 Monat, 6 Monate).
 
 ![WellTrack Chart](screenshots/welltrack-chart.png)
 
 ### **Detailliertes Protokoll**
 
-Ein chronologisches und paginiertes Protokoll aller Einträge, gruppiert nach Tagen, ermöglicht einen tiefen Einblick in Ihre Gesundheitsdaten.
+Ein chronologisches und paginiertes Protokoll aller Einträge, gruppiert nach Tagen.
 
 ![WellTrack Log](screenshots/welltrack-log.png)
 
 ### **Einstellungen & Datenverwaltung**
 
-Passen Sie Ereignisarten an, verwalten Sie Ihre Daten durch Import/Export einer JSON-Datei und konfigurieren Sie Benachrichtigungen.
+Passen Sie Ereignisarten an, verwalten Sie Ihre Daten durch Import/Export einer JSON-Datei.
 
 ![WellTrack Settings](screenshots/welltrack-settings.png)
 
