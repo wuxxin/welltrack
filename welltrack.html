@@ -858,7 +858,7 @@ const WellTrackApp = {
                     const canvas = document.createElement('canvas');
                     const container = document.createElement('div');
                     container.style.position = 'relative';
-                    container.style.height = '800px';
+                    container.style.height = '600px';
                     container.appendChild(canvas);
                     eventChartContainer.appendChild(container);
                     const ctx = canvas.getContext('2d');
@@ -1192,11 +1192,6 @@ const WellTrackApp = {
                 </div>`,
             historySection: () => {
                 const activeTab = WellTrackApp.state.activeHistoryTab;
-                const timeRange = WellTrackApp.state.timeRange;
-                let widthStyle = 'width: 100%;';
-                if (timeRange === 30) widthStyle = 'width: 200%;';
-                if (timeRange === 180) widthStyle = 'width: 400%;';
-
                 return `
                 <div class="card">
                      <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
@@ -1214,13 +1209,9 @@ const WellTrackApp = {
                             <button onclick="WellTrackApp.events.handleHistoryTabClick('pain')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100" data-tab="pain">Schmerz</button>
                         </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <div style="${widthStyle}">
-                            <div id="chart-container-event" class="chart-container space-y-4"></div>
-                            <div id="chart-container-mood" class="chart-container hidden" style="position: relative; height: 800px;"><canvas id="moodChart"></canvas></div>
-                            <div id="chart-container-pain" class="chart-container hidden" style="position: relative; height: 800px;"><canvas id="painChart"></canvas></div>
-                        </div>
-                    </div>
+                    <div id="chart-container-event" class="chart-container space-y-4"></div>
+                    <div id="chart-container-mood" class="chart-container hidden" style="position: relative; height: 600px;"><canvas id="moodChart"></canvas></div>
+                    <div id="chart-container-pain" class="chart-container hidden" style="position: relative; height: 600px;"><canvas id="painChart"></canvas></div>
                 </div>`;
             },
             fullLogSection: () => `
@@ -1343,7 +1334,7 @@ const WellTrackApp = {
                             if (t.metric.endsWith('_timestamp')) {
                                 valueHtml = `um <span class="font-semibold">${time}</span>`;
                             } else {
-                                valueHtml = `<span class="font-semibold">${t.value} ${t.labels.unitType || ''}</span> um ${time}`;
+                                valueHtml = `<span class="font-semibold">${t.value} ${t.labels.unitType || ''}</span>`;
                             }
                             return `<div class="ml-4 text-gray-700 text-base">${t.labels.name}: ${valueHtml}</div>`;
                         }).join('');
@@ -1385,7 +1376,7 @@ const WellTrackApp = {
                         return `
                             <div class="mt-2">
                                 <h5 class="font-semibold text-lg">Um ${firstEntryTime} <span class="font-normal text-gray-600">(Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span>)</span></h5>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">${detailsMatrix}</div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div>
                             </div>`;
                     }).join('');
                 }
@@ -1424,7 +1415,7 @@ const WellTrackApp = {
                         return `
                              <div class="mt-2">
                                 <h5 class="font-semibold text-lg">Um ${firstEntryTime} <span class="font-normal text-gray-600">(Gesamt: <span class="font-bold ${totalColor}">${totalScore}</span>)</span></h5>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">${detailsMatrix}</div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div>
                             </div>
                         `;
                     }).join('');
@@ -1441,14 +1432,14 @@ const WellTrackApp = {
                 };
 
                 return `
-                    <div class="flex justify-between items-start">
-                        <div class="flex-grow">
+                    <div class="relative">
+                        <div class="absolute top-0 right-0">
+                            <h3 class="font-bold text-lg text-gray-600">${date}</h3>
+                        </div>
+                        <div class="pr-24">
                             ${buildSection('Ereignisse', eventsHtml)}
                             ${buildSection('Stimmung', moodHtml)}
                             ${buildSection('Schmerz', painHtml)}
-                        </div>
-                        <div class="flex-shrink-0 ml-4">
-                            <h3 class="font-bold text-lg text-gray-600 text-right">${date}</h3>
                         </div>
                     </div>
                 `;
