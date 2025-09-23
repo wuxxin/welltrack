@@ -22,3 +22,9 @@ This document lists the implementation status of features and refactorings for t
 
 
 ## **Planned Tasks**
+
+### 2025-09-23
+- [ ] Change all epoch seconds to standard epoch milliseconds in `welltrack.html` for consistency.
+- [ ] Repair `create_sampledata.py` to ensure all body parts, moods, and standard event types are sourced directly from `welltrack.html`.
+- [ ] Update `create_sampledata.py` to generate timestamps in milliseconds.
+- [ ] Update this file (`tasks.md`) to reflect the work done.

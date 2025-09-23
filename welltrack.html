@@ -380,7 +380,7 @@ const WellTrackApp = {
             // Auto-commit entries from previous days on startup
             if (lastCommittedIndex < metrics.length - 1) {
                 for (let i = lastCommittedIndex + 1; i < metrics.length; i++) {
-                    const metricDate = new Date(metrics[i].timestamp * 1000);
+                    const metricDate = new Date(metrics[i].timestamp);
                     if (!WellTrackApp.utils.isToday(metricDate)) {
                         lastCommittedIndex = i;
                     } else {
@@ -426,8 +426,8 @@ const WellTrackApp = {
             const page = WellTrackApp.state.activePage;
             const metrics = this.getMetrics();
             const uncommittedMetrics = metrics.slice(this.getSettings().committedIndex + 1);
-            const todaysUncommittedMetrics = uncommittedMetrics.filter(e => WellTrackApp.utils.isToday(new Date(e.timestamp * 1000)));
-            const now = Math.floor(Date.now() / 1000);
+            const todaysUncommittedMetrics = uncommittedMetrics.filter(e => WellTrackApp.utils.isToday(new Date(e.timestamp)));
+            const now = Date.now();
            
             if (page === 'pain') {
                 const todaysPainMetrics = todaysUncommittedMetrics.filter(e => e.metric.startsWith('pain_'));
@@ -435,7 +435,7 @@ const WellTrackApp = {
                 if (lastEntryTimeSpan) {
                     if (todaysPainMetrics.length > 0) {
                         const lastEntry = todaysPainMetrics[todaysPainMetrics.length - 1]; // Already sorted
-                        lastEntryTimeSpan.textContent = `(zuletzt um ${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+                        lastEntryTimeSpan.textContent = `(zuletzt um ${new Date(lastEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
                     } else {
                         lastEntryTimeSpan.textContent = '';
                     }
@@ -443,7 +443,7 @@ const WellTrackApp = {
 
                 document.querySelectorAll('.body-part').forEach(part => {
                     const latestEntry = todaysPainMetrics.filter(m => m.labels.body_part === part.id).pop();
-                    if (latestEntry && (now - latestEntry.timestamp < 600)) {
+                    if (latestEntry && (now - latestEntry.timestamp < 600000)) {
                         part.style.fill = WellTrackApp.config.PAIN_LEVELS[latestEntry.value].color;
                         part.dataset.level = latestEntry.value;
                     } else {
@@ -457,7 +457,7 @@ const WellTrackApp = {
                 if (lastEntryTimeSpan) {
                     if (todaysMoodMetrics.length > 0) {
                         const lastEntry = todaysMoodMetrics[todaysMoodMetrics.length-1];
-                        lastEntryTimeSpan.textContent = `(zuletzt um ${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+                        lastEntryTimeSpan.textContent = `(zuletzt um ${new Date(lastEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
                     } else {
                         lastEntryTimeSpan.textContent = '';
                     }
@@ -474,7 +474,7 @@ const WellTrackApp = {
                         if(slider){
                             const latestEntry = todaysMoodMetrics.filter(m => m.labels.mood_id === q.id).pop();
                             let sliderValue = -1;
-                            if (latestEntry && (now - latestEntry.timestamp < 600)) {
+                            if (latestEntry && (now - latestEntry.timestamp < 600000)) {
                                 sliderValue = WellTrackApp.config.MOOD_VALUE_MAP.indexOf(latestEntry.value);
                             }
                             
@@ -496,7 +496,7 @@ const WellTrackApp = {
             const blob = new Blob([dataStr], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = `welltrack_export_${Math.floor(Date.now() / 1000)}.json`;
+            a.href = url; a.download = `welltrack_export_${Date.now()}.json`;
             a.click(); URL.revokeObjectURL(url);
         },
         importData(event) {
@@ -521,7 +521,7 @@ const WellTrackApp = {
 
                     // Deeper validation of each metric to ensure it has the required fields
                     for(const metric of imported.metrics) {
-                        if (typeof metric.metric !== 'string' || typeof metric.timestamp !== 'string' || typeof metric.labels !== 'object' || metric.labels === null) {
+                        if (typeof metric.metric !== 'string' || typeof metric.timestamp !== 'number' || typeof metric.labels !== 'object' || metric.labels === null) {
                             WellTrackApp.render.modal.showAlert('Fehler', `Ein Metrik-Eintrag in der Importdatei ist ungültig. Bitte überprüfen Sie die Datei. Fehlerhafter Eintrag: ${JSON.stringify(metric)}`);
                             event.target.value = ''; // Reset file input
                             return;
@@ -591,7 +591,7 @@ const WellTrackApp = {
             const groupedData = {};
             
             WellTrackApp.data.getMetrics().forEach(metric => {
-                const date = new Date(metric.timestamp * 1000).toLocaleDateString('de-DE');
+                const date = new Date(metric.timestamp).toLocaleDateString('de-DE');
                 if (!groupedData[date]) groupedData[date] = [];
                 groupedData[date].push(metric);
             });
@@ -624,7 +624,7 @@ const WellTrackApp = {
             if (!eventContainer) return;
 
             const todaysData = WellTrackApp.data.getMetrics();
-            const todaysEventsDone = todaysData.filter(e => e.metric.startsWith('event_') && WellTrackApp.utils.isToday(new Date(e.timestamp * 1000)));
+            const todaysEventsDone = todaysData.filter(e => e.metric.startsWith('event_') && WellTrackApp.utils.isToday(new Date(e.timestamp)));
             
             let allEvents = WellTrackApp.data.getEvents();
             let filteredEvents;
@@ -674,8 +674,8 @@ const WellTrackApp = {
             yesterday.setDate(today.getDate() - 1);
 
             const allData = WellTrackApp.data.getMetrics();
-            let todaysMetrics = allData.filter(e => WellTrackApp.utils.isSameDay(new Date(e.timestamp * 1000), today));
-            let yesterdaysMetrics = allData.filter(e => WellTrackApp.utils.isSameDay(new Date(e.timestamp * 1000), yesterday));
+            let todaysMetrics = allData.filter(e => WellTrackApp.utils.isSameDay(new Date(e.timestamp), today));
+            let yesterdaysMetrics = allData.filter(e => WellTrackApp.utils.isSameDay(new Date(e.timestamp), yesterday));
             
             // Summarize before calculating totals
             const summarizedToday = WellTrackApp.utils.summarizeMetrics(todaysMetrics);
@@ -911,7 +911,7 @@ const WellTrackApp = {
                                             const details = rawData.details;
                                             const timestamps = Object.values(details).flat();
                                             if (timestamps.length > 0) {
-                                                const times = timestamps.map(ts => new Date(ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })).join(', ');
+                                                const times = timestamps.map(ts => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })).join(', ');
                                                 lines.push(`  Zeiten: ${times}`);
                                             }
 
@@ -1234,7 +1234,7 @@ const WellTrackApp = {
                 </div>`,
             eventItemTimestamp: (event, isDoneToday, entries) => {
                 const lastEntry = entries.sort((a, b) => b.timestamp - a.timestamp)[0];
-                const lastTimestamp = lastEntry ? `(zuletzt um ${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})` : '';
+                const lastTimestamp = lastEntry ? `(zuletzt um ${new Date(lastEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})` : '';
 
                 const isPending = WellTrackApp.state.pendingTimestampEvents.includes(event.activity);
 
@@ -1269,7 +1269,7 @@ const WellTrackApp = {
                 </div>`;
             },
             todaysLogEntry: (metric) => {
-                const time = new Date(metric.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const time = new Date(metric.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 if (metric.metric.startsWith('pain_')) {
                     const level = metric.value;
                     const props = WellTrackApp.config.PAIN_LEVELS[level] || {};
@@ -1313,7 +1313,7 @@ const WellTrackApp = {
                             if (!acc[t.labels.name]) {
                                 acc[t.labels.name] = [];
                             }
-                            acc[t.labels.name].push(new Date(t.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                            acc[t.labels.name].push(new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
                             return acc;
                         }, {});
 
@@ -1335,7 +1335,7 @@ const WellTrackApp = {
                     let currentGroup = [];
 
                     moodMetrics.forEach((metric, index) => {
-                        if (index > 0 && (metric.timestamp - moodMetrics[index-1].timestamp > 600)) {
+                        if (index > 0 && (metric.timestamp - moodMetrics[index-1].timestamp > 600000)) {
                             moodGroups.push(currentGroup);
                             currentGroup = [];
                         }
@@ -1345,7 +1345,7 @@ const WellTrackApp = {
 
                     let moodHtml = moodGroups.map(group => {
                         if (group.length === 0) return '';
-                        const firstEntryTime = new Date(group[0].timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const firstEntryTime = new Date(group[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                         const totalScore = group.reduce((sum, m) => sum + m.value, 0);
 
                         const details = group.map(m => {
@@ -1367,7 +1367,7 @@ const WellTrackApp = {
                     let currentGroup = [];
 
                     painMetrics.forEach((metric, index) => {
-                        if (index > 0 && (metric.timestamp - painMetrics[index-1].timestamp > 600)) {
+                        if (index > 0 && (metric.timestamp - painMetrics[index-1].timestamp > 600000)) {
                             painGroups.push(currentGroup);
                             currentGroup = [];
                         }
@@ -1377,7 +1377,7 @@ const WellTrackApp = {
 
                     let painHtml = painGroups.map(group => {
                         if (group.length === 0) return '';
-                        const firstEntryTime = new Date(group[0].timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const firstEntryTime = new Date(group[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                         const totalScore = group.reduce((sum, m) => sum + m.value, 0);
 
                         const details = group.map(p => {
@@ -1525,14 +1525,14 @@ const WellTrackApp = {
             
             let metrics = WellTrackApp.data.getMetrics();
             const committedIndex = WellTrackApp.data.getSettings().committedIndex;
-            const now = Math.floor(Date.now() / 1000);
+            const now = Date.now();
 
             // Search for the last entry for this body part in the last 10 minutes
             let foundIndex = -1;
             for (let i = metrics.length - 1; i > committedIndex; i--) {
                 const entry = metrics[i];
                 if (entry.labels.body_part === part.id) {
-                    if (now - entry.timestamp < 600) {
+                    if (now - entry.timestamp < 600000) {
                         foundIndex = i;
                     }
                     break; // Stop after finding the most recent entry for this part
@@ -1595,7 +1595,7 @@ const WellTrackApp = {
             if (newValue > 0) {
                 allMetrics.push({
                     metric: `event_${activity}_value`,
-                    timestamp: Math.floor(Date.now() / 1000),
+                    timestamp: Date.now(),
                     labels: { activity: event.activity, name: event.name, unitType: event.unitType, groupType: event.groupType || '' },
                     value: newValue
                 });
@@ -1612,7 +1612,7 @@ const WellTrackApp = {
             let metrics = WellTrackApp.data.getMetrics();
             metrics.push({
                 metric: `event_${activity}_timestamp`,
-                timestamp: Math.floor(Date.now() / 1000),
+                timestamp: Date.now(),
                 labels: { activity: event.activity, name: event.name, unitType: event.unitType, groupType: event.groupType || '' },
                 value: 1 // Value is 1 to be countable
             });
@@ -1634,7 +1634,7 @@ const WellTrackApp = {
                 .filter((m, index) =>
                     index > committedIndex &&
                     m.labels.activity === activity &&
-                    WellTrackApp.utils.isToday(new Date(m.timestamp * 1000))
+                    WellTrackApp.utils.isToday(new Date(m.timestamp))
                 )
                 .sort((a,b) => b.timestamp - a.timestamp);
 
@@ -1660,7 +1660,7 @@ const WellTrackApp = {
             WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
         },
         handleChangePage(direction) {
-            const totalItems = Object.keys(WellTrackApp.data.getMetrics().reduce((acc, metric) => { acc[new Date(metric.timestamp * 1000).toLocaleDateString('de-DE')] = true; return acc; }, {})).length;
+            const totalItems = Object.keys(WellTrackApp.data.getMetrics().reduce((acc, metric) => { acc[new Date(metric.timestamp).toLocaleDateString('de-DE')] = true; return acc; }, {})).length;
             const totalPages = Math.ceil(totalItems / WellTrackApp.config.ENTRIES_PER_PAGE);
             const newPage = WellTrackApp.state.currentPage + direction;
             if (newPage >= 1 && newPage <= totalPages) { WellTrackApp.render.fullLogPage(newPage); }
@@ -1763,7 +1763,7 @@ const WellTrackApp = {
             
             let metrics = WellTrackApp.data.getMetrics();
             const committedIndex = WellTrackApp.data.getSettings().committedIndex;
-            const now = Math.floor(Date.now() / 1000);
+            const now = Date.now();
 
             let question;
             for (const groupKey in WellTrackApp.config.MOOD_GROUPS) {
@@ -1778,7 +1778,7 @@ const WellTrackApp = {
                 const entry = metrics[i];
                 if (entry.labels.mood_id === moodId) {
                     // Check if the entry is within the last 10 minutes
-                    if (now - entry.timestamp < 600) {
+                    if (now - entry.timestamp < 600000) {
                         foundIndex = i;
                     }
                     break; // Stop after finding the most recent entry of this type
@@ -1824,7 +1824,7 @@ const WellTrackApp = {
             const committedIndex = settings.committedIndex;
 
             const uncommittedMetrics = metrics.slice(committedIndex + 1);
-            const todaysUncommitted = uncommittedMetrics.filter(m => WellTrackApp.utils.isToday(new Date(m.timestamp * 1000)));
+            const todaysUncommitted = uncommittedMetrics.filter(m => WellTrackApp.utils.isToday(new Date(m.timestamp)));
 
             if (todaysUncommitted.length === 0) {
                 if(WellTrackApp.state.activePage === 'mood') WellTrackApp.render.moodPage();
@@ -1951,14 +1951,14 @@ const WellTrackApp = {
             const startDate = new Date(); startDate.setHours(0, 0, 0, 0); startDate.setDate(startDate.getDate() - (timeRangeDays - 1));
             
             const filteredData = data.filter(entry => {
-                const entryDate = new Date(entry.timestamp * 1000);
+                const entryDate = new Date(entry.timestamp);
                 return entry.metric.startsWith(metricPrefix) &&
                        entryDate >= startDate &&
                        filterFunc(entry);
             });
 
             const dailyTotals = filteredData.reduce((acc, entry) => {
-                let timestamp = new Date(entry.timestamp * 1000);
+                let timestamp = new Date(entry.timestamp);
                 let dayKey;
 
                 // For mood and pain, group by rounded timestamp to see intra-day changes
@@ -1968,7 +1968,7 @@ const WellTrackApp = {
                     timestamp.setMinutes(roundedMinutes, 0, 0);
                     dayKey = timestamp.getTime(); // Use MS for the key
                 } else {
-                    const d = new Date(entry.timestamp * 1000);
+                    const d = new Date(entry.timestamp);
                     d.setHours(0, 0, 0, 0);
                     dayKey = d.getTime(); // For events, group by day (already in MS)
                 }
@@ -2027,14 +2027,14 @@ const WellTrackApp = {
 
             const historicalData = allMetrics
                 .filter(entry => {
-                    const entryDate = new Date(entry.timestamp * 1000);
+                    const entryDate = new Date(entry.timestamp);
                     return entry.metric.startsWith(metricPrefix) &&
                            entryDate >= historicalStartDate &&
                            entryDate < firstVisibleDate &&
                            filterFunc(entry);
                 })
                 .map(entry => {
-                    const d = new Date(entry.timestamp * 1000);
+                    const d = new Date(entry.timestamp);
                     d.setHours(0, 0, 0, 0);
                     return { x: d.getTime(), y: entry.value };
                 })

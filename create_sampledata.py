@@ -1,55 +1,63 @@
 #!/usr/bin/env python
 """Random Event/Mood/Pain Data Generator for WellTrack
 
+This script reads data definitions directly from the 'welltrack.html' file
+to ensure the generated sample data is always in sync with the application.
 """
 
 import json
 import random
+import re
 from datetime import datetime, timedelta
 
-DEFAULT_EVENTS_JSON = [
-    {"name": "Spaziergang", "activity": "walking", "days": [], "increment": 15, "unitType": "min", "groupType": "Bewegung"},
-    {"name": "Kaffee Tassen", "activity": "coffee_cups", "days": [], "increment": 1, "unitType": "", "groupType": "Ernährung"},
-    {"name": "Ibuprofen 400mg", "activity": "ibuprofen_400", "days": [], "increment": 0, "unitType": "Einnahme", "groupType": "Medikamente"},
-    {"name": "Rückenübungen", "activity": "back_exercises", "days": [1, 2, 3, 4, 5], "increment": 15, "unitType": "min", "groupType": "Bewegung"}
-]
+def extract_config_from_html(html_content):
+    """Extracts MOOD_GROUPS, DEFAULT_EVENTS_JSON, and body parts from the HTML script."""
+    config = {}
 
-MOOD_GROUPS = {
-    'arousal_level': {
-        'name': 'Energie & Motivation',
-        'questions': [
-            { 'id': 'energy', 'name': 'Energie' },
-            { 'id': 'motivation', 'name': 'Motivation' },
-            { 'id': 'inner_drive', 'name': 'Innere Unruhe' },
-            { 'id': 'temperament', 'name': 'Temperament' },
-            { 'id': 'anxiety', 'name': 'Angstfreiheit' },
-            { 'id': 'focus', 'name': 'Fokus' }
-        ]
-    },
-    'affective_state': {
-        'name': 'Stimmung & Selbstwert',
-        'questions': [
-            { 'id': 'happiness', 'name': 'Glücklichkeit' },
-            { 'id': 'outlook', 'name': 'Ausblick/Hoffnung' },
-            { 'id': 'self_esteem', 'name': 'Selbstwert' },
-            { 'id': 'stability', 'name': 'Stabilität' },
-            { 'id': 'social_connection', 'name': 'Soziale Verbindung' }
-        ]
-    }
-}
+    # 1. Extract MOOD_GROUPS
+    mood_match = re.search(r'MOOD_GROUPS:\s*(\{.*?\s*\}\s*\})', html_content, re.DOTALL)
+    if mood_match:
+        mood_str = mood_match.group(1)
+        # Clean up for JSON parsing: remove trailing commas, use double quotes
+        mood_str = re.sub(r",\s*(\}|\])", r"\1", mood_str)
+        mood_str = re.sub(r"(\w+)\s*:", r'"\1":', mood_str)
+        mood_str = mood_str.replace("'", '"')
+        try:
+            config['MOOD_GROUPS'] = json.loads(mood_str)
+        except json.JSONDecodeError as e:
+            print(f"Error parsing MOOD_GROUPS: {e}")
+            print(f"Content: {mood_str}")
+            config['MOOD_GROUPS'] = {}
 
-ALL_BODY_PARTS = [
-    {'id': 'head_front', 'name': 'Kopf'}, {'id': 'torso_chest_left', 'name': 'Brust (L)'}, {'id': 'torso_chest_right', 'name': 'Brust (R)'},
-    {'id': 'torso_abdomen_left', 'name': 'Bauch (L)'}, {'id': 'torso_abdomen_right', 'name': 'Bauch (R)'}, {'id': 'arm_left_front', 'name': 'Linker Arm'},
-    {'id': 'hand_left_front', 'name': 'Hand (L)'}, {'id': 'arm_right_front', 'name': 'Rechter Arm'}, {'id': 'hand_right_front', 'name': 'Hand (R)'},
-    {'id': 'leg_left_front', 'name': 'Linkes Bein'}, {'id': 'foot_left_front', 'name': 'Fuß (L)'}, {'id': 'leg_right_front', 'name': 'Rechtes Bein'},
-    {'id': 'foot_right_front', 'name': 'Fuß (R)'}, {'id': 'head_back', 'name': 'Hinterkopf'}, {'id': 'back_cervical_left', 'name': 'HWS (L)'},
-    {'id': 'back_cervical_right', 'name': 'HWS (R)'}, {'id': 'back_thoracic_left', 'name': 'BWS (L)'}, {'id': 'back_thoracic_right', 'name': 'BWS (R)'},
-    {'id': 'back_lumbar_left', 'name': 'LWS (L)'}, {'id': 'back_lumbar_right', 'name': 'LWS (R)'}, {'id': 'arm_left_back', 'name': 'Linker Arm (h)'},
-    {'id': 'hand_left_back', 'name': 'Hand (L,h)'}, {'id': 'arm_right_back', 'name': 'Rechter Arm (h)'}, {'id': 'hand_right_back', 'name': 'Hand (R,h)'},
-    {'id': 'glute_left_back', 'name': 'Gesäß (L)'}, {'id': 'glute_right_back', 'name': 'Gesäß (R)'}, {'id': 'leg_left_back', 'name': 'Linkes Bein (h)'},
-    {'id': 'foot_left_back', 'name': 'Fuß (L,h)'}, {'id': 'leg_right_back', 'name': 'Rechtes Bein (h)'}, {'id': 'foot_right_back', 'name': 'Fuß (R,h)'}
-]
+    # 2. Extract DEFAULT_EVENTS_JSON
+    events_match = re.search(r'DEFAULT_EVENTS_JSON:\s*`(\[.*?\])`', html_content, re.DOTALL)
+    if events_match:
+        events_str = events_match.group(1)
+        try:
+            config['DEFAULT_EVENTS_JSON'] = json.loads(events_str)
+        except json.JSONDecodeError as e:
+            print(f"Error parsing DEFAULT_EVENTS_JSON: {e}")
+            print(f"Content: {events_str}")
+            config['DEFAULT_EVENTS_JSON'] = []
+
+    # 3. Extract Body Parts from SVG
+    body_parts = []
+    # Regex to find any SVG element with id and data-name attributes
+    part_matches = re.findall(r'<(?:rect|circle).*?id="([^"]+)".*?data-name="([^"]+)"', html_content)
+    for part_id, part_name in part_matches:
+        body_parts.append({'id': part_id, 'name': part_name})
+
+    # Remove duplicates
+    seen = set()
+    unique_body_parts = []
+    for part in body_parts:
+        if part['id'] not in seen:
+            unique_body_parts.append(part)
+            seen.add(part['id'])
+
+    config['ALL_BODY_PARTS'] = unique_body_parts
+
+    return config
 
 def get_event_labels(event_config):
     """Extracts the correct label properties from an event configuration object."""
@@ -60,11 +68,18 @@ def get_event_labels(event_config):
         "groupType": event_config.get("groupType", "")
     }
 
-def generate_random_data():
-    """Generates 180 days of random health metrics based on time windows and probabilities."""
+def generate_random_data(config):
+    """Generates 180 days of random health metrics based on the provided config."""
     metrics = []
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    all_mood_questions = [q for group in MOOD_GROUPS.values() for q in group['questions']]
+
+    all_mood_questions = [q for group in config.get('MOOD_GROUPS', {}).values() for q in group.get('questions', [])]
+    all_body_parts = config.get('ALL_BODY_PARTS', [])
+    default_events = config.get('DEFAULT_EVENTS_JSON', [])
+
+    if not all_mood_questions or not all_body_parts or not default_events:
+        print("Error: Configuration missing from HTML. Could not find mood, body, or event data.")
+        return None
 
     for i in range(179, -1, -1):
         # --- Day Skipping Logic ---
@@ -78,94 +93,96 @@ def generate_random_data():
             hour = random.randint(start_hour, end_hour)
             minute = random.randint(0, end_minute)
             second = random.randint(0, 59)
-            # Ensure end_hour and end_minute are respected
             if hour == end_hour:
                 minute = random.randint(0, end_minute)
-
             dt_obj = date.replace(hour=hour, minute=minute, second=second)
-            return int(dt_obj.timestamp())
+            return int(dt_obj.timestamp() * 1000)
 
         # --- Entry Block Logic ---
         num_entries_roll = random.random()
         num_entry_blocks = 3
-        if num_entries_roll < 0.05: # 5% chance
-            num_entry_blocks = 1
-        elif num_entries_roll < 0.15: # 10% chance
-            num_entry_blocks = 2
+        if num_entries_roll < 0.05: num_entry_blocks = 1
+        elif num_entries_roll < 0.15: num_entry_blocks = 2
 
-        time_windows = [
-            (9, 11),  # 9:00 - 11:59
-            (17, 18), # 17:00 - 18:59
-            (23, 23, 50)  # 23:00 - 23:50
-        ]
-
+        time_windows = [(9, 11), (17, 18), (23, 23, 50)]
         selected_windows = random.sample(time_windows, num_entry_blocks)
 
         for window in selected_windows:
             ts = get_random_timestamp(*window)
 
             # --- Generate Mood Data ---
-            num_mood_entries = random.randint(3, len(all_mood_questions))
-            mood_values = [random.choice([-3, -2, -1, 1, 2, 3]) for _ in range(num_mood_entries)]
-            random.shuffle(all_mood_questions)
-            for val, question in zip(mood_values, all_mood_questions[:num_mood_entries]):
-                metrics.append({
-                    'metric': f"mood_{question['id']}_level",
-                    'timestamp': ts + random.randint(-60, 60), # Add jitter
-                    'labels': {'mood_id': question['id'], 'name': question['name']},
-                    'value': val
-                })
+            if all_mood_questions:
+                num_mood_entries = random.randint(3, len(all_mood_questions))
+                mood_values = [random.choice([-3, -2, -1, 1, 2, 3]) for _ in range(num_mood_entries)]
+                random.shuffle(all_mood_questions)
+                for val, question in zip(mood_values, all_mood_questions[:num_mood_entries]):
+                    metrics.append({
+                        'metric': f"mood_{question['id']}_level",
+                        'timestamp': ts + random.randint(-60000, 60000),
+                        'labels': {'mood_id': question['id'], 'name': question['name']},
+                        'value': val
+                    })
 
             # --- Generate Pain Data ---
-            if random.random() < 0.6: # 60% chance of pain entry
+            if all_body_parts and random.random() < 0.6:
                 num_pain_entries = random.randint(1, 4)
-                random.shuffle(ALL_BODY_PARTS)
+                random.shuffle(all_body_parts)
                 for p in range(num_pain_entries):
-                    part = ALL_BODY_PARTS[p]
+                    part = all_body_parts[p]
                     metrics.append({
                         'metric': f"pain_{part['id']}_level",
-                        'timestamp': ts + random.randint(-60, 60), # Add jitter
+                        'timestamp': ts + random.randint(-60000, 60000),
                         'labels': {'body_part': part['id'], 'name': part['name']},
                         'value': random.randint(1, 5)
                     })
 
-            # --- Generate Event Data (less frequent) ---
-            if random.random() < 0.5: # 50% chance of an event entry
-                event_config = random.choice(DEFAULT_EVENTS_JSON)
-                if event_config['increment'] > 0: # Incrementing event
+            # --- Generate Event Data ---
+            if default_events and random.random() < 0.5:
+                event_config = random.choice(default_events)
+                if event_config['increment'] > 0:
                      metrics.append({
                         'metric': f"event_{event_config['activity']}_value",
-                        'timestamp': ts + random.randint(-60, 60),
+                        'timestamp': ts + random.randint(-60000, 60000),
                         'labels': get_event_labels(event_config),
                         'value': event_config['increment'] * random.randint(1, 3)
                     })
-                else: # Timestamp event
+                else:
                     metrics.append({
                         'metric': f"event_{event_config['activity']}_timestamp",
-                        'timestamp': ts + random.randint(-60, 60),
+                        'timestamp': ts + random.randint(-60000, 60000),
                         'labels': get_event_labels(event_config),
                         'value': 1
                     })
 
-    # Sort metrics by timestamp, as expected by the app
     metrics.sort(key=lambda x: x['timestamp'])
 
     return {
         "metrics": metrics,
-        "events": DEFAULT_EVENTS_JSON,
+        "events": default_events,
         "settings": {
             "reminderTime": "20:00",
-            # All generated data is "committed"
             "committedIndex": len(metrics) - 1
         }
     }
 
 if __name__ == "__main__":
-    export_data = generate_random_data()
-    file_name = f"welltrack_export_{int(datetime.now().timestamp())}.json"
+    try:
+        with open("welltrack.html", "r", encoding="utf-8") as f:
+            html_content = f.read()
+    except FileNotFoundError:
+        print("Error: welltrack.html not found. Make sure the script is in the same directory.")
+        exit(1)
 
-    with open(file_name, 'w', encoding='utf-8') as f:
-        json.dump(export_data, f, ensure_ascii=False, indent=2)
+    app_config = extract_config_from_html(html_content)
 
-    print(f"Random data was successfully saved to '{file_name}'.")
+    if not app_config.get('ALL_BODY_PARTS') or not app_config.get('MOOD_GROUPS') or not app_config.get('DEFAULT_EVENTS_JSON'):
+         print("\nCould not extract all required configurations from welltrack.html. Aborting.")
+         exit(1)
 
+    export_data = generate_random_data(app_config)
+
+    if export_data:
+        file_name = f"welltrack_export_{int(datetime.now().timestamp() * 1000)}.json"
+        with open(file_name, 'w', encoding='utf-8') as f:
+            json.dump(export_data, f, ensure_ascii=False, indent=2)
+        print(f"Random data was successfully saved to '{file_name}'.")
