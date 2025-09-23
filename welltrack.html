@@ -12,7 +12,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-    <script src="https://cdn.jsdelivr.net/npm/date-fns/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
@@ -379,7 +379,7 @@ const WellTrackApp = {
             // Auto-commit entries from previous days on startup
             if (lastCommittedIndex < metrics.length - 1) {
                 for (let i = lastCommittedIndex + 1; i < metrics.length; i++) {
-                    const metricDate = new Date(metrics[i].timestamp);
+                    const metricDate = new Date(metrics[i].timestamp * 1000);
                     if (!WellTrackApp.utils.isToday(metricDate)) {
                         lastCommittedIndex = i;
                     } else {
@@ -401,7 +401,7 @@ const WellTrackApp = {
         getMetrics() {
             // Sort metrics by timestamp on load to ensure index is always correct
             const metrics = JSON.parse(localStorage.getItem('wellTrackMetrics')) || [];
-            return metrics.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            return metrics.sort((a, b) => a.timestamp - b.timestamp);
         },
         saveMetrics(metrics) {
             localStorage.setItem('wellTrackMetrics', JSON.stringify(metrics));
@@ -425,26 +425,24 @@ const WellTrackApp = {
             const page = WellTrackApp.state.activePage;
             const metrics = this.getMetrics();
             const uncommittedMetrics = metrics.slice(this.getSettings().committedIndex + 1);
-            const todaysUncommittedMetrics = uncommittedMetrics.filter(e => WellTrackApp.utils.isToday(new Date(e.timestamp)));
+            const todaysUncommittedMetrics = uncommittedMetrics.filter(e => WellTrackApp.utils.isToday(new Date(e.timestamp * 1000)));
+            const now = Math.floor(Date.now() / 1000);
            
             if (page === 'pain') {
                 const todaysPainMetrics = todaysUncommittedMetrics.filter(e => e.metric.startsWith('pain_'));
                 const lastEntryTimeSpan = document.getElementById('pain-last-entry-time');
-                const addAnotherBtn = document.getElementById('add-another-pain-btn');
                 if (lastEntryTimeSpan) {
                     if (todaysPainMetrics.length > 0) {
                         const lastEntry = todaysPainMetrics[todaysPainMetrics.length - 1]; // Already sorted
-                        lastEntryTimeSpan.textContent = `(${new Date(lastEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
-                        if (addAnotherBtn) addAnotherBtn.classList.remove('hidden');
+                        lastEntryTimeSpan.textContent = `(eingetragen um ${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
                     } else {
                         lastEntryTimeSpan.textContent = '';
-                        if (addAnotherBtn) addAnotherBtn.classList.add('hidden');
                     }
                 }
 
                 document.querySelectorAll('.body-part').forEach(part => {
                     const latestEntry = todaysPainMetrics.filter(m => m.labels.body_part === part.id).pop();
-                    if (latestEntry) {
+                    if (latestEntry && (now - latestEntry.timestamp < 600)) {
                         part.style.fill = WellTrackApp.config.PAIN_LEVELS[latestEntry.value].color;
                         part.dataset.level = latestEntry.value;
                     } else {
@@ -455,15 +453,12 @@ const WellTrackApp = {
             } else if (page === 'mood') {
                 const todaysMoodMetrics = todaysUncommittedMetrics.filter(e => e.metric.startsWith('mood_'));
                 const lastEntryTimeSpan = document.getElementById('mood-last-entry-time');
-                const addAnotherBtn = document.getElementById('add-another-mood-btn');
                 if (lastEntryTimeSpan) {
                     if (todaysMoodMetrics.length > 0) {
                         const lastEntry = todaysMoodMetrics[todaysMoodMetrics.length-1];
-                        lastEntryTimeSpan.textContent = `(${new Date(lastEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
-                        if (addAnotherBtn) addAnotherBtn.classList.remove('hidden');
+                        lastEntryTimeSpan.textContent = `(eingetragen um ${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
                     } else {
                         lastEntryTimeSpan.textContent = '';
-                        if (addAnotherBtn) addAnotherBtn.classList.add('hidden');
                     }
                 }
 
@@ -477,7 +472,10 @@ const WellTrackApp = {
                         const slider = document.getElementById(`mood-slider-${q.id}`);
                         if(slider){
                             const latestEntry = todaysMoodMetrics.filter(m => m.labels.mood_id === q.id).pop();
-                            const sliderValue = latestEntry ? WellTrackApp.config.MOOD_VALUE_MAP.indexOf(latestEntry.value) : -1;
+                            let sliderValue = -1;
+                            if (latestEntry && (now - latestEntry.timestamp < 600)) {
+                                sliderValue = WellTrackApp.config.MOOD_VALUE_MAP.indexOf(latestEntry.value);
+                            }
                             
                             if (sliderValue !== -1) {
                                 slider.value = sliderValue;
@@ -497,7 +495,7 @@ const WellTrackApp = {
             const blob = new Blob([dataStr], { type: "application/json" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = `welltrack_export_${new Date().toISOString().split('T')[0]}.json`;
+            a.href = url; a.download = `welltrack_export_${Math.floor(Date.now() / 1000)}.json`;
             a.click(); URL.revokeObjectURL(url);
         },
         importData(event) {
@@ -592,12 +590,17 @@ const WellTrackApp = {
             const groupedData = {};
             
             WellTrackApp.data.getMetrics().forEach(metric => {
-                const date = new Date(metric.timestamp).toLocaleDateString();
+                const date = new Date(metric.timestamp * 1000).toLocaleDateString('de-DE');
                 if (!groupedData[date]) groupedData[date] = [];
                 groupedData[date].push(metric);
             });
 
-            const sortedDates = Object.keys(groupedData).sort((a, b) => new Date(b) - new Date(a));
+            const sortedDates = Object.keys(groupedData).sort((a, b) => {
+                const dateA = a.split('.').reverse().join('-');
+                const dateB = b.split('.').reverse().join('-');
+                return new Date(dateB) - new Date(dateA);
+            });
+
             if (sortedDates.length === 0) {
                 logContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Noch keine Einträge vorhanden.</p>';
                 document.getElementById('log-pagination').innerHTML = ''; return;
@@ -610,7 +613,7 @@ const WellTrackApp = {
                 const div = document.createElement('div');
                 div.className = 'bg-white p-4 rounded-xl border border-gray-200';
                 const summarizedMetrics = WellTrackApp.utils.summarizeMetrics(groupedData[date]);
-                div.innerHTML = this.components.logEntry(new Date(date).toLocaleDateString(), summarizedMetrics);
+                div.innerHTML = this.components.logEntry(date, summarizedMetrics);
                 logContainer.appendChild(div);
             });
             this.pagination(sortedDates.length);
@@ -620,7 +623,7 @@ const WellTrackApp = {
             if (!eventContainer) return;
 
             const todaysData = WellTrackApp.data.getMetrics();
-            const todaysEventsDone = todaysData.filter(e => e.metric.startsWith('event_') && WellTrackApp.utils.isToday(new Date(e.timestamp)));
+            const todaysEventsDone = todaysData.filter(e => e.metric.startsWith('event_') && WellTrackApp.utils.isToday(new Date(e.timestamp * 1000)));
             
             let allEvents = WellTrackApp.data.getEvents();
             let filteredEvents;
@@ -637,7 +640,8 @@ const WellTrackApp = {
                 if (event.increment === 0) {
                     value = todaysEntries.length; // For timestamp events, value is the count
                 } else {
-                    value = todaysEntries.reduce((sum, entry) => sum + entry.value, 0);
+                    // After the change, there should be at most one entry for incrementing events
+                    value = todaysEntries[0]?.value || 0;
                 }
                 return { data: event, value: value, entries: todaysEntries };
             });
@@ -669,8 +673,8 @@ const WellTrackApp = {
             yesterday.setDate(today.getDate() - 1);
 
             const allData = WellTrackApp.data.getMetrics();
-            let todaysMetrics = allData.filter(e => WellTrackApp.utils.isSameDay(new Date(e.timestamp), today));
-            let yesterdaysMetrics = allData.filter(e => WellTrackApp.utils.isSameDay(new Date(e.timestamp), yesterday));
+            let todaysMetrics = allData.filter(e => WellTrackApp.utils.isSameDay(new Date(e.timestamp * 1000), today));
+            let yesterdaysMetrics = allData.filter(e => WellTrackApp.utils.isSameDay(new Date(e.timestamp * 1000), yesterday));
             
             // Summarize before calculating totals
             const summarizedToday = WellTrackApp.utils.summarizeMetrics(todaysMetrics);
@@ -716,7 +720,7 @@ const WellTrackApp = {
             }
 
             let listHtml = '<h3 class="text-lg font-semibold mb-2 text-gray-800">Heutige Einträge:</h3><ul class="space-y-2">';
-            summarizedToday.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(metric => {
+            summarizedToday.sort((a,b) => b.timestamp - a.timestamp).forEach(metric => {
                  listHtml += `<li class="text-sm text-gray-700">${this.components.todaysLogEntry(metric)}</li>`;
             });
             listHtml += '</ul>';
@@ -751,25 +755,40 @@ const WellTrackApp = {
                 const ctx = document.getElementById('painChart')?.getContext('2d');
                 if (!ctx) return;
                 const { dailyData, allLabels } = WellTrackApp.utils.getDailyChartData('pain_');
-                
+
+                // One dataset per body part for the stacked bar chart
                 const datasets = allLabels.map(partName => {
-                    const dataPoints = dailyData.map(day => ({ x: day.timestamp, y: day.values[partName] || 0 }));
                     return {
+                        type: 'bar',
                         label: partName,
-                        data: dataPoints,
-                        borderColor: WellTrackApp.utils.generateColorFromHash(partName),
-                        backgroundColor: WellTrackApp.utils.generateColorFromHash(partName, 0.5),
-                        fill: false,
-                        tension: 0.1,
+                        data: dailyData.map(day => ({ x: day.timestamp, y: day.values[partName] || 0 })),
+                        backgroundColor: WellTrackApp.utils.generateColorFromHash(partName, 0.7),
                     };
                 });
+
+                // Line for the total cumulative pain
+                datasets.push({
+                    type: 'line',
+                    label: 'Gesamtschmerz',
+                    data: dailyData.map(day => ({ x: day.timestamp, y: day.total })),
+                    borderColor: 'rgba(103, 80, 164, 1)',
+                    backgroundColor: 'rgba(103, 80, 164, 0.1)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: 'rgba(103, 80, 164, 1)',
+                    fill: false,
+                    tension: 0.1,
+                    order: -1 // Render line on top
+                });
                 
-                if (datasets.length > 0) {
-                    const movingAverageData = WellTrackApp.utils.calculateMovingAverage(dailyData.map(d => ({x: d.timestamp, y: d.total})), 'pain_');
+                // Moving average line
+                const movingAverageData = WellTrackApp.utils.calculateMovingAverage(dailyData.map(d => ({x: d.timestamp, y: d.total})), 'pain_');
+                if (movingAverageData.length > 0) {
                     datasets.push({
-                        label: 'Durchschnitt',
+                        type: 'line',
+                        label: 'Durchschnitt (Gesamt)',
                         data: movingAverageData,
-                        borderColor: 'rgba(239, 68, 68, 0.8)',
+                        borderColor: 'rgba(96, 165, 250, 0.8)',
                         borderWidth: 2,
                         borderDash: [5, 5],
                         pointRadius: 0,
@@ -778,10 +797,27 @@ const WellTrackApp = {
                     });
                 }
                 
-                const yAxisOptions = { beginAtZero: true, stacked: true, title: { display: true, text: 'Schmerzintensität', ...WellTrackApp.config.CHART_FONT_OPTIONS }, ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 } };
+                const yAxisOptions = {
+                    stacked: true,
+                    title: { display: true, text: 'Kumulative Schmerzlast', ...WellTrackApp.config.CHART_FONT_OPTIONS },
+                    ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }
+                };
                 
                 if (WellTrackApp.state.charts.pain) { WellTrackApp.state.charts.pain.destroy(); }
-                WellTrackApp.state.charts.pain = new Chart(ctx, { type: 'line', data: { datasets }, options: { plugins: { legend: { position: 'bottom', labels: {...WellTrackApp.config.CHART_FONT_OPTIONS} } }, scales: { x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd.MM' } }, grid: { display: false }, ticks: {...WellTrackApp.config.CHART_FONT_OPTIONS} }, y: yAxisOptions } } });
+                WellTrackApp.state.charts.pain = new Chart(ctx, {
+                    type: 'bar', // Default type is bar
+                    data: { datasets },
+                    options: {
+                        plugins: {
+                            legend: { position: 'bottom', labels: { ...WellTrackApp.config.CHART_FONT_OPTIONS } },
+                            tooltip: { mode: 'index', intersect: false }
+                        },
+                        scales: {
+                            x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd.MM' } }, grid: { display: false }, ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS }, stacked: true },
+                            y: yAxisOptions
+                        }
+                    }
+                });
             },
             event() {
                 const eventChartContainer = document.getElementById('chart-container-event');
@@ -874,7 +910,7 @@ const WellTrackApp = {
                                             const details = rawData.details;
                                             const timestamps = Object.values(details).flat();
                                             if (timestamps.length > 0) {
-                                                const times = timestamps.map(ts => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })).join(', ');
+                                                const times = timestamps.map(ts => new Date(ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })).join(', ');
                                                 lines.push(`  Zeiten: ${times}`);
                                             }
 
@@ -1003,7 +1039,7 @@ const WellTrackApp = {
         components: {
             todaySection: () => {
                 const today = new Date();
-                const dateString = today.toLocaleDateString([], { day: 'numeric', month: 'long', year: 'numeric' });
+                const dateString = today.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
                 return `
                 <div class="card">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
@@ -1058,7 +1094,6 @@ const WellTrackApp = {
                         <div class="flex items-center gap-2">
                             <h2 id="mood-section-title" class="text-xl md:text-2xl font-semibold text-gray-700">Stimmung</h2>
                             <span id="mood-last-entry-time" class="text-sm text-gray-500"></span>
-                            <button id="add-another-mood-btn" onclick="WellTrackApp.events.handleCommitDay()" class="btn-secondary !p-1 !w-6 !h-6 rounded-full hidden" title="Nächsten Eintrag beginnen"><span class="material-symbols-outlined !text-base">add</span></button>
                         </div>
                         <div class="flex items-center gap-4">
                             <div class="inline-flex rounded-full shadow-sm" role="group">
@@ -1073,9 +1108,8 @@ const WellTrackApp = {
                 <div class="card">
                      <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <div class="flex items-center gap-2">
-                            <h2 id="pain-section-title" class="text-xl md:text-2xl font-semibold text-gray-700">Rückseite</h2>
+                            <h2 id="pain-section-title" class="text-xl md:text-2xl font-semibold text-gray-700">Schmerzen</h2>
                             <span id="pain-last-entry-time" class="text-sm text-gray-500"></span>
-                             <button id="add-another-pain-btn" onclick="WellTrackApp.events.handleCommitDay()" class="btn-secondary !p-1 !w-6 !h-6 rounded-full hidden" title="Nächsten Eintrag beginnen"><span class="material-symbols-outlined !text-base">add</span></button>
                         </div>
                         <div class="flex items-center gap-4">
                             <div class="inline-flex rounded-full shadow-sm" role="group">
@@ -1198,8 +1232,8 @@ const WellTrackApp = {
                     <button onclick="WellTrackApp.events.handleEventIncrement('${event.activity}', ${event.increment})" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full text-2xl">+</button>
                 </div>`,
             eventItemTimestamp: (event, isDoneToday, entries) => {
-                const lastEntry = entries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
-                const lastTimestamp = lastEntry ? `(${new Date(lastEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})` : '';
+                const lastEntry = entries.sort((a, b) => b.timestamp - a.timestamp)[0];
+                const lastTimestamp = lastEntry ? `(${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})` : '';
 
                 const buttonIcon = isDoneToday ? 'undo' : 'add';
                 const buttonText = isDoneToday ? 'Rückgängig' : (event.unitType || 'Einnahme');
@@ -1218,7 +1252,7 @@ const WellTrackApp = {
                 </div>`;
             },
             todaysLogEntry: (metric) => {
-                const time = new Date(metric.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const time = new Date(metric.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 if (metric.metric.startsWith('pain_')) {
                     const level = metric.value;
                     const props = WellTrackApp.config.PAIN_LEVELS[level] || {};
@@ -1244,14 +1278,37 @@ const WellTrackApp = {
                 // Events
                 const eventMetrics = metrics.filter(m => m.metric.startsWith('event_'));
                 if (eventMetrics.length > 0) {
-                    const eventDetails = eventMetrics.map(t => {
-                        if (t.metric.endsWith('_timestamp')) {
-                            const time = new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                            return `${t.labels.name} (${time})`;
-                        }
-                        return `${t.labels.name} (${t.value} ${t.labels.unitType || ''})`;
-                    }).join(', ');
-                     content += `<div><strong>Ereignisse:</strong><div class="text-xs text-gray-600">${eventDetails}</div></div>`;
+                    const incrementEvents = eventMetrics.filter(m => !m.metric.endsWith('_timestamp'));
+                    const timestampEvents = eventMetrics.filter(m => m.metric.endsWith('_timestamp'));
+
+                    let eventDetails = '';
+
+                    // Handle increment events first
+                    if (incrementEvents.length > 0) {
+                        eventDetails += incrementEvents.map(t => {
+                            return `${t.labels.name} (${t.value} ${t.labels.unitType || ''})`;
+                        }).join(', ');
+                    }
+
+                    // Handle timestamp events, grouped by name
+                    if (timestampEvents.length > 0) {
+                        const groupedTimestamps = timestampEvents.reduce((acc, t) => {
+                            if (!acc[t.labels.name]) {
+                                acc[t.labels.name] = [];
+                            }
+                            acc[t.labels.name].push(new Date(t.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                            return acc;
+                        }, {});
+
+                        const timestampStrings = Object.entries(groupedTimestamps).map(([name, times]) => {
+                            return `${name} (um ${times.join(', ')})`;
+                        });
+
+                        if (eventDetails) eventDetails += ', ';
+                        eventDetails += timestampStrings.join(', ');
+                    }
+
+                    content += `<div><strong>Ereignisse:</strong><div class="text-xs text-gray-600">${eventDetails}</div></div>`;
                 }
                 
                 // Mood
@@ -1260,7 +1317,7 @@ const WellTrackApp = {
                     let moodDetails = moodMetrics.map(m => {
                         const color = WellTrackApp.utils.generateColorFromHash(m.labels.name);
                         const valueColorClass = m.value > 0 ? 'text-green-600' : 'text-red-600';
-                         const time = new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                         const time = new Date(m.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                         return `<span class="inline-flex items-center gap-1 text-xs text-gray-600 mr-2">
                                     <span class="w-3 h-3 rounded-full" style="background-color: ${color}"></span>
                                     (${time}) ${m.labels.name} (<span class="font-semibold ${valueColorClass}">${m.value > 0 ? '+' : ''}${m.value}</span>)
@@ -1276,7 +1333,7 @@ const WellTrackApp = {
                         const props = WellTrackApp.config.PAIN_LEVELS[p.value] || {};
                         const color = props.color || '#ccc';
                         const textColor = (p.value > 2 && p.value < 6) ? 'white' : 'black';
-                        const time = new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const time = new Date(p.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                         return `(${time}) ${p.labels.name} (<span class="font-semibold px-1 rounded" style="background-color:${color}; color:${textColor};">${p.value}</span>)`;
                     }).join(', ');
                     content += `<div><strong>Schmerz:</strong><div class="text-xs text-gray-600">${painDetails}</div></div>`;
@@ -1411,10 +1468,28 @@ const WellTrackApp = {
             const part = WellTrackApp.state.currentPainPart; if (!part) return;
             
             let metrics = WellTrackApp.data.getMetrics();
+            const committedIndex = WellTrackApp.data.getSettings().committedIndex;
+            const now = Math.floor(Date.now() / 1000);
+
+            // Search for the last entry for this body part in the last 10 minutes
+            let foundIndex = -1;
+            for (let i = metrics.length - 1; i > committedIndex; i--) {
+                const entry = metrics[i];
+                if (entry.labels.body_part === part.id) {
+                    if (now - entry.timestamp < 600) {
+                        foundIndex = i;
+                    }
+                    break; // Stop after finding the most recent entry for this part
+                }
+            }
+
+            if (foundIndex > -1) {
+                metrics.splice(foundIndex, 1);
+            }
             
             const newEntry = {
                 metric: `pain_${part.id}_level`,
-                timestamp: new Date().toISOString(),
+                timestamp: now,
                 labels: { body_part: part.id, name: part.dataset.name }, 
                 value: parseInt(level, 10)
             };
@@ -1422,7 +1497,7 @@ const WellTrackApp = {
             if (level === 0) {
                  part.style.fill = WellTrackApp.config.DEFAULT_BODY_COLOR; 
                  delete part.dataset.level; 
-                 // We don't save a "0" entry, absence of entry means 0 pain.
+                 // We don't save a "0" entry, we just removed the old one.
             } else { 
                 part.style.fill = WellTrackApp.config.PAIN_LEVELS[level].color; 
                 part.dataset.level = level; 
@@ -1438,15 +1513,37 @@ const WellTrackApp = {
             if (!event) return;
 
             let allMetrics = WellTrackApp.data.getMetrics();
+            const committedIndex = WellTrackApp.data.getSettings().committedIndex;
 
-            // The logic is simplified: just add a new metric for each increment/decrement.
-            // The summation for display happens in render.eventListByGroup.
-            allMetrics.push({ 
-                metric: `event_${activity}_value`, 
-                timestamp: new Date().toISOString(), 
-                labels: { activity: event.activity, name: event.name, unitType: event.unitType, groupType: event.groupType || '' }, 
-                value: increment 
-            });
+            // Find the existing entry for this activity today
+            let foundIndex = -1;
+            let currentValue = 0;
+
+            // Search backwards from the end in today's uncommitted metrics
+            for (let i = allMetrics.length - 1; i > committedIndex; i--) {
+                if (allMetrics[i].labels.activity === activity) {
+                    foundIndex = i;
+                    currentValue = allMetrics[i].value;
+                    break;
+                }
+            }
+
+            // If an entry was found, remove it from the array
+            if (foundIndex > -1) {
+                allMetrics.splice(foundIndex, 1);
+            }
+
+            const newValue = currentValue + increment;
+
+            // Only add a new entry if the value is positive
+            if (newValue > 0) {
+                allMetrics.push({
+                    metric: `event_${activity}_value`,
+                    timestamp: Math.floor(Date.now() / 1000),
+                    labels: { activity: event.activity, name: event.name, unitType: event.unitType, groupType: event.groupType || '' },
+                    value: newValue
+                });
+            }
             
             WellTrackApp.data.saveMetrics(allMetrics);
             
@@ -1459,7 +1556,7 @@ const WellTrackApp = {
             let metrics = WellTrackApp.data.getMetrics();
             metrics.push({
                 metric: `event_${activity}_timestamp`,
-                timestamp: new Date().toISOString(),
+                timestamp: Math.floor(Date.now() / 1000),
                 labels: { activity: event.activity, name: event.name, unitType: event.unitType, groupType: event.groupType || '' },
                 value: 1 // Value is 1 to be countable
             });
@@ -1475,9 +1572,9 @@ const WellTrackApp = {
                 .filter((m, index) => 
                     index > committedIndex &&
                     m.labels.activity === activity && 
-                    WellTrackApp.utils.isToday(new Date(m.timestamp))
+                    WellTrackApp.utils.isToday(new Date(m.timestamp * 1000))
                 )
-                .sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+                .sort((a,b) => b.timestamp - a.timestamp);
             
             if (todaysUncommittedTimestamps.length > 0) {
                 metrics.splice(todaysUncommittedTimestamps[0].originalIndex, 1);
@@ -1486,13 +1583,12 @@ const WellTrackApp = {
             }
         },
         handleChangePage(direction) {
-            const totalItems = Object.keys(WellTrackApp.data.getMetrics().reduce((acc, metric) => { acc[new Date(metric.timestamp).toLocaleDateString()] = true; return acc; }, {})).length;
+            const totalItems = Object.keys(WellTrackApp.data.getMetrics().reduce((acc, metric) => { acc[new Date(metric.timestamp * 1000).toLocaleDateString('de-DE')] = true; return acc; }, {})).length;
             const totalPages = Math.ceil(totalItems / WellTrackApp.config.ENTRIES_PER_PAGE);
             const newPage = WellTrackApp.state.currentPage + direction;
             if (newPage >= 1 && newPage <= totalPages) { WellTrackApp.render.fullLogPage(newPage); }
         },
         handleViewToggle(view) {
-            document.getElementById('pain-section-title').textContent = view === 'front' ? 'Vorderseite' : 'Rückseite';
             document.getElementById('body-front').classList.toggle('hidden', view !== 'front');
             document.getElementById('body-back').classList.toggle('hidden', view === 'front');
             document.getElementById('btn-view-front').classList.toggle('active', view === 'front');
@@ -1589,7 +1685,9 @@ const WellTrackApp = {
             const value = WellTrackApp.config.MOOD_VALUE_MAP[sliderValue];
             
             let metrics = WellTrackApp.data.getMetrics();
-            
+            const committedIndex = WellTrackApp.data.getSettings().committedIndex;
+            const now = Math.floor(Date.now() / 1000);
+
             let question;
             for (const groupKey in WellTrackApp.config.MOOD_GROUPS) {
                 const found = WellTrackApp.config.MOOD_GROUPS[groupKey].questions.find(q => q.id === moodId);
@@ -1597,9 +1695,26 @@ const WellTrackApp = {
             }
             if(!question) return;
 
+            // Search for the last entry of the same type in the last 10 minutes
+            let foundIndex = -1;
+            for (let i = metrics.length - 1; i > committedIndex; i--) {
+                const entry = metrics[i];
+                if (entry.labels.mood_id === moodId) {
+                    // Check if the entry is within the last 10 minutes
+                    if (now - entry.timestamp < 600) {
+                        foundIndex = i;
+                    }
+                    break; // Stop after finding the most recent entry of this type
+                }
+            }
+
+            if (foundIndex > -1) {
+                metrics.splice(foundIndex, 1); // Remove the old entry
+            }
+
             metrics.push({
                 metric: `mood_${moodId}_level`,
-                timestamp: new Date().toISOString(),
+                timestamp: now,
                 labels: { mood_id: moodId, name: question.name },
                 value: value
             });
@@ -1632,7 +1747,7 @@ const WellTrackApp = {
             const committedIndex = settings.committedIndex;
 
             const uncommittedMetrics = metrics.slice(committedIndex + 1);
-            const todaysUncommitted = uncommittedMetrics.filter(m => WellTrackApp.utils.isToday(new Date(m.timestamp)));
+            const todaysUncommitted = uncommittedMetrics.filter(m => WellTrackApp.utils.isToday(new Date(m.timestamp * 1000)));
 
             if (todaysUncommitted.length === 0) {
                 if(WellTrackApp.state.activePage === 'mood') WellTrackApp.render.moodPage();
@@ -1736,7 +1851,7 @@ const WellTrackApp = {
         summarizeMetrics(metrics) {
             const summarized = {};
             // Create a copy to sort without mutating the original
-            const sortedMetrics = [...metrics].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            const sortedMetrics = [...metrics].sort((a, b) => a.timestamp - b.timestamp);
 
             sortedMetrics.forEach((metric, index) => {
                 if (metric.metric.startsWith('event_') && !metric.metric.endsWith('_timestamp')) {
@@ -1758,14 +1873,15 @@ const WellTrackApp = {
             const timeRangeDays = WellTrackApp.state.timeRange || 7;
             const startDate = new Date(); startDate.setHours(0, 0, 0, 0); startDate.setDate(startDate.getDate() - (timeRangeDays - 1));
             
-            const filteredData = data.filter(entry => 
-                entry.metric.startsWith(metricPrefix) && 
-                new Date(entry.timestamp) >= startDate &&
-                filterFunc(entry)
-            );
+            const filteredData = data.filter(entry => {
+                const entryDate = new Date(entry.timestamp * 1000);
+                return entry.metric.startsWith(metricPrefix) &&
+                       entryDate >= startDate &&
+                       filterFunc(entry);
+            });
 
             const dailyTotals = filteredData.reduce((acc, entry) => {
-                let timestamp = new Date(entry.timestamp);
+                let timestamp = new Date(entry.timestamp * 1000);
                 let dayKey;
 
                 // For mood and pain, group by rounded timestamp to see intra-day changes
@@ -1773,9 +1889,9 @@ const WellTrackApp = {
                     const minutes = timestamp.getMinutes();
                     const roundedMinutes = Math.round(minutes / 15) * 15;
                     timestamp.setMinutes(roundedMinutes, 0, 0);
-                    dayKey = timestamp.getTime(); // Use the precise rounded time as the key
+                    dayKey = Math.floor(timestamp.getTime() / 1000); // Use the precise rounded time as the key
                 } else {
-                     dayKey = new Date(entry.timestamp).setHours(0, 0, 0, 0); // For events, group by day
+                     dayKey = new Date(entry.timestamp * 1000).setHours(0, 0, 0, 0); // For events, group by day
                 }
 
                 if (!acc[dayKey]) acc[dayKey] = { total: 0, positiveSum: 0, negativeSum: 0, values: {}, details: {} };
@@ -1805,7 +1921,7 @@ const WellTrackApp = {
             const allLabels = [...new Set(filteredData.map(p => p.labels.name))];
             
             const dailyData = Object.entries(dailyTotals).map(([timestamp, data]) => ({
-                timestamp: parseInt(timestamp),
+                timestamp: parseInt(timestamp) * 1000,
                 total: data.total,
                 positiveSum: data.positiveSum,
                 negativeSum: data.negativeSum,
@@ -1832,13 +1948,13 @@ const WellTrackApp = {
 
             const historicalData = allMetrics
                 .filter(entry => {
-                    const entryDate = new Date(entry.timestamp);
+                    const entryDate = new Date(entry.timestamp * 1000);
                     return entry.metric.startsWith(metricPrefix) &&
                            entryDate >= historicalStartDate &&
                            entryDate < firstVisibleDate &&
                            filterFunc(entry);
                 })
-                .map(entry => ({ x: new Date(entry.timestamp).setHours(0,0,0,0), y: entry.value }))
+                .map(entry => ({ x: new Date(entry.timestamp * 1000).setHours(0,0,0,0), y: entry.value }))
                 .reduce((acc, curr) => {
                      const day = acc.find(d => d.x === curr.x);
                      if(day) { day.y += curr.y } else { acc.push(curr) }
