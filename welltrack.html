@@ -791,7 +791,6 @@ const WellTrackApp = {
                         data: movingAverageData,
                         borderColor: 'rgba(96, 165, 250, 0.8)',
                         borderWidth: 2,
-                        borderDash: [5, 5],
                         pointRadius: 0,
                         fill: false,
                         tension: 0.4
@@ -809,6 +808,7 @@ const WellTrackApp = {
                     type: 'bar', // Default type is bar
                     data: { datasets },
                     options: {
+                        animation: false,
                         plugins: {
                             legend: { position: 'bottom', labels: { ...WellTrackApp.config.CHART_FONT_OPTIONS } },
                             tooltip: { mode: 'index', intersect: false }
@@ -870,7 +870,6 @@ const WellTrackApp = {
                             data: movingAverageData,
                             borderColor: 'rgba(239, 68, 68, 0.8)',
                             borderWidth: 2,
-                            borderDash: [5, 5],
                             pointRadius: 0,
                             fill: false,
                             tension: 0.4
@@ -881,7 +880,8 @@ const WellTrackApp = {
                     WellTrackApp.state.charts[groupKey] = new Chart(ctx, { 
                         type: 'line', 
                         data: { datasets }, 
-                        options: { 
+                        options: {
+                            animation: false,
                             plugins: { 
                                 legend: { position: 'bottom', labels: {...WellTrackApp.config.CHART_FONT_OPTIONS} },
                                 tooltip: {
@@ -952,7 +952,7 @@ const WellTrackApp = {
                         borderColor: 'rgba(103, 80, 164, 1)', // primary color
                         backgroundColor: 'rgba(103, 80, 164, 0.1)',
                         borderWidth: 2,
-                        pointRadius: 3,
+                        pointRadius: 2,
                         pointBackgroundColor: 'rgba(103, 80, 164, 1)',
                         fill: false,
                         tension: 0.1,
@@ -968,7 +968,6 @@ const WellTrackApp = {
                         data: movingAverageData,
                         borderColor: 'rgba(96, 165, 250, 0.8)', // blue-400
                         borderWidth: 2,
-                        borderDash: [5, 5],
                         pointRadius: 0,
                         fill: false,
                         tension: 0.4
@@ -986,6 +985,7 @@ const WellTrackApp = {
                     type: 'bar',
                     data: { datasets },
                     options: {
+                        animation: false,
                         plugins: { 
                             legend: { position: 'bottom', labels: { ...WellTrackApp.config.CHART_FONT_OPTIONS } },
                             tooltip: {
@@ -1295,37 +1295,38 @@ const WellTrackApp = {
                 // Events
                 const eventMetrics = metrics.filter(m => m.metric.startsWith('event_'));
                 if (eventMetrics.length > 0) {
-                    const incrementEvents = eventMetrics.filter(m => !m.metric.endsWith('_timestamp'));
-                    const timestampEvents = eventMetrics.filter(m => m.metric.endsWith('_timestamp'));
+                    const eventsByGroup = eventMetrics.reduce((acc, t) => {
+                        const group = t.labels.groupType || 'Ohne Gruppe';
+                        if (!acc[group]) acc[group] = { increment: [], timestamp: [] };
+                        if (t.metric.endsWith('_timestamp')) {
+                            acc[group].timestamp.push(t);
+                        } else {
+                            acc[group].increment.push(t);
+                        }
+                        return acc;
+                    }, {});
 
-                    let eventDetails = '';
+                    const groupDetails = Object.entries(eventsByGroup).map(([group, { increment, timestamp }]) => {
+                        let details = [];
+                        if (increment.length > 0) {
+                            const incrementDetails = increment.map(t => `${t.labels.name} (${t.value} ${t.labels.unitType || ''})`).join(', ');
+                            details.push(incrementDetails);
+                        }
 
-                    // Handle increment events first
-                    if (incrementEvents.length > 0) {
-                        eventDetails += incrementEvents.map(t => {
-                            return `${t.labels.name} (${t.value} ${t.labels.unitType || ''})`;
-                        }).join(', ');
-                    }
+                        if (timestamp.length > 0) {
+                            const groupedTimestamps = timestamp.reduce((acc, t) => {
+                                if (!acc[t.labels.name]) acc[t.labels.name] = [];
+                                acc[t.labels.name].push(new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                                return acc;
+                            }, {});
+                            const timestampDetails = Object.entries(groupedTimestamps).map(([name, times]) => `${name} (um ${times.join(', ')})`).join(', ');
+                            details.push(timestampDetails);
+                        }
 
-                    // Handle timestamp events, grouped by name
-                    if (timestampEvents.length > 0) {
-                        const groupedTimestamps = timestampEvents.reduce((acc, t) => {
-                            if (!acc[t.labels.name]) {
-                                acc[t.labels.name] = [];
-                            }
-                            acc[t.labels.name].push(new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-                            return acc;
-                        }, {});
+                        return `<strong>${group}:</strong> ${details.join('<hr class="my-1 border-gray-200">')}`;
+                    }).join('<br><br>');
 
-                        const timestampStrings = Object.entries(groupedTimestamps).map(([name, times]) => {
-                            return `${name} (um ${times.join(', ')})`;
-                        });
-
-                        if (eventDetails) eventDetails += ', ';
-                        eventDetails += timestampStrings.join(', ');
-                    }
-
-                    content += `<div><strong>Ereignisse:</strong><div class="text-xs text-gray-600">${eventDetails}</div></div>`;
+                    content += `<div><strong>Ereignisse:</strong><div class="text-xs text-gray-600">${groupDetails}</div></div>`;
                 }
                 
                 // Mood
@@ -1354,7 +1355,7 @@ const WellTrackApp = {
                         }).join(', ');
 
                         return `<div class="mb-1">
-                                    <strong>${firstEntryTime}:</strong> Gesamt Stimmung (<span class="font-bold ${totalScore > 0 ? 'text-green-600' : 'text-red-600'}">${totalScore > 0 ? '+' : ''}${totalScore}</span>), ${details}
+                                    <strong>${firstEntryTime}:</strong> Gesamt (<span class="font-bold ${totalScore > 0 ? 'text-green-600' : 'text-red-600'}">${totalScore > 0 ? '+' : ''}${totalScore}</span>), ${details}
                                 </div>`;
                     }).join('');
                     content += `<div><strong>Stimmung:</strong><div class="text-xs text-gray-600">${moodHtml}</div></div>`;
@@ -1382,13 +1383,11 @@ const WellTrackApp = {
 
                         const details = group.map(p => {
                             const props = WellTrackApp.config.PAIN_LEVELS[p.value] || {};
-                            const color = props.color || '#ccc';
-                            const textColor = (p.value > 2 && p.value < 6) ? 'white' : 'black';
-                            return `${p.labels.name} (<span class="font-semibold px-1 rounded" style="background-color:${color}; color:${textColor};">${p.value}</span>)`;
+                            return `${p.labels.name} (${props.short})(${p.value})`;
                         }).join(', ');
 
                         return `<div class="mb-1">
-                                    <strong>${firstEntryTime}:</strong> Gesamt Schmerz (<span class="font-bold">${totalScore}</span>), ${details}
+                                    <strong>${firstEntryTime}:</strong> Gesamt (<span class="font-bold">${totalScore}</span>), ${details}
                                 </div>`;
                     }).join('');
 
@@ -1964,7 +1963,7 @@ const WellTrackApp = {
                 // For mood and pain, group by rounded timestamp to see intra-day changes
                 if (metricPrefix === 'mood_' || metricPrefix === 'pain_') {
                     const minutes = timestamp.getMinutes();
-                    const roundedMinutes = Math.round(minutes / 15) * 15;
+                    const roundedMinutes = Math.round(minutes / 10) * 10;
                     timestamp.setMinutes(roundedMinutes, 0, 0);
                     dayKey = timestamp.getTime(); // Use MS for the key
                 } else {
@@ -2019,45 +2018,54 @@ const WellTrackApp = {
 
             if (!data || data.length === 0) return [];
 
-            // Fetch historical data for a more accurate starting average
             const allMetrics = WellTrackApp.data.getMetrics();
             const firstVisibleDate = new Date(data[0].x);
             const historicalStartDate = new Date(firstVisibleDate);
             historicalStartDate.setDate(firstVisibleDate.getDate() - windowSize);
 
-            const historicalData = allMetrics
+            const historicalMetrics = allMetrics
                 .filter(entry => {
                     const entryDate = new Date(entry.timestamp);
                     return entry.metric.startsWith(metricPrefix) &&
                            entryDate >= historicalStartDate &&
                            entryDate < firstVisibleDate &&
                            filterFunc(entry);
-                })
-                .map(entry => {
-                    const d = new Date(entry.timestamp);
-                    d.setHours(0, 0, 0, 0);
-                    return { x: d.getTime(), y: entry.value };
-                })
-                .reduce((acc, curr) => {
-                     const day = acc.find(d => d.x === curr.x);
-                     if(day) { day.y += curr.y } else { acc.push(curr) }
-                     return acc;
-                }, []);
+                });
+            
+            const dailyTotals = {};
+            historicalMetrics.forEach(entry => {
+                const d = new Date(entry.timestamp);
+                d.setHours(0,0,0,0);
+                const dayKey = d.getTime();
+                if(!dailyTotals[dayKey]) dailyTotals[dayKey] = 0;
+                const valueToAdd = entry.metric.endsWith('_timestamp') ? 1 : entry.value;
+                dailyTotals[dayKey] += valueToAdd;
+            });
+
+            const historicalData = [];
+            for (let i = 0; i < windowSize; i++) {
+                const tempDate = new Date(historicalStartDate);
+                tempDate.setDate(tempDate.getDate() + i);
+                tempDate.setHours(0,0,0,0);
+                const dayKey = tempDate.getTime();
+                historicalData.push({ x: dayKey, y: dailyTotals[dayKey] || 0 });
+            }
             
             const combinedData = [...historicalData, ...data];
 
-            if (combinedData.length < windowSize) return data.map(d => ({ x: d.x, y: null }));
-            
-            return data.map((point, index) => {
-                const combinedIndex = index + historicalData.length;
-                if(combinedIndex < windowSize -1) return {x: point.x, y: null};
+            const movingAverages = [];
+            for (let i = 0; i < data.length; i++) {
+                const dataPoint = data[i];
+                const combinedIndex = i + windowSize;
 
                 let sum = 0;
                 for (let j = 0; j < windowSize; j++) {
                     sum += combinedData[combinedIndex - j].y;
                 }
-                return { x: point.x, y: sum / windowSize };
-            });
+                movingAverages.push({ x: dataPoint.x, y: sum / windowSize });
+            }
+
+            return movingAverages;
         }
     }
 };
