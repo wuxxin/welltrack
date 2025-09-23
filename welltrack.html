@@ -295,7 +295,8 @@ const WellTrackApp = {
         notificationPermission: Notification.permission,
         activeMoodGroup: 'arousal_level',
         activeEventGroup: null, // Set to null initially, will be set to first group on page load
-        activeHistoryTab: 'event'
+        activeHistoryTab: 'event',
+        reloadedEvents: []
     },
 
     // --- CONFIGURATION ---
@@ -1235,10 +1236,16 @@ const WellTrackApp = {
                 const lastEntry = entries.sort((a, b) => b.timestamp - a.timestamp)[0];
                 const lastTimestamp = lastEntry ? `(${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})` : '';
 
-                const buttonIcon = isDoneToday ? 'undo' : 'add';
-                const buttonText = isDoneToday ? 'Rückgängig' : (event.unitType || 'Einnahme');
-                const buttonAction = isDoneToday ? `WellTrackApp.events.handleUndoTimestamp('${event.activity}')` : `WellTrackApp.events.handleTimestampEvent('${event.activity}')`;
-                const buttonClass = isDoneToday ? 'btn-tertiary' : 'btn-primary';
+                const isReloaded = WellTrackApp.state.reloadedEvents.includes(event.activity);
+
+                const buttonIcon = isDoneToday && !isReloaded ? 'refresh' : 'add';
+                const buttonText = isDoneToday && !isReloaded ? 'Erneut auslösen' : (event.unitType || 'Einnahme');
+
+                const buttonAction = isDoneToday && !isReloaded
+                    ? `WellTrackApp.events.handleReloadTimestampEvent('${event.activity}')`
+                    : `WellTrackApp.events.handleTimestampEvent('${event.activity}')`;
+
+                const buttonClass = isDoneToday && !isReloaded ? 'btn-secondary' : 'btn-primary';
 
                 return `
                 <span class="text-lg font-medium text-gray-800 flex-1 flex items-center gap-2">
@@ -1561,26 +1568,20 @@ const WellTrackApp = {
                 value: 1 // Value is 1 to be countable
             });
             WellTrackApp.data.saveMetrics(metrics);
+
+            // If this event was in the reloaded state, remove it
+            const index = WellTrackApp.state.reloadedEvents.indexOf(activity);
+            if (index > -1) {
+                WellTrackApp.state.reloadedEvents.splice(index, 1);
+            }
+
             WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
         },
-        handleUndoTimestamp(activity) {
-            let metrics = WellTrackApp.data.getMetrics();
-            const committedIndex = WellTrackApp.data.getSettings().committedIndex;
-            
-            const todaysUncommittedTimestamps = metrics
-                .map((m, index) => ({...m, originalIndex: index}))
-                .filter((m, index) => 
-                    index > committedIndex &&
-                    m.labels.activity === activity && 
-                    WellTrackApp.utils.isToday(new Date(m.timestamp * 1000))
-                )
-                .sort((a,b) => b.timestamp - a.timestamp);
-            
-            if (todaysUncommittedTimestamps.length > 0) {
-                metrics.splice(todaysUncommittedTimestamps[0].originalIndex, 1);
-                WellTrackApp.data.saveMetrics(metrics);
-                WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
+        handleReloadTimestampEvent(activity) {
+            if (!WellTrackApp.state.reloadedEvents.includes(activity)) {
+                WellTrackApp.state.reloadedEvents.push(activity);
             }
+            WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
         },
         handleChangePage(direction) {
             const totalItems = Object.keys(WellTrackApp.data.getMetrics().reduce((acc, metric) => { acc[new Date(metric.timestamp * 1000).toLocaleDateString('de-DE')] = true; return acc; }, {})).length;
@@ -1891,7 +1892,9 @@ const WellTrackApp = {
                     timestamp.setMinutes(roundedMinutes, 0, 0);
                     dayKey = timestamp.getTime(); // Use MS for the key
                 } else {
-                     dayKey = new Date(entry.timestamp * 1000).setHours(0, 0, 0, 0); // For events, group by day (already in MS)
+                    const d = new Date(entry.timestamp * 1000);
+                    d.setHours(0, 0, 0, 0);
+                    dayKey = d.getTime(); // For events, group by day (already in MS)
                 }
 
                 if (!acc[dayKey]) acc[dayKey] = { total: 0, positiveSum: 0, negativeSum: 0, values: {}, details: {} };
@@ -1954,7 +1957,11 @@ const WellTrackApp = {
                            entryDate < firstVisibleDate &&
                            filterFunc(entry);
                 })
-                .map(entry => ({ x: new Date(entry.timestamp * 1000).setHours(0,0,0,0), y: entry.value }))
+                .map(entry => {
+                    const d = new Date(entry.timestamp * 1000);
+                    d.setHours(0, 0, 0, 0);
+                    return { x: d.getTime(), y: entry.value };
+                })
                 .reduce((acc, curr) => {
                      const day = acc.find(d => d.x === curr.x);
                      if(day) { day.y += curr.y } else { acc.push(curr) }
