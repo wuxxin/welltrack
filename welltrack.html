@@ -1889,9 +1889,9 @@ const WellTrackApp = {
                     const minutes = timestamp.getMinutes();
                     const roundedMinutes = Math.round(minutes / 15) * 15;
                     timestamp.setMinutes(roundedMinutes, 0, 0);
-                    dayKey = Math.floor(timestamp.getTime() / 1000); // Use the precise rounded time as the key
+                    dayKey = timestamp.getTime(); // Use MS for the key
                 } else {
-                     dayKey = new Date(entry.timestamp * 1000).setHours(0, 0, 0, 0); // For events, group by day
+                     dayKey = new Date(entry.timestamp * 1000).setHours(0, 0, 0, 0); // For events, group by day (already in MS)
                 }
 
                 if (!acc[dayKey]) acc[dayKey] = { total: 0, positiveSum: 0, negativeSum: 0, values: {}, details: {} };
@@ -1921,7 +1921,7 @@ const WellTrackApp = {
             const allLabels = [...new Set(filteredData.map(p => p.labels.name))];
             
             const dailyData = Object.entries(dailyTotals).map(([timestamp, data]) => ({
-                timestamp: parseInt(timestamp) * 1000,
+                timestamp: parseInt(timestamp), // Already in MS
                 total: data.total,
                 positiveSum: data.positiveSum,
                 negativeSum: data.negativeSum,
