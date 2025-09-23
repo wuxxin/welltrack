@@ -61,90 +61,91 @@ def get_event_labels(event_config):
     }
 
 def generate_random_data():
-    """Generates 180 days of random health metrics."""
+    """Generates 180 days of random health metrics based on time windows and probabilities."""
     metrics = []
-    today = datetime.now().replace(hour=12, minute=0, second=0, microsecond=0)
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
     all_mood_questions = [q for group in MOOD_GROUPS.values() for q in group['questions']]
-    event_config = {event['activity']: event for event in DEFAULT_EVENTS_JSON}
 
     for i in range(179, -1, -1):
+        # --- Day Skipping Logic ---
+        day_roll = random.random()
+        if day_roll < 0.03:
+            continue # 3% chance of a missing day
+
         date = today - timedelta(days=i)
-        day_of_week = date.weekday() # Monday is 0 and Sunday is 6
 
-        def set_timestamp(hour, minute):
-            return (date.replace(hour=hour, minute=minute, second=random.randint(0, 59))).isoformat()
+        def get_random_timestamp(start_hour, end_hour, end_minute=59):
+            hour = random.randint(start_hour, end_hour)
+            minute = random.randint(0, end_minute)
+            second = random.randint(0, 59)
+            # Ensure end_hour and end_minute are respected
+            if hour == end_hour:
+                minute = random.randint(0, end_minute)
 
-        # --- EVENTS ---
-        if 'walking' in event_config and random.random() < 0.9:
-            event = event_config['walking']
-            duration = round(min(90, ((random.random() + random.random()) / 2 * 1.3) * 90))
-            if duration > 0:
+            dt_obj = date.replace(hour=hour, minute=minute, second=second)
+            return int(dt_obj.timestamp())
+
+        # --- Entry Block Logic ---
+        num_entries_roll = random.random()
+        num_entry_blocks = 3
+        if num_entries_roll < 0.05: # 5% chance
+            num_entry_blocks = 1
+        elif num_entries_roll < 0.15: # 10% chance
+            num_entry_blocks = 2
+
+        time_windows = [
+            (9, 11),  # 9:00 - 11:59
+            (17, 18), # 17:00 - 18:59
+            (23, 23, 50)  # 23:00 - 23:50
+        ]
+
+        selected_windows = random.sample(time_windows, num_entry_blocks)
+
+        for window in selected_windows:
+            ts = get_random_timestamp(*window)
+
+            # --- Generate Mood Data ---
+            num_mood_entries = random.randint(3, len(all_mood_questions))
+            mood_values = [random.choice([-3, -2, -1, 1, 2, 3]) for _ in range(num_mood_entries)]
+            random.shuffle(all_mood_questions)
+            for val, question in zip(mood_values, all_mood_questions[:num_mood_entries]):
                 metrics.append({
-                    'metric': f"event_{event['activity']}_value",
-                    'timestamp': set_timestamp(18, 30),
-                    'labels': get_event_labels(event),
-                    'value': duration
+                    'metric': f"mood_{question['id']}_level",
+                    'timestamp': ts + random.randint(-60, 60), # Add jitter
+                    'labels': {'mood_id': question['id'], 'name': question['name']},
+                    'value': val
                 })
 
-        if 'back_exercises' in event_config and day_of_week in [0, 1, 3, 4]:
-            # Mon, Tue, Thu, Fri
-            event = event_config['back_exercises']
-            metrics.append({
-                'metric': f"event_{event['activity']}_value",
-                'timestamp': set_timestamp(8, 0),
-                'labels': get_event_labels(event),
-                'value': 15
-            })
+            # --- Generate Pain Data ---
+            if random.random() < 0.6: # 60% chance of pain entry
+                num_pain_entries = random.randint(1, 4)
+                random.shuffle(ALL_BODY_PARTS)
+                for p in range(num_pain_entries):
+                    part = ALL_BODY_PARTS[p]
+                    metrics.append({
+                        'metric': f"pain_{part['id']}_level",
+                        'timestamp': ts + random.randint(-60, 60), # Add jitter
+                        'labels': {'body_part': part['id'], 'name': part['name']},
+                        'value': random.randint(1, 5)
+                    })
 
-        if 'coffee_cups' in event_config:
-            event = event_config['coffee_cups']
-            for c in range(random.randint(2, 4)):
-                metrics.append({
-                    'metric': f"event_{event['activity']}_value",
-                    'timestamp': set_timestamp(9 + c * 2, 15),
-                    'labels': get_event_labels(event),
-                    'value': 1
-                })
-
-        if 'ibuprofen_400' in event_config and random.random() < 5/7:
-            event = event_config['ibuprofen_400']
-            metrics.append({
-                'metric': f"event_{event['activity']}_timestamp",
-                'timestamp': set_timestamp(10, 0),
-                'labels': get_event_labels(event),
-                'value': 1
-            })
-            if day_of_week == 2: # Wednesday
-                metrics.append({
-                    'metric': f"event_{event['activity']}_timestamp",
-                    'timestamp': set_timestamp(16, 0),
-                    'labels': get_event_labels(event),
-                    'value': 1
-                })
-
-        # --- MOOD ---
-        mood_values = [random.choice([-1, 1]) for _ in range(8)] + [random.choice([-2, 2]) for _ in range(3)]
-        if i % 14 == 0:
-            mood_values.append(random.choice([-3, 3]))
-
-        random.shuffle(all_mood_questions)
-        for val, question in zip(mood_values, all_mood_questions):
-            metrics.append({'metric': f"mood_{question['id']}_level", 'timestamp': set_timestamp(20, 0), 'labels': {'mood_id': question['id'], 'name': question['name']}, 'value': val})
-
-        # --- PAIN ---
-        pain_chance = random.random()
-        random.shuffle(ALL_BODY_PARTS)
-        if pain_chance < 0.25: # 3x Level 2
-            for p in range(3):
-                part = ALL_BODY_PARTS[p]
-                metrics.append({'metric': f"pain_{part['id']}_level", 'timestamp': set_timestamp(14, 0), 'labels': {'body_part': part['id'], 'name': part['name']}, 'value': 2})
-        elif pain_chance < 0.5: # 1x Level 1
-            part = ALL_BODY_PARTS[0]
-            metrics.append({'metric': f"pain_{part['id']}_level", 'timestamp': set_timestamp(14, 0), 'labels': {'body_part': part['id'], 'name': part['name']}, 'value': 1})
-        elif pain_chance < 1: # 2x Level 1
-            for p in range(2):
-                part = ALL_BODY_PARTS[p]
-                metrics.append({'metric': f"pain_{part['id']}_level", 'timestamp': set_timestamp(14, 0), 'labels': {'body_part': part['id'], 'name': part['name']}, 'value': 1})
+            # --- Generate Event Data (less frequent) ---
+            if random.random() < 0.5: # 50% chance of an event entry
+                event_config = random.choice(DEFAULT_EVENTS_JSON)
+                if event_config['increment'] > 0: # Incrementing event
+                     metrics.append({
+                        'metric': f"event_{event_config['activity']}_value",
+                        'timestamp': ts + random.randint(-60, 60),
+                        'labels': get_event_labels(event_config),
+                        'value': event_config['increment'] * random.randint(1, 3)
+                    })
+                else: # Timestamp event
+                    metrics.append({
+                        'metric': f"event_{event_config['activity']}_timestamp",
+                        'timestamp': ts + random.randint(-60, 60),
+                        'labels': get_event_labels(event_config),
+                        'value': 1
+                    })
 
     # Sort metrics by timestamp, as expected by the app
     metrics.sort(key=lambda x: x['timestamp'])
@@ -161,7 +162,7 @@ def generate_random_data():
 
 if __name__ == "__main__":
     export_data = generate_random_data()
-    file_name = f"welltrack_export_{datetime.now().strftime('%Y-%m-%d')}.json"
+    file_name = f"welltrack_export_{int(datetime.now().timestamp())}.json"
 
     with open(file_name, 'w', encoding='utf-8') as f:
         json.dump(export_data, f, ensure_ascii=False, indent=2)
