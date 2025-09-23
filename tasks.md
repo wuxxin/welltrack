@@ -18,6 +18,21 @@ This document lists the implementation status of features and refactorings for t
 - Standardized all user-facing dates and times to German format (dd.mm.yyyy, HH:MM).
 - Corrected the CDN link for the `date-fns` library.
 
+**2025-09-24: UI/UX Improvements and Refactoring**
+- [X] **Mood Entry:** Prevented mood ruler clicks during page scroll by distinguishing between click and drag events.
+- [X] **Today Page:**
+    - [X] Redesigned header to split "Heute" and the date for better readability.
+    - [X] Redesigned summary cards to be more compact, space-efficient, and visually informative.
+- [X] **Event Entry:** Improved layout of event items to fit on a single line, even on smaller screens.
+- [X] **History Charts:**
+    - [X] Set a height of 800px for all charts to provide more detail on the Y-axis.
+    - [X] Dynamically increased chart width for 30-day (2x) and 180-day (4x) views, with horizontal scrolling for overflow.
+- [X] **Log Page (Protokoll):**
+    - [X] Made log cards wider with a larger base font size for better readability.
+    - [X] Completely restructured the card layout with the date on the top-right and clearly separated, indented sections for Events, Mood, and Pain.
+    - [X] Implemented a structured matrix/grid display for Mood and Pain sub-metrics, making them easier to compare.
+    - [X] Applied consistent color-coding to all relevant values (pain levels, mood scores) for at-a-glance understanding.
+
 ## **Resolved Problems and Solutions**
 
 
