@@ -29,10 +29,11 @@ This document lists the implementation status of features and refactorings for t
     - [X] Reverted dynamic width scaling for charts, maintaining a consistent 100% width.
 - [X] **Log Page (Protokoll):**
     - [X] Made log cards wider with a larger base font size for better readability.
-    - [X] Restructured the card layout with the date positioned to not interfere with content flow.
+    - [X] Restructured the card layout with the date positioned in the top-right, in the normal content flow.
     - [X] Implemented a structured matrix/grid display (3-4 columns) for Mood and Pain sub-metrics.
     - [X] Applied consistent color-coding to all relevant values.
     - [X] Hid timestamps for incrementing (non-timestamp) events.
+    - [X] Re-formatted timestamp events to "Um hh:mm: [Event Name]".
 
 ## **Resolved Problems and Solutions**
 

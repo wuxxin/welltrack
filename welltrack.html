@@ -1330,13 +1330,12 @@ const WellTrackApp = {
                     eventsHtml = Object.entries(eventsByGroup).map(([group, entries]) => {
                         const entryDetails = entries.map(t => {
                             const time = new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                            let valueHtml;
                             if (t.metric.endsWith('_timestamp')) {
-                                valueHtml = `um <span class="font-semibold">${time}</span>`;
+                                return `<div class="ml-4 text-gray-700 text-base">Um <span class="font-semibold">${time}</span>: ${t.labels.name}</div>`;
                             } else {
-                                valueHtml = `<span class="font-semibold">${t.value} ${t.labels.unitType || ''}</span>`;
+                                const valueHtml = `<span class="font-semibold">${t.value} ${t.labels.unitType || ''}</span>`;
+                                return `<div class="ml-4 text-gray-700 text-base">${t.labels.name}: ${valueHtml}</div>`;
                             }
-                            return `<div class="ml-4 text-gray-700 text-base">${t.labels.name}: ${valueHtml}</div>`;
                         }).join('');
                         return `<div class="mt-2"><h5 class="font-semibold text-lg">${group}</h5>${entryDetails}</div>`;
                     }).join('');
@@ -1432,14 +1431,14 @@ const WellTrackApp = {
                 };
 
                 return `
-                    <div class="relative">
-                        <div class="absolute top-0 right-0">
-                            <h3 class="font-bold text-lg text-gray-600">${date}</h3>
-                        </div>
-                        <div class="pr-24">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-grow">
                             ${buildSection('Ereignisse', eventsHtml)}
                             ${buildSection('Stimmung', moodHtml)}
                             ${buildSection('Schmerz', painHtml)}
+                        </div>
+                        <div class="flex-shrink-0 ml-4">
+                            <h3 class="font-bold text-lg text-gray-600 text-right">${date}</h3>
                         </div>
                     </div>
                 `;
