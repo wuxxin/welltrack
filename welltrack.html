@@ -296,7 +296,7 @@ const WellTrackApp = {
         activeMoodGroup: 'arousal_level',
         activeEventGroup: null, // Set to null initially, will be set to first group on page load
         activeHistoryTab: 'event',
-        reloadedEvents: []
+        pendingTimestampEvents: []
     },
 
     // --- CONFIGURATION ---
@@ -1236,16 +1236,28 @@ const WellTrackApp = {
                 const lastEntry = entries.sort((a, b) => b.timestamp - a.timestamp)[0];
                 const lastTimestamp = lastEntry ? `(${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})` : '';
 
-                const isReloaded = WellTrackApp.state.reloadedEvents.includes(event.activity);
+                const isPending = WellTrackApp.state.pendingTimestampEvents.includes(event.activity);
 
-                const buttonIcon = isDoneToday && !isReloaded ? 'refresh' : 'add';
-                const buttonText = isDoneToday && !isReloaded ? 'Erneut auslösen' : (event.unitType || 'Einnahme');
-
-                const buttonAction = isDoneToday && !isReloaded
-                    ? `WellTrackApp.events.handleReloadTimestampEvent('${event.activity}')`
-                    : `WellTrackApp.events.handleTimestampEvent('${event.activity}')`;
-
-                const buttonClass = isDoneToday && !isReloaded ? 'btn-secondary' : 'btn-primary';
+                let buttonsHtml = '';
+                if (isDoneToday && isPending) {
+                    // State B: Logged, but pending undo/confirm
+                    buttonsHtml = `
+                        <button onclick="WellTrackApp.events.handleUndoTimestamp('${event.activity}')" class="btn btn-tertiary">
+                            <span class="material-symbols-outlined mr-2">undo</span>Rückgängig
+                        </button>
+                        <button onclick="WellTrackApp.events.handleConfirmTimestampEvent('${event.activity}')" class="btn btn-secondary">
+                            <span class="material-symbols-outlined mr-2">refresh</span>Erneut
+                        </button>
+                    `;
+                } else {
+                    // State A (Not logged) or State C (Logged and confirmed)
+                    // Both show the same button to add a new entry.
+                    buttonsHtml = `
+                        <button onclick="WellTrackApp.events.handleTimestampEvent('${event.activity}')" class="btn btn-primary min-w-[150px]">
+                            <span class="material-symbols-outlined mr-2">add</span>${event.unitType || 'Einnahme'}
+                        </button>
+                    `;
+                }
 
                 return `
                 <span class="text-lg font-medium text-gray-800 flex-1 flex items-center gap-2">
@@ -1253,9 +1265,7 @@ const WellTrackApp = {
                     <span class="text-sm text-gray-500 font-normal">${lastTimestamp}</span>
                 </span>
                 <div class="flex items-center gap-3">
-                     <button onclick="${buttonAction}" class="btn ${buttonClass} min-w-[150px]">
-                        <span class="material-symbols-outlined mr-2">${buttonIcon}</span>${buttonText}
-                    </button>
+                    ${buttonsHtml}
                 </div>`;
             },
             todaysLogEntry: (metric) => {
@@ -1569,17 +1579,44 @@ const WellTrackApp = {
             });
             WellTrackApp.data.saveMetrics(metrics);
 
-            // If this event was in the reloaded state, remove it
-            const index = WellTrackApp.state.reloadedEvents.indexOf(activity);
-            if (index > -1) {
-                WellTrackApp.state.reloadedEvents.splice(index, 1);
+            // Add this event to the pending state
+            if (!WellTrackApp.state.pendingTimestampEvents.includes(activity)) {
+                WellTrackApp.state.pendingTimestampEvents.push(activity);
             }
 
             WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
         },
-        handleReloadTimestampEvent(activity) {
-            if (!WellTrackApp.state.reloadedEvents.includes(activity)) {
-                WellTrackApp.state.reloadedEvents.push(activity);
+        handleUndoTimestamp(activity) {
+            let metrics = WellTrackApp.data.getMetrics();
+            const committedIndex = WellTrackApp.data.getSettings().committedIndex;
+
+            const todaysUncommittedTimestamps = metrics
+                .map((m, index) => ({...m, originalIndex: index}))
+                .filter((m, index) =>
+                    index > committedIndex &&
+                    m.labels.activity === activity &&
+                    WellTrackApp.utils.isToday(new Date(m.timestamp * 1000))
+                )
+                .sort((a,b) => b.timestamp - a.timestamp);
+
+            if (todaysUncommittedTimestamps.length > 0) {
+                metrics.splice(todaysUncommittedTimestamps[0].originalIndex, 1);
+                WellTrackApp.data.saveMetrics(metrics);
+
+                // Remove from pending state
+                const index = WellTrackApp.state.pendingTimestampEvents.indexOf(activity);
+                if (index > -1) {
+                    WellTrackApp.state.pendingTimestampEvents.splice(index, 1);
+                }
+
+                WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
+            }
+        },
+        handleConfirmTimestampEvent(activity) {
+            // "Confirms" the last entry, making it permanent for the session and allowing a new one
+            const index = WellTrackApp.state.pendingTimestampEvents.indexOf(activity);
+            if (index > -1) {
+                WellTrackApp.state.pendingTimestampEvents.splice(index, 1);
             }
             WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
         },
