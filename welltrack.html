@@ -1329,31 +1329,70 @@ const WellTrackApp = {
                 }
                 
                 // Mood
-                const moodMetrics = metrics.filter(m => m.metric.startsWith('mood_'));
+                const moodMetrics = metrics.filter(m => m.metric.startsWith('mood_')).sort((a, b) => a.timestamp - b.timestamp);
                 if (moodMetrics.length > 0) {
-                    let moodDetails = moodMetrics.map(m => {
-                        const color = WellTrackApp.utils.generateColorFromHash(m.labels.name);
-                        const valueColorClass = m.value > 0 ? 'text-green-600' : 'text-red-600';
-                         const time = new Date(m.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        return `<span class="inline-flex items-center gap-1 text-xs text-gray-600 mr-2">
-                                    <span class="w-3 h-3 rounded-full" style="background-color: ${color}"></span>
-                                    (${time}) ${m.labels.name} (<span class="font-semibold ${valueColorClass}">${m.value > 0 ? '+' : ''}${m.value}</span>)
-                                </span>`;
+                    const moodGroups = [];
+                    let currentGroup = [];
+
+                    moodMetrics.forEach((metric, index) => {
+                        if (index > 0 && (metric.timestamp - moodMetrics[index-1].timestamp > 600)) {
+                            moodGroups.push(currentGroup);
+                            currentGroup = [];
+                        }
+                        currentGroup.push(metric);
+                    });
+                    moodGroups.push(currentGroup);
+
+                    let moodHtml = moodGroups.map(group => {
+                        if (group.length === 0) return '';
+                        const firstEntryTime = new Date(group[0].timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const totalScore = group.reduce((sum, m) => sum + m.value, 0);
+
+                        const details = group.map(m => {
+                             const valueColorClass = m.value > 0 ? 'text-green-600' : 'text-red-600';
+                             return `${m.labels.name} (<span class="font-semibold ${valueColorClass}">${m.value > 0 ? '+' : ''}${m.value}</span>)`;
+                        }).join(', ');
+
+                        return `<div class="mb-1">
+                                    <strong>${firstEntryTime}:</strong> Gesamt Stimmung (<span class="font-bold ${totalScore > 0 ? 'text-green-600' : 'text-red-600'}">${totalScore > 0 ? '+' : ''}${totalScore}</span>), ${details}
+                                </div>`;
                     }).join('');
-                    content += `<div><strong>Stimmung:</strong><div class="mt-1 flex flex-wrap">${moodDetails}</div></div>`;
+                    content += `<div><strong>Stimmung:</strong><div class="text-xs text-gray-600">${moodHtml}</div></div>`;
                 }
 
                 // Pain
-                const painMetrics = metrics.filter(m => m.metric.startsWith('pain_'));
+                const painMetrics = metrics.filter(m => m.metric.startsWith('pain_')).sort((a, b) => a.timestamp - b.timestamp);
                 if (painMetrics.length > 0) {
-                     const painDetails = painMetrics.map(p => {
-                        const props = WellTrackApp.config.PAIN_LEVELS[p.value] || {};
-                        const color = props.color || '#ccc';
-                        const textColor = (p.value > 2 && p.value < 6) ? 'white' : 'black';
-                        const time = new Date(p.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        return `(${time}) ${p.labels.name} (<span class="font-semibold px-1 rounded" style="background-color:${color}; color:${textColor};">${p.value}</span>)`;
-                    }).join(', ');
-                    content += `<div><strong>Schmerz:</strong><div class="text-xs text-gray-600">${painDetails}</div></div>`;
+                    const painGroups = [];
+                    let currentGroup = [];
+
+                    painMetrics.forEach((metric, index) => {
+                        if (index > 0 && (metric.timestamp - painMetrics[index-1].timestamp > 600)) {
+                            painGroups.push(currentGroup);
+                            currentGroup = [];
+                        }
+                        currentGroup.push(metric);
+                    });
+                    painGroups.push(currentGroup);
+
+                    let painHtml = painGroups.map(group => {
+                        if (group.length === 0) return '';
+                        const firstEntryTime = new Date(group[0].timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const totalScore = group.reduce((sum, m) => sum + m.value, 0);
+
+                        const details = group.map(p => {
+                            const props = WellTrackApp.config.PAIN_LEVELS[p.value] || {};
+                            const color = props.color || '#ccc';
+                            const textColor = (p.value > 2 && p.value < 6) ? 'white' : 'black';
+                            return `${p.labels.name} (<span class="font-semibold px-1 rounded" style="background-color:${color}; color:${textColor};">${p.value}</span>)`;
+                        }).join(', ');
+
+                        return `<div class="mb-1">
+                                    <strong>${firstEntryTime}:</strong> Gesamt Schmerz (<span class="font-bold">${totalScore}</span>), ${details}
+                                </div>`;
+                    }).join('');
+
+                    content += `<div><strong>Schmerz:</strong><div class="text-xs text-gray-600">${painHtml}</div></div>`;
                 }
 
                 return content + `</div>`;
