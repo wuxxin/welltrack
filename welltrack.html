@@ -435,7 +435,7 @@ const WellTrackApp = {
                 if (lastEntryTimeSpan) {
                     if (todaysPainMetrics.length > 0) {
                         const lastEntry = todaysPainMetrics[todaysPainMetrics.length - 1]; // Already sorted
-                        lastEntryTimeSpan.textContent = `(eingetragen um ${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+                        lastEntryTimeSpan.textContent = `(zuletzt um ${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
                     } else {
                         lastEntryTimeSpan.textContent = '';
                     }
@@ -457,7 +457,7 @@ const WellTrackApp = {
                 if (lastEntryTimeSpan) {
                     if (todaysMoodMetrics.length > 0) {
                         const lastEntry = todaysMoodMetrics[todaysMoodMetrics.length-1];
-                        lastEntryTimeSpan.textContent = `(eingetragen um ${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+                        lastEntryTimeSpan.textContent = `(zuletzt um ${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
                     } else {
                         lastEntryTimeSpan.textContent = '';
                     }
@@ -1234,7 +1234,7 @@ const WellTrackApp = {
                 </div>`,
             eventItemTimestamp: (event, isDoneToday, entries) => {
                 const lastEntry = entries.sort((a, b) => b.timestamp - a.timestamp)[0];
-                const lastTimestamp = lastEntry ? `(${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})` : '';
+                const lastTimestamp = lastEntry ? `(zuletzt um ${new Date(lastEntry.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})` : '';
 
                 const isPending = WellTrackApp.state.pendingTimestampEvents.includes(event.activity);
 
