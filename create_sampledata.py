@@ -81,7 +81,7 @@ def generate_random_data(config):
         print("Error: Configuration missing from HTML. Could not find mood, body, or event data.")
         return None
 
-    for i in range(179, -1, -1):
+    for i in range(180+28, 0, -1):
         # --- Day Skipping Logic ---
         day_roll = random.random()
         if day_roll < 0.03:
@@ -101,10 +101,10 @@ def generate_random_data(config):
         # --- Entry Block Logic ---
         num_entries_roll = random.random()
         num_entry_blocks = 3
-        if num_entries_roll < 0.05: num_entry_blocks = 1
+        if num_entries_roll < 0.025: num_entry_blocks = 1
         elif num_entries_roll < 0.15: num_entry_blocks = 2
 
-        time_windows = [(9, 11), (17, 18), (23, 23, 50)]
+        time_windows = [(9, 12), (17, 19), (23, 23, 50)]
         selected_windows = random.sample(time_windows, num_entry_blocks)
 
         for window in selected_windows:
@@ -144,7 +144,7 @@ def generate_random_data(config):
                         'metric': f"event_{event_config['activity']}_value",
                         'timestamp': ts + random.randint(-60000, 60000),
                         'labels': get_event_labels(event_config),
-                        'value': event_config['increment'] * random.randint(1, 3)
+                        'value': event_config['increment'] * random.randint(1, 4)
                     })
                 else:
                     metrics.append({
