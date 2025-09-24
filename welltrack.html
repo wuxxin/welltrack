@@ -1963,7 +1963,6 @@ const WellTrackApp = {
         isToday(date) {
             return this.isSameDay(date, new Date());
         },
-        scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); },
         slugify(text) {
             return text.toString().toLowerCase()
                 .replace(/\s+/g, '_')       // Replace spaces with _
