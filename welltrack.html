@@ -266,12 +266,6 @@
         <!-- Page content will be dynamically inserted here -->
     </main>
     
-    <!-- Floating Action Button for Scroll to Top -->
-    <div class="fixed bottom-6 right-6 z-10">
-        <button id="scroll-to-top" onclick="WellTrackApp.utils.scrollToTop()" class="fab opacity-0 transform translate-y-4 transition-all duration-300">
-            <span class="material-symbols-outlined">arrow_upward</span>
-        </button>
-    </div>
 
     <!-- Modal Structure -->
     <div id="modal-container" onclick="if (event.target === this) { WellTrackApp.render.modal.hide() }" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
@@ -739,7 +733,7 @@ const WellTrackApp = {
                 return;
             }
 
-            let listHtml = '<h3 class="text-lg font-semibold mb-2 text-gray-800">Heutige Einträge:</h3><ul class="space-y-2">';
+            let listHtml = '<h3 class="text-lg font-semibold mb-2 text-gray-800">Letzte Einträge:</h3><ul class="space-y-2">';
             summarizedToday.sort((a,b) => b.timestamp - a.timestamp).forEach(metric => {
                  listHtml += `<li class="text-sm text-gray-700">${this.components.todaysLogEntry(metric)}</li>`;
             });
@@ -806,7 +800,7 @@ const WellTrackApp = {
                 if (movingAverageData.length > 0) {
                     datasets.push({
                         type: 'line',
-                        label: 'Durchschnitt (Gesamt)',
+                        label: 'Durchschnitt',
                         data: movingAverageData,
                         borderColor: 'rgba(96, 165, 250, 0.8)',
                         borderWidth: 2,
@@ -818,7 +812,7 @@ const WellTrackApp = {
                 
                 const yAxisOptions = {
                     stacked: true,
-                    title: { display: true, text: 'Kumulative Schmerzlast', ...WellTrackApp.config.CHART_FONT_OPTIONS },
+                    title: { display: true, text: 'Schmerzwert', ...WellTrackApp.config.CHART_FONT_OPTIONS },
                     ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }
                 };
                 
@@ -858,13 +852,13 @@ const WellTrackApp = {
                     const canvas = document.createElement('canvas');
                     const container = document.createElement('div');
                     container.style.position = 'relative';
-                    container.style.height = '600px';
+                    container.style.height = '400px';
                     container.appendChild(canvas);
                     eventChartContainer.appendChild(container);
                     const ctx = canvas.getContext('2d');
 
                     const { dailyData } = WellTrackApp.utils.getDailyChartData('event_', d => activities.includes(d.labels.activity));
-                    
+
                     let chartLabel;
                     const isMultiActivityGroup = activities.length > 1;
 
@@ -977,7 +971,7 @@ const WellTrackApp = {
                         borderColor: 'rgba(103, 80, 164, 1)', // primary color
                         backgroundColor: 'rgba(103, 80, 164, 0.1)',
                         borderWidth: 2,
-                        pointRadius: 2,
+                        pointRadius: 1,
                         pointBackgroundColor: 'rgba(103, 80, 164, 1)',
                         fill: false,
                         tension: 0.1,
@@ -989,7 +983,7 @@ const WellTrackApp = {
                 if (movingAverageData.length > 0) {
                     datasets.push({
                         type: 'line',
-                        label: 'Durchschnitt (Gesamt)',
+                        label: 'Durchschnitt',
                         data: movingAverageData,
                         borderColor: 'rgba(96, 165, 250, 0.8)', // blue-400
                         borderWidth: 2,
@@ -1001,7 +995,7 @@ const WellTrackApp = {
                 
                 const yAxisOptions = {
                     stacked: true,
-                    title: { display: true, text: 'Kumulativer Stimmungswert', ...WellTrackApp.config.CHART_FONT_OPTIONS },
+                    title: { display: true, text: 'Stimmungswert', ...WellTrackApp.config.CHART_FONT_OPTIONS },
                     ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }
                 };
                 
@@ -1071,7 +1065,7 @@ const WellTrackApp = {
                 <div class="card">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-2xl font-semibold text-gray-700">Heute</h2>
-                        <span class="text-lg text-gray-500">${dateString}</span>
+                        <span class="text-lg text-gray-800">${dateString}</span>
                     </div>
                     <div id="todays-log-container"></div>
                 </div>
@@ -1210,8 +1204,8 @@ const WellTrackApp = {
                         </div>
                     </div>
                     <div id="chart-container-event" class="chart-container space-y-4"></div>
-                    <div id="chart-container-mood" class="chart-container hidden" style="position: relative; height: 600px;"><canvas id="moodChart"></canvas></div>
-                    <div id="chart-container-pain" class="chart-container hidden" style="position: relative; height: 600px;"><canvas id="painChart"></canvas></div>
+                    <div id="chart-container-mood" class="chart-container hidden" style="position: relative; height: 700px;"><canvas id="moodChart"></canvas></div>
+                    <div id="chart-container-pain" class="chart-container hidden" style="position: relative; height: 700px;"><canvas id="painChart"></canvas></div>
                 </div>`;
             },
             fullLogSection: () => `
@@ -1331,7 +1325,7 @@ const WellTrackApp = {
                         const entryDetails = entries.map(t => {
                             const time = new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                             if (t.metric.endsWith('_timestamp')) {
-                                return `<div class="ml-4 text-gray-700 text-base">Um <span class="font-semibold">${time}</span>: ${t.labels.name}</div>`;
+                                return `<div class="ml-4 text-gray-700 text-base"><span class="font-semibold">Um ${time}</span>: ${t.labels.name}</div>`;
                             } else {
                                 const valueHtml = `<span class="font-semibold">${t.value} ${t.labels.unitType || ''}</span>`;
                                 return `<div class="ml-4 text-gray-700 text-base">${t.labels.name}: ${valueHtml}</div>`;
@@ -1374,8 +1368,8 @@ const WellTrackApp = {
 
                         return `
                             <div class="mt-2">
-                                <h5 class="font-semibold text-lg">Um ${firstEntryTime} <span class="font-normal text-gray-600">(Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span>)</span></h5>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div>
+                                <h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600"> Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></span></h5>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div>
                             </div>`;
                     }).join('');
                 }
@@ -1413,7 +1407,7 @@ const WellTrackApp = {
 
                         return `
                              <div class="mt-2">
-                                <h5 class="font-semibold text-lg">Um ${firstEntryTime} <span class="font-normal text-gray-600">(Gesamt: <span class="font-bold ${totalColor}">${totalScore}</span>)</span></h5>
+                                <h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600">Gesamt: <span class="font-bold ${totalColor}">${totalScore}</span></span></h5>
                                 <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div>
                             </div>
                         `;
@@ -1431,15 +1425,14 @@ const WellTrackApp = {
                 };
 
                 return `
+                    <h3 class="font-bold text-lg text-gray-600">${date}</h3>
                     <div class="flex justify-between items-start">
                         <div class="flex-grow">
                             ${buildSection('Ereignisse', eventsHtml)}
                             ${buildSection('Stimmung', moodHtml)}
                             ${buildSection('Schmerz', painHtml)}
                         </div>
-                        <div class="flex-shrink-0 ml-4">
-                            <h3 class="font-bold text-lg text-gray-600 text-right">${date}</h3>
-                        </div>
+
                     </div>
                 `;
             },

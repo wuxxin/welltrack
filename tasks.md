@@ -17,6 +17,9 @@ This document lists the implementation status of features and refactorings for t
 - Rebuilt the pain history chart to be a stacked bar chart (for individual pain points) with a cumulative line graph and moving average, similar to the mood chart.
 - Standardized all user-facing dates and times to German format (dd.mm.yyyy, HH:MM).
 - Corrected the CDN link for the `date-fns` library.
+- Change all epoch seconds to standard epoch milliseconds in `welltrack.html` for consistency.
+- Repair `create_sampledata.py` to ensure all body parts, moods, and standard event types are sourced directly from `welltrack.html`.
+- Update `create_sampledata.py` to generate timestamps in milliseconds.
 
 **2025-09-24: UI/UX Improvements and Refactoring**
 - [X] **Mood Entry:** Prevented mood ruler clicks during page scroll by distinguishing between click and drag events.
@@ -37,11 +40,8 @@ This document lists the implementation status of features and refactorings for t
 
 ## **Resolved Problems and Solutions**
 
+## **New Tasks**
+
 
 ## **Planned Tasks**
 
-### 2025-09-23
-- [ ] Change all epoch seconds to standard epoch milliseconds in `welltrack.html` for consistency.
-- [ ] Repair `create_sampledata.py` to ensure all body parts, moods, and standard event types are sourced directly from `welltrack.html`.
-- [ ] Update `create_sampledata.py` to generate timestamps in milliseconds.
-- [ ] Update this file (`tasks.md`) to reflect the work done.
