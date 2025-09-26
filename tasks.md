@@ -42,6 +42,24 @@ This document lists the implementation status of features and refactorings for t
 
 ## **New Tasks**
 
+**2025-09-25: Comprehensive Refactoring and UI/UX Enhancements**
+- **Refactored Data Entry Logic:**
+  - Removed the `committedIndex` system entirely, simplifying data management.
+  - Implemented a new `addMetric` helper function to handle all data entries.
+  - **De-duplication Logic:**
+    - Event entries with increments now update the existing value if logged on the same day.
+    - Mood and Pain entries now update the previous value if made within a 10-minute window, preventing duplicate entries for the same feeling.
+- **Improved "Verlauf" (History) Page Calculations:**
+  - The moving average (mvg) calculation is now time-weighted for Mood and Pain, reflecting the duration each value was active for a more accurate trend analysis.
+  - For days with no pain data, a value of 0 is now assumed at noon to ensure a continuous moving average line.
+  - All moving average values are now rounded to two decimal places.
+- **Redesigned "Today" Page:**
+  - The page now prioritizes Mood and Pain summary cards.
+  - Below these, new cards for each event group are displayed. These cards are clickable and navigate directly to the "Events" page with the corresponding group tab pre-selected.
+- **UI Enhancements:**
+  - **Events Page:** The `+` and `-` buttons for incrementing events were replaced with centered Material Symbols icons for better visual alignment and consistency.
+- **Security Hardening:**
+  - Implemented a strict Content Security Policy (CSP) via a `<meta>` tag to restrict resource loading to trusted CDNs and prevent potential cross-site scripting (XSS) attacks.
 
 ## **Planned Tasks**
 
