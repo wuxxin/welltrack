@@ -2,6 +2,18 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+        style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        img-src 'self' data:;
+        connect-src 'self';
+        object-src 'none';
+        frame-ancestors 'none';
+        base-uri 'self';
+        form-action 'self';
+    ">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WellTrack Gesundheitstagebuch</title>
 
@@ -350,7 +362,6 @@ const WellTrackApp = {
     // --- INITIALIZATION ---
     init() {
         document.addEventListener('DOMContentLoaded', () => {
-            this.data.initializeCommittedState(); // First, determine committed state
             this.events.showPage(this.state.activePage);
             this.events.initEventListeners();
             this.events.registerServiceWorker();
@@ -361,31 +372,13 @@ const WellTrackApp = {
     data: {
         getSettings() {
             const settings = localStorage.getItem('wellTrackSettings');
-            const defaults = { committedIndex: -1, reminderTime: '' };
+            const defaults = { reminderTime: '' };
             return settings ? { ...defaults, ...JSON.parse(settings) } : defaults;
         },
         saveSettings(settings) {
-            localStorage.setItem('wellTrackSettings', JSON.stringify(settings));
-        },
-        initializeCommittedState() {
-            const metrics = this.getMetrics();
-            const settings = this.getSettings();
-            let lastCommittedIndex = settings.committedIndex;
-
-            // Auto-commit entries from previous days on startup
-            if (lastCommittedIndex < metrics.length - 1) {
-                for (let i = lastCommittedIndex + 1; i < metrics.length; i++) {
-                    const metricDate = new Date(metrics[i].timestamp);
-                    if (!WellTrackApp.utils.isToday(metricDate)) {
-                        lastCommittedIndex = i;
-                    } else {
-                        // Stop at the first entry for today
-                        break;
-                    }
-                }
-            }
-            
-            this.saveSettings({ ...settings, committedIndex: lastCommittedIndex });
+            // committedIndex is obsolete, ensure it's not saved.
+            const { committedIndex, ...rest } = settings;
+            localStorage.setItem('wellTrackSettings', JSON.stringify(rest));
         },
         getExportableData() {
             return {
@@ -393,6 +386,46 @@ const WellTrackApp = {
                 events: this.getEvents(),
                 settings: this.getSettings()
             };
+        },
+        addMetric(entry) {
+            let metrics = this.getMetrics();
+            const now = Date.now();
+
+            if (entry.metric.startsWith('event_') && !entry.metric.endsWith('_timestamp')) {
+                // For incrementing events, find and replace the entry for the same activity today.
+                const startOfToday = new Date();
+                startOfToday.setHours(0, 0, 0, 0);
+                const existingIndex = metrics.findIndex(oldEntry =>
+                    oldEntry.labels.activity === entry.labels.activity &&
+                    oldEntry.timestamp >= startOfToday.getTime()
+                );
+                if (existingIndex > -1) {
+                    metrics.splice(existingIndex, 1);
+                }
+            } else if (entry.metric.startsWith('mood_') || entry.metric.startsWith('pain_')) {
+                // For mood/pain, find and replace the entry for the same metric in the last 10 minutes.
+                const tenMinutesAgo = now - 600000;
+                let foundIndex = -1;
+                // Search from the end for performance.
+                for (let i = metrics.length - 1; i >= 0; i--) {
+                    const oldEntry = metrics[i];
+                    if (oldEntry.timestamp < tenMinutesAgo) break; // Optimization
+                    if (oldEntry.metric === entry.metric) {
+                        foundIndex = i;
+                        break;
+                    }
+                }
+                if (foundIndex > -1) {
+                    metrics.splice(foundIndex, 1);
+                }
+            }
+
+            // Only add entry if it has a non-zero value, or it's a timestamp event.
+            if ((entry.value !== 0) || entry.metric.endsWith('_timestamp')) {
+                 metrics.push(entry);
+            }
+
+            this.saveMetrics(metrics);
         },
         getMetrics() {
             // Sort metrics by timestamp on load to ensure index is always correct
@@ -420,12 +453,11 @@ const WellTrackApp = {
         loadTodaysState() {
             const page = WellTrackApp.state.activePage;
             const metrics = this.getMetrics();
-            const uncommittedMetrics = metrics.slice(this.getSettings().committedIndex + 1);
-            const todaysUncommittedMetrics = uncommittedMetrics.filter(e => WellTrackApp.utils.isToday(new Date(e.timestamp)));
+            const todaysMetrics = metrics.filter(e => WellTrackApp.utils.isToday(new Date(e.timestamp)));
             const now = Date.now();
            
             if (page === 'pain') {
-                const todaysPainMetrics = todaysUncommittedMetrics.filter(e => e.metric.startsWith('pain_'));
+                const todaysPainMetrics = todaysMetrics.filter(e => e.metric.startsWith('pain_'));
                 const lastEntryTimeSpan = document.getElementById('pain-last-entry-time');
                 if (lastEntryTimeSpan) {
                     if (todaysPainMetrics.length > 0) {
@@ -447,7 +479,7 @@ const WellTrackApp = {
                     }
                 });
             } else if (page === 'mood') {
-                const todaysMoodMetrics = todaysUncommittedMetrics.filter(e => e.metric.startsWith('mood_'));
+                const todaysMoodMetrics = todaysMetrics.filter(e => e.metric.startsWith('mood_'));
                 const lastEntryTimeSpan = document.getElementById('mood-last-entry-time');
                 if (lastEntryTimeSpan) {
                     if (todaysMoodMetrics.length > 0) {
@@ -541,7 +573,107 @@ const WellTrackApp = {
         todayPage() {
             const container = document.getElementById('app-container');
             container.innerHTML = this.components.todaySection();
-            this.todaysLog();
+
+            // --- Data fetching ---
+            const today = new Date();
+            const yesterday = new Date();
+            yesterday.setDate(today.getDate() - 1);
+
+            const allData = WellTrackApp.data.getMetrics();
+            const todaysMetrics = allData.filter(e => WellTrackApp.utils.isSameDay(new Date(e.timestamp), today));
+            const yesterdaysMetrics = allData.filter(e => WellTrackApp.utils.isSameDay(new Date(e.timestamp), yesterday));
+
+            const summarizedToday = WellTrackApp.utils.summarizeMetrics(todaysMetrics);
+            const summarizedYesterday = WellTrackApp.utils.summarizeMetrics(yesterdaysMetrics);
+
+            // --- Deltas ---
+            const renderDelta = (delta, unit = '', higherIsWorse = true) => {
+                if (yesterdaysMetrics.length === 0) return `<span class="text-lg text-gray-500">...</span>`;
+                if (delta === 0) return ``;
+                const isWorse = higherIsWorse ? delta > 0 : delta < 0;
+                const color = isWorse ? 'text-red-500' : 'text-green-500';
+                const sign = delta > 0 ? '+' : '';
+                return `<span class="text-sm ${color} font-semibold">${sign}${delta}${unit}</span>`;
+            };
+
+            // --- Render Mood and Pain Cards ---
+            const summaryContainer = document.getElementById('today-summary-cards');
+
+            const todaysTotalPain = summarizedToday.filter(m => m.metric.startsWith('pain_')).reduce((sum, m) => sum + m.value, 0);
+            const yesterdaysTotalPain = summarizedYesterday.filter(m => m.metric.startsWith('pain_')).reduce((sum, m) => sum + m.value, 0);
+            const painDelta = todaysTotalPain - yesterdaysTotalPain;
+
+            const todaysTotalMood = summarizedToday.filter(m => m.metric.startsWith('mood_')).reduce((sum, m) => sum + m.value, 0);
+            const yesterdaysTotalMood = summarizedYesterday.filter(m => m.metric.startsWith('mood_')).reduce((sum, m) => sum + m.value, 0);
+            const moodDelta = todaysTotalMood - yesterdaysTotalMood;
+
+            summaryContainer.innerHTML = `
+                <div onclick="WellTrackApp.events.showPage('mood')" class="bg-white p-4 rounded-xl cursor-pointer hover:shadow-lg transition-shadow flex justify-between items-center">
+                    <p class="text-lg font-semibold">Stimmung</p>
+                    <div class="text-right">
+                       <p class="text-3xl font-bold">${todaysTotalMood}</p>
+                       ${renderDelta(moodDelta, '', false)}
+                    </div>
+                </div>
+                <div onclick="WellTrackApp.events.showPage('pain')" class="bg-white p-4 rounded-xl cursor-pointer hover:shadow-lg transition-shadow flex justify-between items-center">
+                    <p class="text-lg font-semibold">Schmerzen</p>
+                    <div class="text-right">
+                       <p class="text-3xl font-bold">${todaysTotalPain}</p>
+                       ${renderDelta(painDelta, '', true)}
+                    </div>
+                </div>
+            `;
+
+            // --- Render Event Group Cards ---
+            const eventGroupsContainer = document.getElementById('today-event-groups');
+            const eventGroupsCard = document.getElementById('today-event-groups-card');
+            const allEvents = WellTrackApp.data.getEvents();
+            const eventGroups = [...new Set(allEvents.map(e => e.groupType || 'Ohne Gruppe'))].sort();
+
+            if (eventGroups.length === 0 || eventGroups.every(g => g === 'Ohne Gruppe' && !allEvents.some(e => !e.groupType))) {
+                if(eventGroupsCard) eventGroupsCard.classList.add('hidden');
+            } else {
+                if(eventGroupsCard) eventGroupsCard.classList.remove('hidden');
+                eventGroupsContainer.innerHTML = eventGroups.map(group => {
+                    const groupEvents = allEvents.filter(e => (e.groupType || 'Ohne Gruppe') === group);
+                    const groupActivityNames = groupEvents.map(e => e.activity);
+
+                    const todaysGroupMetrics = summarizedToday.filter(m => m.metric.startsWith('event_') && groupActivityNames.includes(m.labels.activity));
+
+                    const totalValue = todaysGroupMetrics.reduce((sum, m) => sum + m.value, 0);
+
+                    const groupKey = group === 'Ohne Gruppe' ? '*' : group;
+
+                    return `
+                        <div onclick="WellTrackApp.events.showEventPageForGroup('${groupKey}')" class="bg-white p-4 rounded-xl cursor-pointer hover:shadow-lg transition-shadow flex justify-between items-center">
+                            <p class="text-lg font-semibold">${group}</p>
+                            <p class="text-3xl font-bold">${totalValue}<span class="text-base font-medium ml-1"></span></p>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // --- Render Todays Log ---
+            const logContainer = document.getElementById('todays-log-container');
+            const logCard = document.getElementById('todays-log-card');
+            const existingNoEntriesP = document.getElementById('no-entries-today');
+            if(existingNoEntriesP) existingNoEntriesP.remove();
+
+            if (summarizedToday.length === 0) {
+                if(logCard) logCard.classList.add('hidden');
+                const appContainer = document.getElementById('app-container');
+                if(!document.getElementById('no-entries-today')) {
+                    appContainer.insertAdjacentHTML('beforeend', '<p id="no-entries-today" class="text-gray-500 text-center py-4">Noch keine Einträge für heute.</p>');
+                }
+            } else {
+                if(logCard) logCard.classList.remove('hidden');
+
+                let listHtml = '';
+                summarizedToday.sort((a,b) => b.timestamp - a.timestamp).forEach(metric => {
+                     listHtml += `<li class="text-sm text-gray-700">${this.components.todaysLogEntry(metric)}</li>`;
+                });
+                logContainer.innerHTML = listHtml;
+            }
         },
         eventPage() {
             const container = document.getElementById('app-container');
@@ -1062,12 +1194,24 @@ const WellTrackApp = {
                 const today = new Date();
                 const dateString = today.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
                 return `
-                <div class="card">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-2xl font-semibold text-gray-700">Heute</h2>
-                        <span class="text-lg text-gray-800">${dateString}</span>
+                <div class="flex justify-between items-center mb-4 px-1">
+                    <h2 class="text-2xl font-semibold text-gray-700">Heute</h2>
+                    <span class="text-lg text-gray-800">${dateString}</span>
+                </div>
+                <div id="today-summary-cards" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <!-- Mood and Pain cards will be rendered here -->
+                </div>
+                <div id="today-event-groups-card" class="card">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Ereignis-Gruppen</h3>
+                    <div id="today-event-groups" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Event group cards will be rendered here -->
                     </div>
-                    <div id="todays-log-container"></div>
+                </div>
+                <div id="todays-log-card" class="card">
+                    <h3 class="text-lg font-semibold mb-2 text-gray-800">Letzte Einträge</h3>
+                    <ul id="todays-log-container" class="space-y-2">
+                        <!-- Log entries will be rendered here -->
+                    </ul>
                 </div>
                 `;
             },
@@ -1249,9 +1393,13 @@ const WellTrackApp = {
             eventItemIncrement: (event, value) => `
                 <span class="text-base sm:text-lg font-medium text-gray-800 flex-1">${event.name}</span>
                 <div class="flex items-center gap-2">
-                    <button onclick="WellTrackApp.events.handleEventIncrement('${event.activity}', -${event.increment})" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-8 w-8 sm:h-10 sm:w-10 rounded-full text-xl sm:text-2xl flex-shrink-0">-</button>
+                    <button onclick="WellTrackApp.events.handleEventIncrement('${event.activity}', -${event.increment})" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined">remove</span>
+                    </button>
                     <span id="value-${event.activity}" class="text-xl sm:text-2xl font-semibold w-20 sm:w-24 text-center">${value} ${event.unitType}</span>
-                    <button onclick="WellTrackApp.events.handleEventIncrement('${event.activity}', ${event.increment})" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-8 w-8 sm:h-10 sm:w-10 rounded-full text-xl sm:text-2xl flex-shrink-0">+</button>
+                    <button onclick="WellTrackApp.events.handleEventIncrement('${event.activity}', ${event.increment})" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined">add</span>
+                    </button>
                 </div>`,
             eventItemTimestamp: (event, isDoneToday, entries) => {
                 const lastEntry = entries.sort((a, b) => b.timestamp - a.timestamp)[0];
@@ -1564,44 +1712,24 @@ const WellTrackApp = {
         handleSetPainLevel(level) {
             const part = WellTrackApp.state.currentPainPart; if (!part) return;
             
-            let metrics = WellTrackApp.data.getMetrics();
-            const committedIndex = WellTrackApp.data.getSettings().committedIndex;
-            const now = Date.now();
-
-            // Search for the last entry for this body part in the last 10 minutes
-            let foundIndex = -1;
-            for (let i = metrics.length - 1; i > committedIndex; i--) {
-                const entry = metrics[i];
-                if (entry.labels.body_part === part.id) {
-                    if (now - entry.timestamp < 600000) {
-                        foundIndex = i;
-                    }
-                    break; // Stop after finding the most recent entry for this part
-                }
-            }
-
-            if (foundIndex > -1) {
-                metrics.splice(foundIndex, 1);
-            }
-            
             const newEntry = {
                 metric: `pain_${part.id}_level`,
-                timestamp: now,
+                timestamp: Date.now(),
                 labels: { body_part: part.id, name: part.dataset.name }, 
                 value: parseInt(level, 10)
             };
 
+            WellTrackApp.data.addMetric(newEntry);
+
+            // Update UI immediately
             if (level === 0) {
                  part.style.fill = WellTrackApp.config.DEFAULT_BODY_COLOR; 
                  delete part.dataset.level; 
-                 // We don't save a "0" entry, we just removed the old one.
             } else { 
                 part.style.fill = WellTrackApp.config.PAIN_LEVELS[level].color; 
                 part.dataset.level = level; 
-                metrics.push(newEntry);
             }
             
-            WellTrackApp.data.saveMetrics(metrics);
             WellTrackApp.data.loadTodaysState(); // to update timestamp
             WellTrackApp.render.modal.hide();
         },
@@ -1610,54 +1738,41 @@ const WellTrackApp = {
             if (!event) return;
 
             let allMetrics = WellTrackApp.data.getMetrics();
-            const committedIndex = WellTrackApp.data.getSettings().committedIndex;
 
-            // Find the existing entry for this activity today
-            let foundIndex = -1;
-            let currentValue = 0;
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
 
-            // Search backwards from the end in today's uncommitted metrics
-            for (let i = allMetrics.length - 1; i > committedIndex; i--) {
-                if (allMetrics[i].labels.activity === activity) {
-                    foundIndex = i;
-                    currentValue = allMetrics[i].value;
-                    break;
-                }
-            }
+            const todaysEntry = allMetrics.find(m =>
+                m.labels.activity === activity &&
+                m.timestamp >= startOfToday.getTime()
+            );
 
-            // If an entry was found, remove it from the array
-            if (foundIndex > -1) {
-                allMetrics.splice(foundIndex, 1);
-            }
-
+            const currentValue = todaysEntry ? todaysEntry.value : 0;
             const newValue = currentValue + increment;
-
-            // Only add a new entry if the value is positive
-            if (newValue > 0) {
-                allMetrics.push({
-                    metric: `event_${activity}_value`,
-                    timestamp: Date.now(),
-                    labels: { activity: event.activity, name: event.name, unitType: event.unitType, groupType: event.groupType || '' },
-                    value: newValue
-                });
-            }
             
-            WellTrackApp.data.saveMetrics(allMetrics);
+            const newEntry = {
+                metric: `event_${activity}_value`,
+                timestamp: Date.now(),
+                labels: { activity: event.activity, name: event.name, unitType: event.unitType, groupType: event.groupType || '' },
+                value: newValue
+            };
+
+            WellTrackApp.data.addMetric(newEntry);
             
             // Re-render the list to update the value
             WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
         },
         handleTimestampEvent(activity) {
-             const event = WellTrackApp.data.getEvents().find(e => e.activity === activity);
+            const event = WellTrackApp.data.getEvents().find(e => e.activity === activity);
             if (!event) return;
-            let metrics = WellTrackApp.data.getMetrics();
-            metrics.push({
+
+            const newEntry = {
                 metric: `event_${activity}_timestamp`,
                 timestamp: Date.now(),
                 labels: { activity: event.activity, name: event.name, unitType: event.unitType, groupType: event.groupType || '' },
                 value: 1 // Value is 1 to be countable
-            });
-            WellTrackApp.data.saveMetrics(metrics);
+            };
+            WellTrackApp.data.addMetric(newEntry);
 
             // Add this event to the pending state
             if (!WellTrackApp.state.pendingTimestampEvents.includes(activity)) {
@@ -1668,19 +1783,22 @@ const WellTrackApp = {
         },
         handleUndoTimestamp(activity) {
             let metrics = WellTrackApp.data.getMetrics();
-            const committedIndex = WellTrackApp.data.getSettings().committedIndex;
 
-            const todaysUncommittedTimestamps = metrics
-                .map((m, index) => ({...m, originalIndex: index}))
-                .filter((m, index) =>
-                    index > committedIndex &&
-                    m.labels.activity === activity &&
-                    WellTrackApp.utils.isToday(new Date(m.timestamp))
-                )
-                .sort((a,b) => b.timestamp - a.timestamp);
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
 
-            if (todaysUncommittedTimestamps.length > 0) {
-                metrics.splice(todaysUncommittedTimestamps[0].originalIndex, 1);
+            // Find the last timestamp entry for this activity today
+            let lastEntryIndex = -1;
+            for(let i = metrics.length - 1; i >= 0; i--) {
+                const entry = metrics[i];
+                if (entry.labels.activity === activity && entry.metric.endsWith('_timestamp') && entry.timestamp >= startOfToday.getTime()) {
+                    lastEntryIndex = i;
+                    break;
+                }
+            }
+
+            if (lastEntryIndex > -1) {
+                metrics.splice(lastEntryIndex, 1);
                 WellTrackApp.data.saveMetrics(metrics);
 
                 // Remove from pending state
@@ -1817,10 +1935,6 @@ const WellTrackApp = {
 
             const sliderValue = parseInt(slider.value, 10);
             const value = WellTrackApp.config.MOOD_VALUE_MAP[sliderValue];
-            
-            let metrics = WellTrackApp.data.getMetrics();
-            const committedIndex = WellTrackApp.data.getSettings().committedIndex;
-            const now = Date.now();
 
             let question;
             for (const groupKey in WellTrackApp.config.MOOD_GROUPS) {
@@ -1829,31 +1943,14 @@ const WellTrackApp = {
             }
             if(!question) return;
 
-            // Search for the last entry of the same type in the last 10 minutes
-            let foundIndex = -1;
-            for (let i = metrics.length - 1; i > committedIndex; i--) {
-                const entry = metrics[i];
-                if (entry.labels.mood_id === moodId) {
-                    // Check if the entry is within the last 10 minutes
-                    if (now - entry.timestamp < 600000) {
-                        foundIndex = i;
-                    }
-                    break; // Stop after finding the most recent entry of this type
-                }
-            }
-
-            if (foundIndex > -1) {
-                metrics.splice(foundIndex, 1); // Remove the old entry
-            }
-
-            metrics.push({
+            const newEntry = {
                 metric: `mood_${moodId}_level`,
-                timestamp: now,
+                timestamp: Date.now(),
                 labels: { mood_id: moodId, name: question.name },
                 value: value
-            });
+            };
             
-            WellTrackApp.data.saveMetrics(metrics);
+            WellTrackApp.data.addMetric(newEntry);
             WellTrackApp.data.loadTodaysState(); // to update timestamp
         },
         handleMoodGroupToggle(groupId) {
@@ -1863,6 +1960,10 @@ const WellTrackApp = {
         handleEventGroupToggle(groupType) {
             WellTrackApp.state.activeEventGroup = groupType;
             WellTrackApp.render.eventPage();
+        },
+        showEventPageForGroup(groupKey) {
+            WellTrackApp.state.activeEventGroup = groupKey;
+            this.showPage('event');
         },
         handleHistoryTabClick(tabName, shouldAnimate = true) {
             WellTrackApp.state.activeHistoryTab = tabName;
@@ -1874,43 +1975,6 @@ const WellTrackApp = {
             document.querySelectorAll('.chart-container').forEach(container => {
                 container.classList.toggle('hidden', container.id !== `chart-container-${tabName}`);
             });
-        },
-        handleCommitDay() {
-            const metrics = WellTrackApp.data.getMetrics();
-            const settings = WellTrackApp.data.getSettings();
-            const committedIndex = settings.committedIndex;
-
-            const uncommittedMetrics = metrics.slice(committedIndex + 1);
-            const todaysUncommitted = uncommittedMetrics.filter(m => WellTrackApp.utils.isToday(new Date(m.timestamp)));
-
-            if (todaysUncommitted.length === 0) {
-                if(WellTrackApp.state.activePage === 'mood') WellTrackApp.render.moodPage();
-                if(WellTrackApp.state.activePage === 'pain') WellTrackApp.render.painPage();
-                return;
-            };
-
-            const todaysEvents = todaysUncommitted.filter(m => m.metric.startsWith('event_'));
-            const todaysMoodPain = todaysUncommitted.filter(m => !m.metric.startsWith('event_'));
-            
-            const reorderedTodaysMetrics = [...todaysMoodPain, ...todaysEvents];
-            
-            const newMetrics = [
-                ...metrics.slice(0, committedIndex + 1),
-                ...reorderedTodaysMetrics
-            ];
-
-            const newCommittedIndex = committedIndex + todaysMoodPain.length;
-
-            settings.committedIndex = newCommittedIndex;
-
-            WellTrackApp.data.saveMetrics(newMetrics);
-            WellTrackApp.data.saveSettings(settings);
-
-            WellTrackApp.render.todayPage();
-            // After committing, refresh the mood/pain pages to clear the sliders/body
-            if(WellTrackApp.state.activePage === 'mood') WellTrackApp.render.moodPage();
-            if(WellTrackApp.state.activePage === 'pain') WellTrackApp.render.painPage();
-
         },
         async requestNotificationPermission() {
             const permission = await Notification.requestPermission();
@@ -2074,54 +2138,76 @@ const WellTrackApp = {
             else windowSize = 28;
 
             if (!data || data.length === 0) return [];
+            if (windowSize > data.length) windowSize = data.length;
 
-            const allMetrics = WellTrackApp.data.getMetrics();
             const firstVisibleDate = new Date(data[0].x);
             const historicalStartDate = new Date(firstVisibleDate);
-            historicalStartDate.setDate(firstVisibleDate.getDate() - windowSize);
+            historicalStartDate.setDate(firstVisibleDate.getDate() - windowSize + 1);
 
-            const historicalMetrics = allMetrics
-                .filter(entry => {
-                    const entryDate = new Date(entry.timestamp);
-                    return entry.metric.startsWith(metricPrefix) &&
-                           entryDate >= historicalStartDate &&
-                           entryDate < firstVisibleDate &&
-                           filterFunc(entry);
-                });
-            
-            const dailyTotals = {};
-            historicalMetrics.forEach(entry => {
-                const d = new Date(entry.timestamp);
-                d.setHours(0,0,0,0);
-                const dayKey = d.getTime();
-                if(!dailyTotals[dayKey]) dailyTotals[dayKey] = 0;
-                const valueToAdd = entry.metric.endsWith('_timestamp') ? 1 : entry.value;
-                dailyTotals[dayKey] += valueToAdd;
-            });
+            const lastVisibleDate = new Date(data[data.length - 1].x);
 
-            const historicalData = [];
-            for (let i = 0; i < windowSize; i++) {
-                const tempDate = new Date(historicalStartDate);
-                tempDate.setDate(tempDate.getDate() + i);
-                tempDate.setHours(0,0,0,0);
-                const dayKey = tempDate.getTime();
-                historicalData.push({ x: dayKey, y: dailyTotals[dayKey] || 0 });
+            const dailyAverages = [];
+            const allMetrics = WellTrackApp.data.getMetrics().filter(m => m.metric.startsWith(metricPrefix) && filterFunc(m));
+
+            for (let d = new Date(historicalStartDate); d <= lastVisibleDate; d.setDate(d.getDate() + 1)) {
+                const day = new Date(d);
+                day.setHours(0, 0, 0, 0);
+                let dailyAverage = 0;
+
+                if (metricPrefix.startsWith('mood_') || metricPrefix.startsWith('pain_')) {
+                    const startOfDay = day.getTime();
+                    const endOfDay = startOfDay + (24 * 60 * 60 * 1000) - 1;
+
+                    const metricsBefore = allMetrics
+                        .filter(m => m.timestamp < startOfDay)
+                        .sort((a, b) => b.timestamp - a.timestamp);
+                    const lastValue = metricsBefore.length > 0 ? metricsBefore[0].value : 0;
+
+                    let dayMetrics = allMetrics
+                        .filter(m => m.timestamp >= startOfDay && m.timestamp <= endOfDay)
+                        .sort((a, b) => a.timestamp - b.timestamp);
+
+                    if (metricPrefix.startsWith('pain_') && dayMetrics.length === 0) {
+                        const noon = new Date(day);
+                        noon.setHours(12, 0, 0, 0);
+                        dayMetrics.push({ timestamp: noon.getTime(), value: 0 });
+                    }
+
+                    const pointsInTime = [{ timestamp: startOfDay, value: lastValue }, ...dayMetrics];
+
+                    if (pointsInTime.length === 1) {
+                        dailyAverage = lastValue;
+                    } else {
+                        let weightedSum = 0;
+                        for (let i = 0; i < pointsInTime.length; i++) {
+                            const currentPoint = pointsInTime[i];
+                            const nextTimestamp = (i + 1 < pointsInTime.length) ? pointsInTime[i + 1].timestamp : endOfDay + 1;
+                            const duration = nextTimestamp - currentPoint.timestamp;
+                            weightedSum += currentPoint.value * duration;
+                        }
+                        dailyAverage = weightedSum / (endOfDay - startOfDay + 1);
+                    }
+                } else { // Events
+                    const startOfDay = day.getTime();
+                    const endOfDay = startOfDay + (24 * 60 * 60 * 1000) - 1;
+                    const dayMetrics = allMetrics.filter(m => m.timestamp >= startOfDay && m.timestamp <= endOfDay);
+                    dailyAverage = dayMetrics.reduce((sum, m) => sum + (m.value || 0), 0);
+                }
+                dailyAverages.push({ x: day.getTime(), y: dailyAverage });
             }
-            
-            const combinedData = [...historicalData, ...data];
 
             const movingAverages = [];
-            for (let i = 0; i < data.length; i++) {
-                const dataPoint = data[i];
-                const combinedIndex = i + windowSize;
+            if (dailyAverages.length < windowSize) return [];
 
-                let sum = 0;
-                for (let j = 0; j < windowSize; j++) {
-                    sum += combinedData[combinedIndex - j].y;
-                }
-                movingAverages.push({ x: dataPoint.x, y: sum / windowSize });
+            for (let i = windowSize - 1; i < dailyAverages.length; i++) {
+                const windowSlice = dailyAverages.slice(i - windowSize + 1, i + 1);
+                const sum = windowSlice.reduce((acc, val) => acc + val.y, 0);
+                const sma = sum / windowSize;
+                movingAverages.push({
+                    x: dailyAverages[i].x,
+                    y: parseFloat(sma.toFixed(2))
+                });
             }
-
             return movingAverages;
         }
     }
