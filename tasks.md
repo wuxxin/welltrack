@@ -85,12 +85,6 @@ This document lists the implementation status of features and refactorings for t
 - **CSP Fix:** The Content Security Policy was corrected by removing the `frame-ancestors` directive (which is not supported in meta tags) and adding `https://cdn.jsdelivr.net` to `connect-src` to allow Chart.js to fetch its source maps, resolving console errors.
 
 
-## **Resolved Problems and Solutions**
-
-## **New Tasks**
-
-## **Planned Tasks**
-
 **2025-09-29: Feature Update and UI/UX Overhaul**
 - **Documentation (`README.md`):**
   - Add clear links to the live GitHub Pages application.
@@ -120,3 +114,10 @@ This document lists the implementation status of features and refactorings for t
   - Add a confirmation dialog before import.
   - Provide three options: "Abbrechen" (Cancel), "An bestehende Daten anhängen" (Append), and "Alles überschreiben" (Overwrite).
   - Implement the "Append" logic to merge new event types and chronologically insert new metrics without creating duplicates.
+
+## **Resolved Problems and Solutions**
+
+## **New Tasks**
+
+## **Planned Tasks**
+

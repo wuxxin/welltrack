@@ -1,7 +1,7 @@
 # **WellTrack Gesundheitstagebuch**
 ![WellTrack Logo](icon-192.png)
 
-**[Klicken Sie hier, um WellTrack direkt im Browser zu nutzen (automatische Updates)](https://your-github-username.github.io/your-repo-name/welltrack.html)**
+**[Hier klicken , um WellTrack (mit Updates) im Browser zu nutzen](https://wuxxin.github.io/welltrack/welltrack.html)**
 
 WellTrack ist ein persönliches und 100 % privates Gesundheitstagebuch, das dabei hilft, Zusammenhänge zwischen Gewohnheiten, dem eigenen Befinden und der allgemeinen Gesundheit zu erkennen.
 
@@ -69,7 +69,7 @@ Passen Sie Ereignisarten an, verwalten Sie Ihre Daten durch Import/Export einer 
 
 Die einfachste Methode, WellTrack zu nutzen, ist über die gehostete Version, die immer auf dem neuesten Stand ist:
 
-**[Klicken Sie hier, um WellTrack zu starten](https://your-github-username.github.io/your-repo-name/welltrack.html)**
+**[Klicken Sie hier, um WellTrack zu starten](https://wuxxin.github.io/welltrack/welltrack.html)**
 
 ### **Installation auf dem Smartphone**
 

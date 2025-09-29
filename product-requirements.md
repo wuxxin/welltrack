@@ -25,7 +25,7 @@ The app is structured into several main pages for clear separation of concerns:
     * The duration of each session can be adjusted in 15-minute increments.
     * The app highlights Events sessions that are scheduled for the current day but not yet completed.
 * **Mood Logging:**
-    * On the "Mood" page, users rate various aspects of their mood on a 0 (most negative) to 5 (most positive) scale using visual sliders.
+    * On the "Mood" page, users rate various aspects of their mood on a -3 (most negative) to +3 (most positive) scale using visual sliders.
     * Moods are organized into switchable groups (e.g., "Energy & Motivation", "Well-being & Self-Esteem").
 * **Pain Logging:**
     * On the dedicated "Pain" page, users can select specific body parts on an interactive representation of the human body (front and back views).

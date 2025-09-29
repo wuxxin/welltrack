@@ -1,8 +1,6 @@
 # **Planning & Architecture for WellTrack Health Diary**
 
-## **Project Goal**
-
-The primary goal of the WellTrack Health Diary is to provide users with a simple, private, and offline-first Single-Page Application (SPA) to track and visualize personal health data. The application focuses on logging Events, Mood and Pain metrics, and presenting this data in an intuitive and insightful way. The user interface is in German.
+The WellTrack Health Diary is made to provide users with a simple, private, and offline-first Single-Page Application (SPA) to track and visualize personal health data. The application focuses on logging Events, Mood and Pain metrics, and presenting this data in an intuitive and insightful way. The user interface is in German.
 
 ## **Current Architecture: Vanilla JS SPA**
 
@@ -58,10 +56,10 @@ Documents:
 
 Software and Assets:
 
-* welltrack.html: The main application file containing all HTML, CSS, and JavaScript.
-* sw.js: The service worker for PWA caching and offline capabilities.
-* manifest.json: The PWA web app manifest.
-* icon-192.png / icon-512.png: Application icons.
+* welltrack.html: The main application file containing all HTML, CSS, and JavaScript
+* sw.js: The service worker for PWA caching and offline capabilities
+* manifest.json: The PWA web app manifest
+* icon-192.png , icon-512.png: Application icons
 
 
 ## **Future Development & Refactoring Plan**

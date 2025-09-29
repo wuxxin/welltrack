@@ -575,7 +575,7 @@ const WellTrackApp = {
 
                     for(const metric of imported.metrics) {
                         if (typeof metric.metric !== 'string' || typeof metric.timestamp !== 'number' || typeof metric.labels !== 'object' || metric.labels === null) {
-                            WellTrackApp.render.modal.showAlert('Fehler', `Ein Metrik-Eintrag in der Importdatei ist ungültig. Bitte überprüfen Sie die Datei. Fehlerhafter Eintrag: ${JSON.stringify(metric)}`);
+                            WellTrackApp.render.modal.showAlert('Fehler', `Ein Metrik-Eintrag in der Importdatei ist ungültig. Fehlerhafter Eintrag: ${JSON.stringify(metric)}`);
                             event.target.value = '';
                             return;
                         }
@@ -636,7 +636,7 @@ const WellTrackApp = {
 
                     const content = `
                         <h3 class="text-xl font-medium mb-4">Daten importieren</h3>
-                        <p class="mb-6">Möchtest du die aktuellen Daten wirklich überschreiben? Diese Aktion kann nicht rückgängig gemacht werden.</p>
+                        <p class="mb-6">Möchten Sie die aktuellen Daten wirklich überschreiben? Diese Aktion kann nicht rückgängig gemacht werden.</p>
                         <div class="flex flex-col gap-2">
                             <button id="import-append-btn" class="btn btn-secondary w-full">An bestehende Daten anhängen</button>
                             <button id="import-overwrite-btn" class="btn btn-error-primary w-full">Alles überschreiben</button>
@@ -2032,7 +2032,7 @@ const WellTrackApp = {
         handleRemoveEvent(index) {
             const events = WellTrackApp.data.getEvents();
             const eventNameToDelete = events[index].name;
-            WellTrackApp.render.modal.showConfirmation('Ereignis löschen', `Möchtest du das Ereignis "${eventNameToDelete}" wirklich entfernen?`, () => {
+            WellTrackApp.render.modal.showConfirmation('Ereignis löschen', `Möchten Sie das Ereignis "${eventNameToDelete}" wirklich entfernen?`, () => {
                 events.splice(index, 1);
                 WellTrackApp.data.saveEvents(events);
                 WellTrackApp.render.settingsPage();
@@ -2226,7 +2226,7 @@ const WellTrackApp = {
         handleDeleteAllData() {
             WellTrackApp.render.modal.showConfirmation(
                 'Alle Daten löschen',
-                'Bist du sicher, dass du alle deine Einträge und Einstellungen unwiderruflich löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.',
+                'Sind Sie sicher, dass Sie alle ihre Einträge und Einstellungen unwiderruflich löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
                 () => {
                     localStorage.removeItem('wellTrackMetrics');
                     localStorage.removeItem('wellTrackEvents');
