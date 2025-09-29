@@ -127,6 +127,8 @@
         .body-part { fill: var(--md-sys-color-surface-container-highest); stroke: var(--md-sys-color-outline); stroke-width: 0.5; cursor: pointer; transition: fill 0.2s ease-in-out; }
         .body-part:hover { fill: var(--md-sys-color-primary-container); }
         .svg-label { font-size: 8px; font-family: 'Roboto', sans-serif; fill: var(--md-sys-color-on-surface-variant); pointer-events: none; text-anchor: middle; }
+        .label { font-family: 'Roboto', sans-serif; font-size: 16px; font-weight: 500; fill: #5F6368; pointer-events: none; text-anchor: middle; dominant-baseline: central; transition: fill 0.2s ease-in-out; }
+        .body-part.selected + .label { fill: #FFFFFF; }
         
         .nav-btn {
             padding: 8px;
@@ -273,7 +275,7 @@
     </header>
 
     <!-- Main Content -->
-    <main id="app-container" class="container mx-auto max-w-4xl p-4 md:p-6">
+    <main id="app-container" class="container mx-auto max-w-4xl py-4 md:py-6">
         <!-- Page content will be dynamically inserted here -->
     </main>
     
@@ -301,7 +303,8 @@ const WellTrackApp = {
         activeMoodGroup: 'arousal_level',
         activeEventGroup: null, // Set to null initially, will be set to first group on page load
         activeHistoryTab: 'event',
-        sliderClickStartPosition: null
+        sliderClickStartPosition: null,
+        currentPainView: 'back'
     },
 
     // --- CONFIGURATION ---
@@ -354,6 +357,10 @@ const WellTrackApp = {
 
     // --- INITIALIZATION ---
     init() {
+        const savedPainView = localStorage.getItem('wellTrackPainView');
+        if (savedPainView) {
+            this.state.currentPainView = savedPainView;
+        }
         document.addEventListener('DOMContentLoaded', () => {
             this.events.showPage(this.state.activePage);
             this.events.initEventListeners();
@@ -597,13 +604,23 @@ const WellTrackApp = {
                         const importedMetrics = imported.metrics || [];
                         const metricsMap = new Map();
 
+                        const getCanonicalKey = (metric) => {
+                            const sortedLabels = Object.keys(metric.labels).sort().reduce(
+                                (obj, key) => {
+                                    obj[key] = metric.labels[key];
+                                    return obj;
+                                },
+                                {}
+                            );
+                            return `${metric.timestamp}|${metric.metric}|${JSON.stringify(sortedLabels)}`;
+                        };
+
                         currentMetrics.forEach(m => {
-                            const key = `${m.timestamp}|${m.metric}|${JSON.stringify(m.labels)}`;
-                            metricsMap.set(key, m);
+                            metricsMap.set(getCanonicalKey(m), m);
                         });
 
                         importedMetrics.forEach(m => {
-                            const key = `${m.timestamp}|${m.metric}|${JSON.stringify(m.labels)}`;
+                            const key = getCanonicalKey(m);
                             if (!metricsMap.has(key)) {
                                 metricsMap.set(key, m);
                             }
@@ -720,15 +737,27 @@ const WellTrackApp = {
                 group.activities.forEach(act => processedActivities.add(act));
             });
 
-            // Add remaining individual events
+            // Add remaining individual events that have a value today
             allEvents
                 .filter(e => !processedActivities.has(e.activity))
                 .forEach(event => {
-                    displayItems.push({
-                        isGroup: false, name: event.name, unit: event.unitType,
-                        groupKey: event.groupType || '*', activities: [event.activity],
-                        increment: event.increment
-                    });
+                    const itemMetrics = todaysEventMetrics.filter(m => m.labels.activity === event.activity);
+
+                    let totalValue = 0;
+                    if (event.increment === 0) { // Timestamp event
+                        totalValue = itemMetrics.length;
+                    } else { // Cumulative event
+                        const metric = WellTrackApp.utils.summarizeMetrics(itemMetrics)[0];
+                        totalValue = metric ? metric.value : 0;
+                    }
+
+                    if (totalValue > 0) {
+                        displayItems.push({
+                            isGroup: false, name: event.name, unit: event.unitType,
+                            groupKey: event.groupType || '*', activities: [event.activity],
+                            increment: event.increment
+                        });
+                    }
                 });
 
             // Render the items
@@ -1334,23 +1363,21 @@ const WellTrackApp = {
                 const today = new Date();
                 const dateString = today.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
                 return `
-                <div class="space-y-6">
-                    <div class="flex justify-between items-center px-1">
-                        <h2 class="text-2xl font-semibold text-gray-700">Heute</h2>
-                        <span class="text-lg text-gray-800">${dateString}</span>
-                    </div>
-                    <div id="today-summary-cards" class="grid grid-cols-2 gap-4">
-                        <!-- Mood and Pain cards will be rendered here -->
-                    </div>
-                    <div id="today-event-groups" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        <!-- Event group cards will be rendered here -->
-                    </div>
-                    <div id="todays-log-card" class="card">
-                        <h3 class="text-lg font-semibold mb-2 text-gray-800">Letzte Einträge</h3>
-                        <ul id="todays-log-container" class="space-y-2">
-                            <!-- Log entries will be rendered here -->
-                        </ul>
-                    </div>
+                <div class="flex justify-between items-center mb-4 px-1">
+                    <h2 class="text-2xl font-semibold text-gray-700">Heute</h2>
+                    <span class="text-lg text-gray-800">${dateString}</span>
+                </div>
+                <div id="today-summary-cards" class="grid grid-cols-2 gap-4 mb-6">
+                    <!-- Mood and Pain cards will be rendered here -->
+                </div>
+                <div id="today-event-groups" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
+                    <!-- Event group cards will be rendered here -->
+                </div>
+                <div id="todays-log-card" class="card">
+                    <h3 class="text-lg font-semibold mb-2 text-gray-800">Letzte Einträge</h3>
+                    <ul id="todays-log-container" class="space-y-2">
+                        <!-- Log entries will be rendered here -->
+                    </ul>
                 </div>
                 `;
             },
@@ -1409,7 +1436,9 @@ const WellTrackApp = {
                     <div id="mood-container" class="space-y-8">${activeGroup.questions.map(q => WellTrackApp.render.components.moodSlider(q)).join('')}</div>
                 </div>`;
             },
-            painSection: () => `
+            painSection: () => {
+                const currentView = WellTrackApp.state.currentPainView;
+                return `
                 <div class="card">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <div class="flex items-center gap-2">
@@ -1418,15 +1447,14 @@ const WellTrackApp = {
                         </div>
                         <div class="flex items-center gap-4">
                             <div class="inline-flex rounded-full shadow-sm" role="group">
-                                <button type="button" onclick="WellTrackApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100 active">Vorderseite</button>
-                                <button type="button" onclick="WellTrackApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100">Rückseite</button>
+                                <button type="button" onclick="WellTrackApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100 ${currentView === 'front' ? 'active' : ''}">Vorderseite</button>
+                                <button type="button" onclick="WellTrackApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100 ${currentView === 'back' ? 'active' : ''}">Rückseite</button>
                             </div>
                         </div>
                     </div>
                     <div class="flex justify-center">
-                        <svg id="pain-figure" width="400" height="650" viewBox="0 0 400 650">
-                            <style> .label { font-family: 'Roboto', sans-serif; font-size: 16px; font-weight: 500; fill: #5F6368; pointer-events: none; text-anchor: middle; dominant-baseline: central; transition: fill 0.2s ease-in-out; } .body-part.selected + .label { fill: #FFFFFF; } </style>
-                            <g id="body-front">
+                        <svg width="400" height="650" viewBox="0 0 400 650">
+                            <g id="body-front" class="${currentView === 'front' ? '' : 'hidden'}">
                                 <circle   id="front_head"          data-name="Kopf" class="body-part" cx="200" cy="50" r="45"></circle><text class="label" x="200" y="50">K</text>
                                 <rect     id="front_neck"          data-name="Nacken" class="body-part" x="180" y="99" width="40" height="45"></rect><text class="label" x="200" y="121.5">HWS</text>
                                 <rect     id="front_shoulder_left" data-name="Schulter (L)" class="body-part" x="55" y="99" width="121" height="45"></rect><text class="label" x="115.5" y="121.5">S</text>
@@ -1449,7 +1477,7 @@ const WellTrackApp = {
                                 <rect     id="front_foot_left"     data-name="Fuß (L)" class="body-part" x="128" y="598" width="50" height="40"></rect><text class="label" x="153" y="618">F</text>
                                 <rect     id="front_foot_right"    data-name="Fuß (R)" class="body-part" x="222" y="598" width="50" height="40"></rect><text class="label" x="247" y="618">F</text>
                             </g>
-                            <g id="body-back" class="hidden">
+                            <g id="body-back" class="${currentView === 'back' ? '' : 'hidden'}">
                                 <circle   id="back_head"           data-name="Hinterkopf" class="body-part" cx="200" cy="50" r="45"></circle><text class="label" x="200" y="50">K</text>
                                 <rect     id="back_neck"           data-name="Nacken" class="body-part" x="180" y="99" width="40" height="45"></rect><text class="label" x="200" y="121.5">HWS</text>
                                 <rect     id="back_shoulder_left"  data-name="Schulter (L, h)" class="body-part" x="55" y="99" width="121" height="45"></rect><text class="label" x="115.5" y="121.5">S</text>
@@ -1477,7 +1505,8 @@ const WellTrackApp = {
                             </g>
                         </svg>
                     </div>
-                </div>`,
+                </div>`;
+            },
             historySection: () => {
                 const activeTab = WellTrackApp.state.activeHistoryTab;
                 return `
@@ -1584,7 +1613,7 @@ const WellTrackApp = {
                             <span class="material-symbols-outlined mr-1 sm:mr-2">undo</span>Rückgängig
                         </button>
                         <button onclick="WellTrackApp.events.handleTimestampEvent('${event.activity}')" class="btn btn-secondary btn-sm">
-                            <span class="material-symbols-outlined mr-1 sm:mr-2">refresh</span>Erneut/e ${event.unitType || ''}
+                            <span class="material-symbols-outlined mr-1 sm:mr-2">refresh</span>Erneut/e ${event.unitType || 'Einnahme'}
                         </button>
                     `;
                 } else {
@@ -1989,6 +2018,8 @@ const WellTrackApp = {
             if (newPage >= 1 && newPage <= totalPages) { WellTrackApp.render.fullLogPage(newPage); }
         },
         handleViewToggle(view) {
+            WellTrackApp.state.currentPainView = view;
+            localStorage.setItem('wellTrackPainView', view);
             document.getElementById('body-front').classList.toggle('hidden', view !== 'front');
             document.getElementById('body-back').classList.toggle('hidden', view === 'front');
             document.getElementById('btn-view-front').classList.toggle('active', view === 'front');
@@ -2068,22 +2099,30 @@ const WellTrackApp = {
             document.getElementById('add-new-event-btn').classList.remove('hidden');
         },
         handleMoodRulerMouseDown(event) {
-            WellTrackApp.state.sliderClickStartPosition = { x: event.clientX, y: event.clientY };
+            WellTrackApp.state.sliderClickStartPosition = {
+                x: event.clientX,
+                y: event.clientY,
+                scrollX: window.scrollX,
+                scrollY: window.scrollY
+            };
         },
         handleMoodRulerMouseUp(event, moodId) {
-            if (!WellTrackApp.state.sliderClickStartPosition) return;
+            const startPos = WellTrackApp.state.sliderClickStartPosition;
+            if (!startPos) return;
 
-            const dx = Math.abs(event.clientX - WellTrackApp.state.sliderClickStartPosition.x);
-            const dy = Math.abs(event.clientY - WellTrackApp.state.sliderClickStartPosition.y);
+            const dx = Math.abs(event.clientX - startPos.x);
+            const dy = Math.abs(event.clientY - startPos.y);
+            const dScrollX = Math.abs(window.scrollX - startPos.scrollX);
+            const dScrollY = Math.abs(window.scrollY - startPos.scrollY);
 
             WellTrackApp.state.sliderClickStartPosition = null; // Reset for next time
 
-            // If moved more than a threshold, it was a drag/scroll, so do nothing.
-            if (dx > 5 || dy > 5) {
+            // If mouse moved more than a threshold OR the page scrolled, it was a drag/scroll.
+            if (dx > 5 || dy > 5 || dScrollX > 0 || dScrollY > 0) {
                 return;
             }
 
-            // It was a click, execute the original logic
+            // It was a true click, execute the original logic.
             if (event.target.type === 'range') return;
             const slider = document.getElementById(`mood-slider-${moodId}`);
             const rect = event.currentTarget.getBoundingClientRect();
