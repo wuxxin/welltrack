@@ -90,3 +90,33 @@ This document lists the implementation status of features and refactorings for t
 ## **New Tasks**
 
 ## **Planned Tasks**
+
+**2025-09-29: Feature Update and UI/UX Overhaul**
+- **Documentation (`README.md`):**
+  - Add clear links to the live GitHub Pages application.
+  - Add a new section explaining how to "install" the PWA on a smartphone, including the provided screenshot.
+  - Clarify the difference between using the live page and a local file regarding updates.
+- **GUI and Styling:**
+  - **Today Tab:** Re-style the event and mood cards into a more organized matrix layout.
+  - **Mood Tab:** Change mood entry to trigger on click release (mouseup) and prevent firing on scroll.
+  - **General Style:**
+    - Make all cards full-width.
+    - Ensure consistent padding on mood cards.
+    - Add a hover color to all clickable buttons.
+- **"PushButton" Event Logic:**
+  - The first button will be named after the event's `unitType`.
+  - After a click, it will be replaced by "Rückgängig" (Undo) and "Erneut/e [unitType]" (Again) buttons.
+  - "Erneut" will log a new event immediately.
+  - "Rückgängig" will undo the last entry of the day; if it's the last one, the UI reverts to the initial state.
+- **Reminder Settings:**
+  - **Inactive State:** Show "Status: Nicht aktiviert" and an "Aktivieren" button.
+  - **Active State:** Show "Status: aktiviert", a text field for multiple reminder times (e.g., "12:00, 17:00"), and "Deaktivieren" and "Test-Benachrichtigung" buttons.
+- **Body Pain Feature:**
+  - Replace the current body SVGs with the new versions from `new-body-front.html` and `new-body-back.html`.
+  - Add German `data-name` attributes to the new SVGs.
+  - Update the pain selection modal to display the figure name (e.g., "Rückseite") and the body part name.
+  - Add keyboard shortcuts (-, L, U, S, F, X, Escape) to the pain modal.
+- **Data Import:**
+  - Add a confirmation dialog before import.
+  - Provide three options: "Abbrechen" (Cancel), "An bestehende Daten anhängen" (Append), and "Alles überschreiben" (Overwrite).
+  - Implement the "Append" logic to merge new event types and chronologically insert new metrics without creating duplicates.
