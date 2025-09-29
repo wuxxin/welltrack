@@ -267,7 +267,7 @@
                         <span class="material-symbols-outlined">history</span>
                     </button>
                     <button id="nav-settings" onclick="WellTrackApp.events.showPage('settings')" class="nav-btn rounded-full" title="Einstellungen">
-                        <span class="material-symbols-outlined">settings</span>
+                        <span class="material-symbols-outlined">menu</span>
                     </button>
                 </nav>
             </div>
@@ -854,9 +854,10 @@ const WellTrackApp = {
             const groupedData = {};
             
             WellTrackApp.data.getMetrics().forEach(metric => {
-                const date = new Date(metric.timestamp).toLocaleDateString('de-DE');
-                if (!groupedData[date]) groupedData[date] = [];
-                groupedData[date].push(metric);
+                    const d = new Date(metric.timestamp);
+                    const dateKey = `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
+                    if (!groupedData[dateKey]) groupedData[dateKey] = [];
+                    groupedData[dateKey].push(metric);
             });
 
             const sortedDates = Object.keys(groupedData).sort((a, b) => {
@@ -881,7 +882,7 @@ const WellTrackApp = {
                 const formattedDate = `${dayName} ${dateString}`;
 
                 const div = document.createElement('div');
-                div.className = 'bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 text-base';
+                    div.className = 'py-4 border-b border-gray-200 last:border-b-0';
                 const summarizedMetrics = WellTrackApp.utils.summarizeMetrics(groupedData[dateString]);
                 div.innerHTML = this.components.logEntry(formattedDate, summarizedMetrics);
                 logContainer.appendChild(div);
@@ -1463,53 +1464,53 @@ const WellTrackApp = {
                     <div class="flex justify-center">
                         <svg width="400" height="650" viewBox="0 0 400 650">
                             <g id="body-front" class="${currentView === 'front' ? '' : 'hidden'}">
-                                <circle   id="front_head"          data-name="Kopf" class="body-part" cx="200" cy="50" r="45"></circle><text class="label" x="200" y="50">K</text>
-                                <rect     id="front_neck"          data-name="Nacken" class="body-part" x="180" y="99" width="40" height="45"></rect><text class="label" x="200" y="121.5">HWS</text>
-                                <rect     id="front_shoulder_left" data-name="Schulter (L)" class="body-part" x="55" y="99" width="121" height="45"></rect><text class="label" x="115.5" y="121.5">S</text>
-                                <rect     id="front_shoulder_right"data-name="Schulter (R)" class="body-part" x="224" y="99" width="121" height="45"></rect><text class="label" x="284.5" y="121.5">S</text>
-                                <rect     id="front_chest"         data-name="Brust" class="body-part" x="125" y="148" width="150" height="80"></rect><text class="label" x="200" y="188">B</text>
-                                <rect     id="front_abdomen"       data-name="Bauch" class="body-part" x="128" y="232" width="144" height="60"></rect><text class="label" x="200" y="262">BA</text>
-                                <rect     id="front_pelvis_left"   data-name="Becken (L)" class="body-part" x="128" y="296" width="62" height="60"></rect><text class="label" x="159" y="326">P</text>
-                                <rect     id="front_pelvis_right"  data-name="Becken (R)" class="body-part" x="210" y="296" width="62" height="60"></rect><text class="label" x="241" y="326">P</text>
-                                <rect     id="front_groin"         data-name="Leiste" class="body-part" x="190" y="326" width="20" height="40"></rect><text class="label" x="200" y="346">L</text>
-                                <rect     id="front_upper_arm_left" data-name="Oberarm (L)" class="body-part" x="51" y="148" width="41" height="100"></rect><text class="label" x="71.5" y="198">oA</text>
-                                <rect     id="front_lower_arm_left" data-name="Unterarm (L)" class="body-part" x="51" y="252" width="41" height="90"></rect><text class="label" x="71.5" y="297">uA</text>
-                                <rect     id="front_hand_left"     data-name="Hand (L)" class="body-part" x="47" y="346" width="50" height="50"></rect><text class="label" x="72" y="371">H</text>
-                                <rect     id="front_upper_arm_right" data-name="Oberarm (R)" class="body-part" x="308" y="148" width="41" height="100"></rect><text class="label" x="328.5" y="198">oA</text>
-                                <rect     id="front_lower_arm_right" data-name="Unterarm (R)" class="body-part" x="308" y="252" width="41" height="90"></rect><text class="label" x="328.5" y="297">uA</text>
-                                <rect     id="front_hand_right"    data-name="Hand (R)" class="body-part" x="304" y="346" width="50" height="50"></rect><text class="label" x="329" y="371">H</text>
-                                <rect     id="front_upper_leg_left" data-name="Oberschenkel (L)" class="body-part" x="133" y="360" width="41" height="120"></rect><text class="label" x="153.5" y="420">oB</text>
-                                <rect     id="front_lower_leg_left" data-name="Unterschenkel (L)" class="body-part" x="133" y="484" width="41" height="110"></rect><text class="label" x="153.5" y="539">uB</text>
-                                <rect     id="front_upper_leg_right" data-name="Oberschenkel (R)" class="body-part" x="227" y="360" width="41" height="120"></rect><text class="label" x="247.5" y="420">oB</text>
-                                <rect     id="front_lower_leg_right" data-name="Unterschenkel (R)" class="body-part" x="227" y="484" width="41" height="110"></rect><text class="label" x="247.5" y="539">uB</text>
-                                <rect     id="front_foot_left"     data-name="Fuß (L)" class="body-part" x="128" y="598" width="50" height="40"></rect><text class="label" x="153" y="618">F</text>
-                                <rect     id="front_foot_right"    data-name="Fuß (R)" class="body-part" x="222" y="598" width="50" height="40"></rect><text class="label" x="247" y="618">F</text>
+                                <circle   id="front_head"          data-name="Kopf" class="body-part" cx="200" cy="50" r="45"></circle>
+                                <rect     id="front_neck"          data-name="Nacken" class="body-part" x="180" y="99" width="40" height="45" rx="10"></rect>
+                                <rect     id="front_shoulder_left" data-name="Schulter (L)" class="body-part" x="55" y="99" width="121" height="45" rx="10"></rect>
+                                <rect     id="front_shoulder_right"data-name="Schulter (R)" class="body-part" x="224" y="99" width="121" height="45" rx="10"></rect>
+                                <rect     id="front_chest"         data-name="Brust" class="body-part" x="125" y="148" width="150" height="80" rx="10"></rect>
+                                <rect     id="front_abdomen"       data-name="Bauch" class="body-part" x="128" y="232" width="144" height="60" rx="10"></rect>
+                                <rect     id="front_pelvis_left"   data-name="Becken (L)" class="body-part" x="128" y="296" width="62" height="60" rx="10"></rect>
+                                <rect     id="front_pelvis_right"  data-name="Becken (R)" class="body-part" x="210" y="296" width="62" height="60" rx="10"></rect>
+                                <rect     id="front_groin"         data-name="Leiste" class="body-part" x="190" y="326" width="20" height="40" rx="10"></rect>
+                                <rect     id="front_upper_arm_left" data-name="Oberarm (L)" class="body-part" x="51" y="148" width="41" height="100" rx="10"></rect>
+                                <rect     id="front_lower_arm_left" data-name="Unterarm (L)" class="body-part" x="51" y="252" width="41" height="90" rx="10"></rect>
+                                <rect     id="front_hand_left"     data-name="Hand (L)" class="body-part" x="47" y="346" width="50" height="50" rx="10"></rect>
+                                <rect     id="front_upper_arm_right" data-name="Oberarm (R)" class="body-part" x="308" y="148" width="41" height="100" rx="10"></rect>
+                                <rect     id="front_lower_arm_right" data-name="Unterarm (R)" class="body-part" x="308" y="252" width="41" height="90" rx="10"></rect>
+                                <rect     id="front_hand_right"    data-name="Hand (R)" class="body-part" x="304" y="346" width="50" height="50" rx="10"></rect>
+                                <rect     id="front_upper_leg_left" data-name="Oberschenkel (L)" class="body-part" x="133" y="360" width="41" height="120" rx="10"></rect>
+                                <rect     id="front_lower_leg_left" data-name="Unterschenkel (L)" class="body-part" x="133" y="484" width="41" height="110" rx="10"></rect>
+                                <rect     id="front_upper_leg_right" data-name="Oberschenkel (R)" class="body-part" x="227" y="360" width="41" height="120" rx="10"></rect>
+                                <rect     id="front_lower_leg_right" data-name="Unterschenkel (R)" class="body-part" x="227" y="484" width="41" height="110" rx="10"></rect>
+                                <rect     id="front_foot_left"     data-name="Fuß (L)" class="body-part" x="128" y="598" width="50" height="40" rx="10"></rect>
+                                <rect     id="front_foot_right"    data-name="Fuß (R)" class="body-part" x="222" y="598" width="50" height="40" rx="10"></rect>
                             </g>
                             <g id="body-back" class="${currentView === 'back' ? '' : 'hidden'}">
-                                <circle   id="back_head"           data-name="Hinterkopf" class="body-part" cx="200" cy="50" r="45"></circle><text class="label" x="200" y="50">K</text>
-                                <rect     id="back_neck"           data-name="Nacken" class="body-part" x="180" y="99" width="40" height="45"></rect><text class="label" x="200" y="121.5">HWS</text>
-                                <rect     id="back_shoulder_left"  data-name="Schulter (L, h)" class="body-part" x="55" y="99" width="121" height="45"></rect><text class="label" x="115.5" y="121.5">S</text>
-                                <rect     id="back_shoulder_right" data-name="Schulter (R, h)" class="body-part" x="224" y="99" width="121" height="45"></rect><text class="label" x="284.5" y="121.5">S</text>
-                                <rect     id="back_upper_back_left" data-name="Oberer Rücken (L)" class="body-part" x="125" y="148" width="56.25" height="80"></rect><text class="label" x="153.125" y="188">B-L</text>
-                                <rect     id="back_upper_back_middle" data-name="Obere Wirbelsäule" class="body-part" x="181.25" y="148" width="37.5" height="80"></rect><text class="label" x="200" y="188">BWS</text>
-                                <rect     id="back_upper_back_right" data-name="Oberer Rücken (R)" class="body-part" x="218.75" y="148" width="56.25" height="80"></rect><text class="label" x="246.875" y="188">B-R</text>
-                                <rect     id="back_lower_back_left" data-name="Unterer Rücken (L)" class="body-part" x="128" y="232" width="54" height="60"></rect><text class="label" x="155" y="262">L-L</text>
-                                <rect     id="back_lower_back_middle" data-name="Untere Wirbelsäule" class="body-part" x="182" y="232" width="36" height="124"></rect><text class="label" x="200" y="294">LWS</text>
-                                <rect     id="back_lower_back_right" data-name="Unterer Rücken (R)" class="body-part" x="218" y="232" width="54" height="60"></rect><text class="label" x="245" y="262">L-R</text>
-                                <rect     id="back_glute_left"     data-name="Gesäß (L)" class="body-part" x="128" y="296" width="50" height="60"></rect><text class="label" x="153" y="326">G</text>
-                                <rect     id="back_glute_right"    data-name="Gesäß (R)" class="body-part" x="222" y="296" width="50" height="60"></rect><text class="label" x="247" y="326">G</text>
-                                <rect     id="back_upper_arm_left" data-name="Oberarm (L, h)" class="body-part" x="51" y="148" width="41" height="100"></rect><text class="label" x="71.5" y="198">oA</text>
-                                <rect     id="back_lower_arm_left" data-name="Unterarm (L, h)" class="body-part" x="51" y="252" width="41" height="90"></rect><text class="label" x="71.5" y="297">uA</text>
-                                <rect     id="back_hand_left"      data-name="Hand (L, h)" class="body-part" x="47" y="346" width="50" height="50"></rect><text class="label" x="72" y="371">H</text>
-                                <rect     id="back_upper_arm_right" data-name="Oberarm (R, h)" class="body-part" x="308" y="148" width="41" height="100"></rect><text class="label" x="328.5" y="198">oA</text>
-                                <rect     id="back_lower_arm_right" data-name="Unterarm (R, h)" class="body-part" x="308" y="252" width="41" height="90"></rect><text class="label" x="328.5" y="297">uA</text>
-                                <rect     id="back_hand_right"     data-name="Hand (R, h)" class="body-part" x="304" y="346" width="50" height="50"></rect><text class="label" x="329" y="371">H</text>
-                                <rect     id="back_upper_leg_left" data-name="Oberschenkel (L, h)" class="body-part" x="133" y="360" width="41" height="120"></rect><text class="label" x="153.5" y="420">oB</text>
-                                <rect     id="back_lower_leg_left" data-name="Unterschenkel (L, h)" class="body-part" x="133" y="484" width="41" height="110"></rect><text class="label" x="153.5" y="539">uB</text>
-                                <rect     id="back_upper_leg_right" data-name="Oberschenkel (R, h)" class="body-part" x="227" y="360" width="41" height="120"></rect><text class="label" x="247.5" y="420">oB</text>
-                                <rect     id="back_lower_leg_right" data-name="Unterschenkel (R, h)" class="body-part" x="227" y="484" width="41" height="110"></rect><text class="label" x="247.5" y="539">uB</text>
-                                <rect     id="back_foot_left"      data-name="Fuß (L, h)" class="body-part" x="128" y="598" width="50" height="40"></rect><text class="label" x="153" y="618">F</text>
-                                <rect     id="back_foot_right"     data-name="Fuß (R, h)" class="body-part" x="222" y="598" width="50" height="40"></rect><text class="label" x="247" y="618">F</text>
+                                <circle   id="back_head"           data-name="Hinterkopf" class="body-part" cx="200" cy="50" r="45"></circle>
+                                <rect     id="back_neck"           data-name="Nacken" class="body-part" x="180" y="99" width="40" height="45" rx="10"></rect><text class="label" x="200" y="121.5">HWS</text>
+                                <rect     id="back_shoulder_left"  data-name="Schulter (L, h)" class="body-part" x="55" y="99" width="121" height="45" rx="10"></rect>
+                                <rect     id="back_shoulder_right" data-name="Schulter (R, h)" class="body-part" x="224" y="99" width="121" height="45" rx="10"></rect>
+                                <rect     id="back_upper_back_left" data-name="Oberer Rücken (L)" class="body-part" x="125" y="148" width="56.25" height="80" rx="10"></rect>
+                                <rect     id="back_upper_back_middle" data-name="Obere Wirbelsäule" class="body-part" x="181.25" y="148" width="37.5" height="80" rx="10"></rect><text class="label" x="200" y="188">BWS</text>
+                                <rect     id="back_upper_back_right" data-name="Oberer Rücken (R)" class="body-part" x="218.75" y="148" width="56.25" height="80" rx="10"></rect>
+                                <rect     id="back_lower_back_left" data-name="Unterer Rücken (L)" class="body-part" x="128" y="232" width="54" height="60" rx="10"></rect>
+                                <rect     id="back_lower_back_middle" data-name="Untere Wirbelsäule" class="body-part" x="182" y="232" width="36" height="124" rx="10"></rect><text class="label" x="200" y="294">LWS</text>
+                                <rect     id="back_lower_back_right" data-name="Unterer Rücken (R)" class="body-part" x="218" y="232" width="54" height="60" rx="10"></rect>
+                                <rect     id="back_glute_left"     data-name="Gesäß (L)" class="body-part" x="128" y="296" width="50" height="60" rx="10"></rect>
+                                <rect     id="back_glute_right"    data-name="Gesäß (R)" class="body-part" x="222" y="296" width="50" height="60" rx="10"></rect>
+                                <rect     id="back_upper_arm_left" data-name="Oberarm (L, h)" class="body-part" x="51" y="148" width="41" height="100" rx="10"></rect>
+                                <rect     id="back_lower_arm_left" data-name="Unterarm (L, h)" class="body-part" x="51" y="252" width="41" height="90" rx="10"></rect>
+                                <rect     id="back_hand_left"      data-name="Hand (L, h)" class="body-part" x="47" y="346" width="50" height="50" rx="10"></rect>
+                                <rect     id="back_upper_arm_right" data-name="Oberarm (R, h)" class="body-part" x="308" y="148" width="41" height="100" rx="10"></rect>
+                                <rect     id="back_lower_arm_right" data-name="Unterarm (R, h)" class="body-part" x="308" y="252" width="41" height="90" rx="10"></rect>
+                                <rect     id="back_hand_right"     data-name="Hand (R, h)" class="body-part" x="304" y="346" width="50" height="50" rx="10"></rect>
+                                <rect     id="back_upper_leg_left" data-name="Oberschenkel (L, h)" class="body-part" x="133" y="360" width="41" height="120" rx="10"></rect>
+                                <rect     id="back_lower_leg_left" data-name="Unterschenkel (L, h)" class="body-part" x="133" y="484" width="41" height="110" rx="10"></rect>
+                                <rect     id="back_upper_leg_right" data-name="Oberschenkel (R, h)" class="body-part" x="227" y="360" width="41" height="120" rx="10"></rect>
+                                <rect     id="back_lower_leg_right" data-name="Unterschenkel (R, h)" class="body-part" x="227" y="484" width="41" height="110" rx="10"></rect>
+                                <rect     id="back_foot_left"      data-name="Fuß (L, h)" class="body-part" x="128" y="598" width="50" height="40" rx="10"></rect>
+                                <rect     id="back_foot_right"     data-name="Fuß (R, h)" class="body-part" x="222" y="598" width="50" height="40" rx="10"></rect>
                             </g>
                         </svg>
                     </div>
@@ -1540,7 +1541,11 @@ const WellTrackApp = {
                 </div>`;
             },
             fullLogSection: () => `
-                <h2 class="text-2xl font-semibold mb-4 text-gray-700 px-6">Protokoll</h2><div id="log-entries-container" class="space-y-4"></div><div id="log-pagination" class="mt-6 flex justify-between items-center"></div>`,
+                <div class="card">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Protokoll</h2>
+                    <div id="log-entries-container" class="space-y-4"></div>
+                    <div id="log-pagination" class="mt-6 flex justify-between items-center"></div>
+                </div>`,
             settingsSection: () => {
                 const settings = WellTrackApp.data.getSettings();
                 const perm = WellTrackApp.state.notificationPermission;
@@ -1567,7 +1572,7 @@ const WellTrackApp = {
                     } else {
                         reminderContentHtml = `
                             <p class="text-sm text-gray-600">Status: <span class="font-bold">Nicht aktiviert</span></p>
-                            <button onclick="WellTrackApp.events.handleActivateReminders()" class="btn btn-primary w-full">Erinnerungen aktivieren</button>
+                            <button onclick="WellTrackApp.events.handleActivateReminders()" class="btn btn-secondary w-full">Erinnerungen aktivieren</button>
                         `;
                     }
                 }
@@ -1578,7 +1583,7 @@ const WellTrackApp = {
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">Ereignisarten</h2>
                         <div id="manage-event-list" class="space-y-2 mb-4"></div>
                         <div id="edit-event-form-container"></div>
-                        <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-primary w-full"><span class="material-symbols-outlined mr-2">add</span>Neue hinzufügen</button></div>
+                        <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-secondary w-full"><span class="material-symbols-outlined mr-2">add</span>Neue hinzufügen</button></div>
                     </div>
                     <div class="card">
                         <h2 class="text-2xl font-semibold mb-4 text-gray-700">Datenverwaltung</h2>
@@ -1768,26 +1773,58 @@ const WellTrackApp = {
                     }).join('');
                 }
 
-                const buildSection = (title, content) => {
-                    if (!content) return '';
-                    return `
-                        <div class="mt-4 pt-4 border-t border-gray-200">
-                            <h4 class="font-bold text-xl mb-2 text-primary-dark">${title}</h4>
-                            <div class="pl-4">${content}</div>
+                let html = '';
+
+                if (eventsHtml) {
+                    html += `
+                        <div>
+                            <div class="flex justify-between items-baseline">
+                               <h4 class="font-bold text-xl mb-2 text-primary-dark">Ereignisse</h4>
+                               <h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3>
+                            </div>
+                            <div class="pl-4">${eventsHtml}</div>
                         </div>
                     `;
-                };
+                    if (moodHtml) {
+                        html += `
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <h4 class="font-bold text-xl mb-2 text-primary-dark">Stimmung</h4>
+                                <div class="pl-4">${moodHtml}</div>
+                            </div>
+                        `;
+                    }
+                    if (painHtml) {
+                         html += `
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <h4 class="font-bold text-xl mb-2 text-primary-dark">Schmerz</h4>
+                                <div class="pl-4">${painHtml}</div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    html += `<div class="flex justify-end mb-2"><h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3></div>`;
+                    let isFirstSection = true;
+                    if (moodHtml) {
+                         html += `
+                            <div>
+                                <h4 class="font-bold text-xl mb-2 text-primary-dark">Stimmung</h4>
+                                <div class="pl-4">${moodHtml}</div>
+                            </div>
+                        `;
+                        isFirstSection = false;
+                    }
+                    if (painHtml) {
+                        const dividerClass = isFirstSection ? '' : 'mt-4 pt-4 border-t border-gray-200';
+                        html += `
+                            <div class="${dividerClass}">
+                                <h4 class="font-bold text-xl mb-2 text-primary-dark">Schmerz</h4>
+                                <div class="pl-4">${painHtml}</div>
+                            </div>
+                        `;
+                    }
+                }
 
-                return `
-                    <div class="flex justify-end mb-2">
-                        <h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3>
-                    </div>
-                    <div>
-                        ${buildSection('Ereignisse', eventsHtml)}
-                        ${buildSection('Stimmung', moodHtml)}
-                        ${buildSection('Schmerz', painHtml)}
-                    </div>
-                `;
+                return html;
             },
             paginationControls: (currentPage, totalPages) => `<button onclick="WellTrackApp.events.handleChangePage(-1)" class="btn btn-tertiary" ${currentPage === 1 ? 'disabled' : ''}>Zurück</button><span class="text-sm text-gray-700">Seite ${currentPage} von ${totalPages}</span><button onclick="WellTrackApp.events.handleChangePage(1)" class="btn btn-tertiary" ${currentPage === totalPages ? 'disabled' : ''}>Weiter</button>`,
             manageEventItem: (event, index) => {
