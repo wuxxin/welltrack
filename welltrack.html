@@ -235,6 +235,9 @@
             border-color: var(--md-sys-color-primary-container);
             z-index: 10;
         }
+        #today-event-groups {
+            grid-template-columns: repeat(auto-fit, minmax(min(100%/2, max(200px, 100%/3)), 1fr));
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -318,19 +321,14 @@ const WellTrackApp = {
             4: { label: "Fürchterlich", short: "F", color: "#ef4444" },
             5: { label: "Vernichtend", short: "X", color: "#9333ea" },
         },
-        DAY_NAMES: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
-        DAY_DISPLAY_ORDER: [
-            { name: 'Mo', index: 1 }, { name: 'Di', index: 2 }, { name: 'Mi', index: 3 }, { name: 'Do', index: 4 },
-            { name: 'Fr', index: 5 }, { name: 'Sa', index: 6 }, { name: 'So', index: 0 }
-        ],
         CHART_FONT_OPTIONS: {
             font: { size: 12, weight: 'bold' }
         },
         DEFAULT_EVENTS_JSON: `[
-            {"name": "Spaziergang", "activity": "walking", "days": [], "increment": 15, "unitType": "min", "groupType": "Bewegung"},
-            {"name": "Kaffee Tassen", "activity": "coffee_cups", "days": [], "increment": 1, "unitType": "", "groupType": "Ernährung"},
-            {"name": "Ibuprofen 400mg", "activity": "ibuprofen_400", "days": [], "increment": 0, "unitType": "Einnahme", "groupType": "Medikamente"},
-            {"name": "Rückenübungen", "activity": "back_exercises", "days": [1, 2, 3, 4, 5], "increment": 15, "unitType": "min", "groupType": "Bewegung"}
+            {"name": "Spaziergang", "activity": "walking", "is_cumulative": true, "increment": 15, "unitType": "min", "groupType": "Bewegung"},
+            {"name": "Kaffee Tassen", "activity": "coffee_cups", "is_cumulative": true, "increment": 1, "unitType": "", "groupType": "Ernährung"},
+            {"name": "Ibuprofen 400mg", "activity": "ibuprofen_400", "is_cumulative": false, "increment": 0, "unitType": "Einnahme", "groupType": "Medikamente"},
+            {"name": "Rückenübungen", "activity": "back_exercises", "is_cumulative": true, "increment": 15, "unitType": "min", "groupType": "Bewegung"}
         ]`,
         MOOD_GROUPS: {
             'arousal_level': {
@@ -437,11 +435,28 @@ const WellTrackApp = {
         },
         getEvents() {
             const events = localStorage.getItem('wellTrackEvents');
+            const processEvents = (eventArray) => {
+                return eventArray.map(e => {
+                    const newEvent = {
+                        ...e,
+                        groupType: e.groupType || '',
+                        is_cumulative: e.is_cumulative !== undefined ? e.is_cumulative : true
+                    };
+                    delete newEvent.days; // Ensure 'days' is removed
+                    return newEvent;
+                });
+            };
+
             if (events) {
-                // Ensure all events have a groupType
-                return JSON.parse(events).map(e => ({ ...e, groupType: e.groupType || '' }));
+                const parsedEvents = JSON.parse(events);
+                const updatedEvents = processEvents(parsedEvents);
+                // If migration happened, save it back
+                if (JSON.stringify(parsedEvents) !== JSON.stringify(updatedEvents)) {
+                    this.saveEvents(updatedEvents);
+                }
+                return updatedEvents;
             } else {
-                const defaultEvents = JSON.parse(WellTrackApp.config.DEFAULT_EVENTS_JSON);
+                const defaultEvents = processEvents(JSON.parse(WellTrackApp.config.DEFAULT_EVENTS_JSON));
                 this.saveEvents(defaultEvents);
                 return defaultEvents;
             }
@@ -625,31 +640,70 @@ const WellTrackApp = {
 
             // --- Render Event Group Cards ---
             const eventGroupsContainer = document.getElementById('today-event-groups');
-            const eventGroupsCard = document.getElementById('today-event-groups-card');
             const allEvents = WellTrackApp.data.getEvents();
-            const eventGroups = [...new Set(allEvents.map(e => e.groupType || 'Ohne Gruppe'))].sort();
+            const todaysEventMetrics = todaysMetrics.filter(e => e.metric.startsWith('event_'));
 
-            if (eventGroups.length === 0 || eventGroups.every(g => g === 'Ohne Gruppe' && !allEvents.some(e => !e.groupType))) {
-                if(eventGroupsCard) eventGroupsCard.classList.add('hidden');
-            } else {
-                if(eventGroupsCard) eventGroupsCard.classList.remove('hidden');
-                eventGroupsContainer.innerHTML = eventGroups.map(group => {
-                    const groupEvents = allEvents.filter(e => (e.groupType || 'Ohne Gruppe') === group);
-                    const groupActivityNames = groupEvents.map(e => e.activity);
+            const displayItems = [];
+            const processedActivities = new Set();
 
-                    const todaysGroupMetrics = summarizedToday.filter(m => m.metric.startsWith('event_') && groupActivityNames.includes(m.labels.activity));
+            // Define cumulative groups
+            const cumulativeGroups = {};
+            allEvents
+                .filter(e => e.is_cumulative && e.groupType && e.unitType && e.unitType.length > 2)
+                .forEach(e => {
+                    const key = `${e.groupType}|${e.unitType}`;
+                    if (!cumulativeGroups[key]) {
+                        cumulativeGroups[key] = {
+                            isGroup: true, name: e.groupType, unit: e.unitType,
+                            groupKey: e.groupType, activities: []
+                        };
+                    }
+                    cumulativeGroups[key].activities.push(e.activity);
+                });
 
-                    const totalValue = todaysGroupMetrics.reduce((sum, m) => sum + m.value, 0);
+            Object.values(cumulativeGroups).forEach(group => {
+                displayItems.push(group);
+                group.activities.forEach(act => processedActivities.add(act));
+            });
 
-                    const groupKey = group === 'Ohne Gruppe' ? '*' : group;
+            // Add remaining individual events
+            allEvents
+                .filter(e => !processedActivities.has(e.activity))
+                .forEach(event => {
+                    displayItems.push({
+                        isGroup: false, name: event.name, unit: event.unitType,
+                        groupKey: event.groupType || '*', activities: [event.activity],
+                        increment: event.increment
+                    });
+                });
 
+            // Render the items
+            if (displayItems.length > 0) {
+                eventGroupsContainer.innerHTML = displayItems.map(item => {
+                    const itemMetrics = todaysEventMetrics.filter(m => item.activities.includes(m.labels.activity));
+
+                    let totalValue = 0;
+                    if (item.isGroup) {
+                        totalValue = itemMetrics.reduce((sum, m) => sum + m.value, 0);
+                    } else {
+                        if (item.increment === 0) {
+                            totalValue = itemMetrics.length;
+                        } else {
+                            const metric = WellTrackApp.utils.summarizeMetrics(itemMetrics)[0];
+                            totalValue = metric ? metric.value : 0;
+                        }
+                    }
+
+                    const unitHtml = item.unit ? `<span class="text-base font-medium ml-1">${item.unit}</span>` : '';
                     return `
-                        <div onclick="WellTrackApp.events.showEventPageForGroup('${groupKey}')" class="bg-white p-4 rounded-xl cursor-pointer hover:shadow-lg transition-shadow flex justify-between items-center">
-                            <p class="text-lg font-semibold">${group}</p>
-                            <p class="text-3xl font-bold">${totalValue}<span class="text-base font-medium ml-1"></span></p>
+                        <div onclick="WellTrackApp.events.showEventPageForGroup('${item.groupKey}')" class="bg-white p-4 rounded-xl cursor-pointer hover:shadow-lg transition-shadow flex justify-between items-center">
+                            <p class="text-lg font-semibold">${item.name}</p>
+                            <p class="text-3xl font-bold">${totalValue}${unitHtml}</p>
                         </div>
                     `;
                 }).join('');
+            } else {
+                eventGroupsContainer.innerHTML = '';
             }
 
             // --- Render Todays Log ---
@@ -971,15 +1025,39 @@ const WellTrackApp = {
                 eventChartContainer.innerHTML = ''; // Clear previous charts
 
                 const allEvents = WellTrackApp.data.getEvents();
-                const groupedBy = allEvents.reduce((acc, event) => {
-                    const key = event.groupType ? `${event.groupType}-${event.unitType}` : `* -${event.unitType}`;
-                    if(!acc[key]) acc[key] = [];
-                    acc[key].push(event.activity);
-                    return acc;
-                }, {});
+                const displayGroups = [];
+                const processedActivities = new Set();
 
-                Object.entries(groupedBy).forEach(([groupKey, activities]) => {
-                    const [groupType, unitType] = groupKey.split('-');
+                // 1. Identify and create cumulative groups
+                const cumulativeGroups = {};
+                allEvents
+                    .filter(e => e.is_cumulative && e.groupType && e.unitType && e.unitType.length > 2)
+                    .forEach(e => {
+                        const key = `${e.groupType}|${e.unitType}`;
+                        if (!cumulativeGroups[key]) {
+                            cumulativeGroups[key] = {
+                                isGroup: true, name: e.groupType, unit: e.unitType, activities: []
+                            };
+                        }
+                        cumulativeGroups[key].activities.push(e.activity);
+                    });
+
+                Object.values(cumulativeGroups).forEach(group => {
+                    displayGroups.push(group);
+                    group.activities.forEach(act => processedActivities.add(act));
+                });
+
+                // 2. Add remaining individual events
+                allEvents
+                    .filter(e => !processedActivities.has(e.activity))
+                    .forEach(event => {
+                        displayGroups.push({
+                            isGroup: false, name: event.name, unit: event.unitType, activities: [event.activity]
+                        });
+                    });
+
+                // 3. Render a chart for each display group
+                displayGroups.forEach(group => {
                     const canvas = document.createElement('canvas');
                     const container = document.createElement('div');
                     container.style.position = 'relative';
@@ -988,32 +1066,23 @@ const WellTrackApp = {
                     eventChartContainer.appendChild(container);
                     const ctx = canvas.getContext('2d');
 
-                    const { dailyData } = WellTrackApp.utils.getDailyChartData('event_', d => activities.includes(d.labels.activity));
+                    const { dailyData } = WellTrackApp.utils.getDailyChartData('event_', d => group.activities.includes(d.labels.activity));
 
-                    let chartLabel;
-                    const isMultiActivityGroup = activities.length > 1;
+                    const chartKey = group.isGroup ? `${group.name}-${group.unit}` : group.name;
+                    const yAxisLabel = group.unit ? `${group.name} (${group.unit})` : group.name;
+                    const isMultiActivityGroup = group.activities.length > 1;
 
-                    if (groupType === '*') {
-                        const singleEvent = allEvents.find(e => e.activity === activities[0]);
-                        chartLabel = singleEvent ? singleEvent.name : activities[0];
-                    } else if (!isMultiActivityGroup) {
-                        const singleEvent = allEvents.find(e => e.activity === activities[0]);
-                        chartLabel = singleEvent ? singleEvent.name : activities[0];
-                    } else {
-                        chartLabel = `${groupType} (${unitType || 'Anzahl'})`;
-                    }
-                    
                     const datasets = [{
-                        label: chartLabel,
+                        label: group.name,
                         data: dailyData.map(d => ({x: d.timestamp, y: d.total, details: d.details, values: d.values})),
-                        borderColor: WellTrackApp.utils.generateColorFromHash(groupKey),
-                        backgroundColor: WellTrackApp.utils.generateColorFromHash(groupKey, 0.5),
+                        borderColor: WellTrackApp.utils.generateColorFromHash(chartKey),
+                        backgroundColor: WellTrackApp.utils.generateColorFromHash(chartKey, 0.5),
                         fill: true,
                         tension: 0.1,
                     }];
 
                     if(datasets[0].data.length > 0) {
-                        const movingAverageData = WellTrackApp.utils.calculateMovingAverage(datasets[0].data, 'event_', d => activities.includes(d.labels.activity));
+                        const movingAverageData = WellTrackApp.utils.calculateMovingAverage(datasets[0].data, 'event_', d => group.activities.includes(d.labels.activity));
                         datasets.push({
                             label: `Durchschnitt`,
                             data: movingAverageData,
@@ -1025,8 +1094,8 @@ const WellTrackApp = {
                         });
                     }
                     
-                    if (WellTrackApp.state.charts[groupKey]) WellTrackApp.state.charts[groupKey].destroy();
-                    WellTrackApp.state.charts[groupKey] = new Chart(ctx, { 
+                    if (WellTrackApp.state.charts[chartKey]) WellTrackApp.state.charts[chartKey].destroy();
+                    WellTrackApp.state.charts[chartKey] = new Chart(ctx, {
                         type: 'line', 
                         data: { datasets }, 
                         options: {
@@ -1052,7 +1121,7 @@ const WellTrackApp = {
                                                 Object.entries(values).forEach(([name, value]) => {
                                                     if(value > 0) {
                                                         const eventConfig = allEvents.find(e => e.name === name);
-                                                        const unit = eventConfig ? eventConfig.unitType : unitType;
+                                                        const unit = eventConfig ? eventConfig.unitType : group.unit;
                                                         lines.push(`  - ${name}: ${value} ${unit}`);
                                                     }
                                                 });
@@ -1072,7 +1141,7 @@ const WellTrackApp = {
                             }, 
                             scales: { 
                                 x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd.MM' } }, grid: { display: false }, ticks: {...WellTrackApp.config.CHART_FONT_OPTIONS} }, 
-                                y: { title: { display: true, text: `Wert (${unitType || 'Anzahl'})`, ...WellTrackApp.config.CHART_FONT_OPTIONS }, ticks: {...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }, min: 0 } 
+                                y: { title: { display: true, text: yAxisLabel, ...WellTrackApp.config.CHART_FONT_OPTIONS }, ticks: {...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }, min: 0 }
                             },
                         } 
                     });
@@ -1200,7 +1269,7 @@ const WellTrackApp = {
                 <div id="today-summary-cards" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <!-- Mood and Pain cards will be rendered here -->
                 </div>
-                <div id="today-event-groups" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div id="today-event-groups" class="grid gap-4 mb-6">
                         <!-- Event group cards will be rendered here -->
                 </div>
                 <div id="todays-log-card" class="card">
@@ -1513,7 +1582,7 @@ const WellTrackApp = {
                         return `
                             <div class="mt-2">
                                 <h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600"> Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></span></h5>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div>
                             </div>`;
                     }).join('');
                 }
@@ -1552,7 +1621,7 @@ const WellTrackApp = {
                         return `
                              <div class="mt-2">
                                 <h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600">Gesamt: <span class="font-bold ${totalColor}">${totalScore}</span></span></h5>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div>
                             </div>
                         `;
                     }).join('');
@@ -1582,7 +1651,6 @@ const WellTrackApp = {
             },
             paginationControls: (currentPage, totalPages) => `<button onclick="WellTrackApp.events.handleChangePage(-1)" class="btn btn-tertiary" ${currentPage === 1 ? 'disabled' : ''}>Zurück</button><span class="text-sm text-gray-700">Seite ${currentPage} von ${totalPages}</span><button onclick="WellTrackApp.events.handleChangePage(1)" class="btn btn-tertiary" ${currentPage === totalPages ? 'disabled' : ''}>Weiter</button>`,
             manageEventItem: (event, index) => {
-                const scheduledDays = event.days && event.days.length > 0 ? event.days.map(d => WellTrackApp.config.DAY_NAMES[d]).join(', ') : 'Täglich';
                 const incrementText = event.increment === 0 ? 'Timestamp' : `+${event.increment}`;
                 const detailsText = `${incrementText} ${event.unitType || ''}`;
                 return `
@@ -1592,7 +1660,7 @@ const WellTrackApp = {
                         </button>
                         <div>
                             <span>${event.name} <span class="text-xs text-gray-400">(${detailsText})</span></span>
-                            <span class="text-xs text-gray-500 block">Gruppe: ${event.groupType || 'Keine'} | ${scheduledDays}</span>
+                            <span class="text-xs text-gray-500 block">Gruppe: ${event.groupType || 'Keine'}</span>
                         </div>
                     </div>
                     <div class="flex items-center">
@@ -1630,8 +1698,18 @@ const WellTrackApp = {
                             <div><label for="event-increment" class="block mb-1 text-sm font-medium">Inkrement (0=Timestamp)</label><input id="event-increment" type="number" value="${increment}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="1"></div>
                             <div><label for="event-unit" class="block mb-1 text-sm font-medium">Einheit</label><input id="event-unit" type="text" value="${unitType}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="min, x, etc."></div>
                         </div>
-                         <div><label for="event-group" class="block mb-1 text-sm font-medium">Gruppe (optional)</label><input id="event-group" type="text" value="${groupType}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="z.B. Medikamente"></div>
-                        <div><label class="block mb-2 text-sm font-medium">Tage (optional)</label><div id="day-selector-container" class="grid grid-cols-7 gap-1 text-center" onclick="WellTrackApp.events.handleToggleDay(event)">${dayButtons}</div><p class="text-xs text-gray-500 mt-1">Wenn keine Tage gewählt sind, ist das Ereignis immer sichtbar.</p></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="event-group" class="block mb-1 text-sm font-medium">Gruppe (optional)</label>
+                                <input id="event-group" type="text" value="${groupType}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="z.B. Medikamente">
+                            </div>
+                            <div class="flex items-end pb-1">
+                                <div class="flex items-center h-full">
+                                    <input id="event-is-cumulative" type="checkbox" ${!isEditing || event.is_cumulative ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
+                                    <label for="event-is-cumulative" class="ml-2 text-sm font-medium text-gray-900">kumulativ bei selben Typ</label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex gap-4 mt-6">
                         <button onclick="WellTrackApp.events.handleHideEventForm()" class="btn btn-tertiary flex-1">Abbrechen</button>
@@ -1852,6 +1930,7 @@ const WellTrackApp = {
             const increment = parseInt(document.getElementById('event-increment').value, 10); // Can be 0
             const unitType = document.getElementById('event-unit').value.trim();
             const groupType = document.getElementById('event-group').value.trim();
+            const isCumulative = document.getElementById('event-is-cumulative').checked;
 
             if (!name || !activity) {
                 WellTrackApp.render.modal.showAlert('Fehler', 'Bezeichnung und Aktivität-ID sind erforderlich.');
@@ -1866,10 +1945,7 @@ const WellTrackApp = {
                 return;
             }
 
-            const selectedDays = Array.from(document.querySelectorAll('#day-selector-container .day-btn.selected'))
-                .map(btn => parseInt(btn.dataset.dayIndex, 10));
-
-            const newEventData = { name, activity, days: selectedDays, increment, unitType, groupType };
+            const newEventData = { name, activity, increment, unitType, groupType, is_cumulative: isCumulative };
 
             if (isEditing) {
                 const index = events.findIndex(t => t.activity === WellTrackApp.state.currentEditingEvent.activity);

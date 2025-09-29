@@ -61,5 +61,20 @@ This document lists the implementation status of features and refactorings for t
 - **Security Hardening:**
   - Implemented a strict Content Security Policy (CSP) via a `<meta>` tag to restrict resource loading to trusted CDNs and prevent potential cross-site scripting (XSS) attacks.
 
+**2025-09-28: Settings, Grouping Logic, and UI Refactoring**
+- **Settings Refactor:**
+  - Removed the "days" selection for event types entirely from the UI and data model.
+  - Added a new boolean checkbox `is_cumulative` to the event editor, allowing users to define whether events of the same type should be aggregated. This is enabled by default.
+  - The underlying data handling for events was updated to support this new property, and a migration path ensures older data is handled gracefully.
+- **"Today" and "Verlauf" Page Refactoring:**
+  - Rebuilt the display logic for events on both the "Today" dashboard and the "Verlauf" (History) charts.
+  - Events are now grouped based on a new set of rules: events are aggregated if they share the same `groupType`, the same `unitType` (which must be a meaningful string), and have the `is_cumulative` flag set to `true`.
+  - On the "Today" page, this results in single, cumulative cards for aggregated groups.
+  - In the "Verlauf" charts, this creates a single, consolidated line chart for each aggregated group, with the Y-axis correctly labeled (e.g., "Bewegung (min)").
+  - All non-cumulative events are displayed individually as before, maintaining clarity.
+- **GUI Refactoring:**
+  - The event cards on the "Today" page are now arranged in a responsive "automatrix" grid that automatically adjusts between 2 and 3 columns based on screen width, falling back to a single column on very small screens.
+  - The "Protokoll" (Log) page's mood and pain detail views were updated to use a more compact and consistent grid, displaying between 2 and 4 columns for better readability.
+
 ## **Planned Tasks**
 
