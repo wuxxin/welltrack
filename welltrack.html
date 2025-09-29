@@ -8,9 +8,8 @@
         style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com;
         font-src 'self' https://fonts.gstatic.com;
         img-src 'self' data:;
-        connect-src 'self';
+        connect-src 'self' https://cdn.jsdelivr.net;
         object-src 'none';
-        frame-ancestors 'none';
         base-uri 'self';
         form-action 'self';
     ">
@@ -1681,12 +1680,6 @@ const WellTrackApp = {
                 const increment = isEditing ? event.increment : 1;
                 const unitType = isEditing ? event.unitType : '';
                 const groupType = isEditing ? event.groupType : '';
-
-                let dayButtons = '';
-                WellTrackApp.config.DAY_DISPLAY_ORDER.forEach(day => {
-                    const isSelected = isEditing && event.days && event.days.includes(day.index);
-                    dayButtons += `<button data-day-index="${day.index}" class="day-btn p-2 border rounded-md ${isSelected ? 'selected' : ''}">${day.name}</button>`;
-                });
 
                 return `
                 <div class="p-4 border rounded-lg bg-white mt-4">

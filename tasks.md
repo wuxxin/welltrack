@@ -84,5 +84,9 @@ This document lists the implementation status of features and refactorings for t
 - **Bug Fix:** The "edit event" functionality was definitively repaired by refactoring the `handleSaveEvent` function. The logic now correctly uses the `activity` ID from the application's state when editing, ensuring the correct event is always updated.
 - **Config Update:** The default `unitType` for the "Ibuprofen 400mg" event was changed from "Einnahme" to an empty string (`""`) for better clarity in the UI.
 
+**2025-09-29: Final Polish and CSP Fix**
+- **Bug Fix:** A JavaScript `TypeError` that occurred when opening the event editor was resolved by removing obsolete code related to the old "days" selection feature.
+- **CSP Fix:** The Content Security Policy was corrected by removing the `frame-ancestors` directive (which is not supported in meta tags) and adding `https://cdn.jsdelivr.net` to `connect-src` to allow Chart.js to fetch its source maps, resolving console errors.
+
 ## **Planned Tasks**
 
