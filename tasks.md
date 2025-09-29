@@ -121,3 +121,17 @@ This document lists the implementation status of features and refactorings for t
 
 ## **Planned Tasks**
 
+- **UI Alignment:** Sub-tab selectors (like "Vorderseite | Rückseite") should remain right-aligned when they wrap on smaller screens. The layout for multiple entries should be improved to prevent visual clutter.
+- **"Today" Tab:**
+    - Align "Heute" and the date on the same line, indented similarly to card content.
+    - Format the date as "Montag 29.9.2025".
+    - Move the "Letzte Einträge" title out of its card and position it above.
+- **"Protokoll" (Log) Tab:**
+    - Style the "Protokoll" title to match other tabs and indent it like card content.
+    - Right-align the date and format it as "Montag 29.9.2025".
+- **"Verlauf" (History) Tab:**
+    - Remove Y-axis labels from all charts.
+    - Make chart legends more descriptive, including units like `(min)`.
+    - Configure charts to maximize horizontal space.
+- **Settings Tab:**
+    - Rename the "Test-Benachrichtigung erzeugen" button to "Test Nachricht".

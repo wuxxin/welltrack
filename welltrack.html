@@ -873,11 +873,17 @@ const WellTrackApp = {
             const endIndex = page * WellTrackApp.config.ENTRIES_PER_PAGE;
             const paginatedDates = sortedDates.slice(startIndex, endIndex);
             
-            paginatedDates.forEach(date => {
+            paginatedDates.forEach(dateString => {
+                const dateParts = dateString.split('.').map(part => parseInt(part, 10));
+                const dateObj = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+                const weekdays = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+                const dayName = weekdays[dateObj.getDay()];
+                const formattedDate = `${dayName} ${dateString}`;
+
                 const div = document.createElement('div');
                 div.className = 'bg-white p-4 sm:p-6 rounded-2xl border border-gray-200 text-base';
-                const summarizedMetrics = WellTrackApp.utils.summarizeMetrics(groupedData[date]);
-                div.innerHTML = this.components.logEntry(date, summarizedMetrics);
+                const summarizedMetrics = WellTrackApp.utils.summarizeMetrics(groupedData[dateString]);
+                div.innerHTML = this.components.logEntry(formattedDate, summarizedMetrics);
                 logContainer.appendChild(div);
             });
             this.pagination(sortedDates.length);
@@ -1068,7 +1074,7 @@ const WellTrackApp = {
                 if (movingAverageData.length > 0) {
                     datasets.push({
                         type: 'line',
-                        label: 'Durchschnitt',
+                        label: 'Durchschnitt (Gesamtschmerz)',
                         data: movingAverageData,
                         borderColor: 'rgba(96, 165, 250, 0.8)',
                         borderWidth: 2,
@@ -1080,7 +1086,7 @@ const WellTrackApp = {
                 
                 const yAxisOptions = {
                     stacked: true,
-                    title: { display: true, text: 'Schmerzwert', ...WellTrackApp.config.CHART_FONT_OPTIONS },
+                    title: { display: false },
                     ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }
                 };
                 
@@ -1156,7 +1162,7 @@ const WellTrackApp = {
                     const isMultiActivityGroup = group.activities.length > 1;
 
                     const datasets = [{
-                        label: group.name,
+                        label: yAxisLabel,
                         data: dailyData.map(d => ({x: d.timestamp, y: d.total, details: d.details, values: d.values})),
                         borderColor: WellTrackApp.utils.generateColorFromHash(chartKey),
                         backgroundColor: WellTrackApp.utils.generateColorFromHash(chartKey, 0.5),
@@ -1167,7 +1173,7 @@ const WellTrackApp = {
                     if(datasets[0].data.length > 0) {
                         const movingAverageData = WellTrackApp.utils.calculateMovingAverage(datasets[0].data, 'event_', d => group.activities.includes(d.labels.activity));
                         datasets.push({
-                            label: `Durchschnitt`,
+                            label: `Durchschnitt (${group.name})`,
                             data: movingAverageData,
                             borderColor: 'rgba(239, 68, 68, 0.8)',
                             borderWidth: 2,
@@ -1224,7 +1230,7 @@ const WellTrackApp = {
                             }, 
                             scales: { 
                                 x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd.MM' } }, grid: { display: false }, ticks: {...WellTrackApp.config.CHART_FONT_OPTIONS} }, 
-                                y: { title: { display: true, text: yAxisLabel, ...WellTrackApp.config.CHART_FONT_OPTIONS }, ticks: {...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }, min: 0 }
+                                y: { title: { display: false }, ticks: {...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }, min: 0 }
                             },
                         } 
                     });
@@ -1266,7 +1272,7 @@ const WellTrackApp = {
                 if (movingAverageData.length > 0) {
                     datasets.push({
                         type: 'line',
-                        label: 'Durchschnitt',
+                        label: 'Durchschnitt (Gesamtwert)',
                         data: movingAverageData,
                         borderColor: 'rgba(96, 165, 250, 0.8)', // blue-400
                         borderWidth: 2,
@@ -1278,7 +1284,7 @@ const WellTrackApp = {
                 
                 const yAxisOptions = {
                     stacked: true,
-                    title: { display: true, text: 'Stimmungswert', ...WellTrackApp.config.CHART_FONT_OPTIONS },
+                    title: { display: false },
                     ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }
                 };
                 
@@ -1361,9 +1367,11 @@ const WellTrackApp = {
         components: {
             todaySection: () => {
                 const today = new Date();
-                const dateString = today.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const weekdays = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+                const dayName = weekdays[today.getDay()];
+                const dateString = `${dayName} ${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
                 return `
-                <div class="flex justify-between items-center mb-4 px-1">
+                <div class="flex justify-between items-center mb-4 px-6">
                     <h2 class="text-2xl font-semibold text-gray-700">Heute</h2>
                     <span class="text-lg text-gray-800">${dateString}</span>
                 </div>
@@ -1373,8 +1381,8 @@ const WellTrackApp = {
                 <div id="today-event-groups" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
                     <!-- Event group cards will be rendered here -->
                 </div>
+                <h3 class="text-lg font-semibold mb-2 text-gray-800 px-6">Letzte Einträge</h3>
                 <div id="todays-log-card" class="card">
-                    <h3 class="text-lg font-semibold mb-2 text-gray-800">Letzte Einträge</h3>
                     <ul id="todays-log-container" class="space-y-2">
                         <!-- Log entries will be rendered here -->
                     </ul>
@@ -1427,7 +1435,7 @@ const WellTrackApp = {
                             <h2 id="mood-section-title" class="text-xl md:text-2xl font-semibold text-gray-700">Stimmung</h2>
                             <span id="mood-last-entry-time" class="text-sm text-gray-500"></span>
                         </div>
-                        <div class="flex items-center gap-4">
+                        <div class="w-full sm:w-auto flex justify-end items-center gap-4">
                             <div class="inline-flex rounded-full shadow-sm" role="group">
                                 ${groupButtons}
                             </div>
@@ -1445,7 +1453,7 @@ const WellTrackApp = {
                             <h2 id="pain-section-title" class="text-xl md:text-2xl font-semibold text-gray-700">Schmerzen</h2>
                             <span id="pain-last-entry-time" class="text-sm text-gray-500"></span>
                         </div>
-                        <div class="flex items-center gap-4">
+                        <div class="w-full sm:w-auto flex justify-end items-center gap-4">
                             <div class="inline-flex rounded-full shadow-sm" role="group">
                                 <button type="button" onclick="WellTrackApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100 ${currentView === 'front' ? 'active' : ''}">Vorderseite</button>
                                 <button type="button" onclick="WellTrackApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100 ${currentView === 'back' ? 'active' : ''}">Rückseite</button>
@@ -1532,7 +1540,7 @@ const WellTrackApp = {
                 </div>`;
             },
             fullLogSection: () => `
-                <h2 class="text-2xl font-semibold mb-4 text-gray-700">Protokoll</h2><div id="log-entries-container" class="space-y-4"></div><div id="log-pagination" class="mt-6 flex justify-between items-center"></div>`,
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700 px-6">Protokoll</h2><div id="log-entries-container" class="space-y-4"></div><div id="log-pagination" class="mt-6 flex justify-between items-center"></div>`,
             settingsSection: () => {
                 const settings = WellTrackApp.data.getSettings();
                 const perm = WellTrackApp.state.notificationPermission;
@@ -1553,7 +1561,7 @@ const WellTrackApp = {
                             </div>
                             <div class="flex gap-4">
                                 <button onclick="WellTrackApp.events.handleDeactivateReminders()" class="btn btn-tertiary flex-1">Deaktivieren</button>
-                                <button onclick="WellTrackApp.events.showTestNotification()" class="btn btn-secondary flex-1">Test-Benachrichtigung erzeugen</button>
+                                <button onclick="WellTrackApp.events.showTestNotification()" class="btn btn-secondary flex-1">Test Nachricht</button>
                             </div>
                         `;
                     } else {
@@ -1656,7 +1664,7 @@ const WellTrackApp = {
                 }
                 return `(${time}) Unbekannter Eintrag`;
             },
-            logEntry: (date, metrics) => {
+            logEntry: (formattedDate, metrics) => {
                 let eventsHtml = '';
                 const eventMetrics = metrics.filter(m => m.metric.startsWith('event_'));
                 if (eventMetrics.length > 0) {
@@ -1771,14 +1779,13 @@ const WellTrackApp = {
                 };
 
                 return `
-                    <h3 class="font-bold text-lg text-gray-600">${date}</h3>
-                    <div class="flex justify-between items-start">
-                        <div class="flex-grow">
-                            ${buildSection('Ereignisse', eventsHtml)}
-                            ${buildSection('Stimmung', moodHtml)}
-                            ${buildSection('Schmerz', painHtml)}
-                        </div>
-
+                    <div class="flex justify-end mb-2">
+                        <h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3>
+                    </div>
+                    <div>
+                        ${buildSection('Ereignisse', eventsHtml)}
+                        ${buildSection('Stimmung', moodHtml)}
+                        ${buildSection('Schmerz', painHtml)}
                     </div>
                 `;
             },
