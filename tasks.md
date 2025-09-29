@@ -80,5 +80,9 @@ This document lists the implementation status of features and refactorings for t
 - **Bug Fix:** The "edit" button in the event type settings was non-functional. This was resolved by correcting the `onclick` handler to pass the event's index instead of the entire object, allowing the edit form to populate correctly.
 - **Config Update:** The default event "Kaffee Tassen" is now set to be non-cumulative (`is_cumulative: false`) for new users.
 
+**2025-09-29: Final Bug Fixes and Configuration**
+- **Bug Fix:** The "edit event" functionality was definitively repaired by refactoring the `handleSaveEvent` function. The logic now correctly uses the `activity` ID from the application's state when editing, ensuring the correct event is always updated.
+- **Config Update:** The default `unitType` for the "Ibuprofen 400mg" event was changed from "Einnahme" to an empty string (`""`) for better clarity in the UI.
+
 ## **Planned Tasks**
 
