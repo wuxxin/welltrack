@@ -327,7 +327,7 @@ const WellTrackApp = {
         DEFAULT_EVENTS_JSON: `[
             {"name": "Spaziergang", "activity": "walking", "is_cumulative": true, "increment": 15, "unitType": "min", "groupType": "Bewegung"},
             {"name": "Kaffee Tassen", "activity": "coffee_cups", "is_cumulative": false, "increment": 1, "unitType": "", "groupType": "Ernährung"},
-            {"name": "Ibuprofen 400mg", "activity": "ibuprofen_400", "is_cumulative": false, "increment": 0, "unitType": "Einnahme", "groupType": "Medikamente"},
+            {"name": "Ibuprofen 400mg", "activity": "ibuprofen_400", "is_cumulative": false, "increment": 0, "unitType": "", "groupType": "Medikamente"},
             {"name": "Rückenübungen", "activity": "back_exercises", "is_cumulative": true, "increment": 15, "unitType": "min", "groupType": "Bewegung"}
         ]`,
         MOOD_GROUPS: {
@@ -1926,8 +1926,16 @@ const WellTrackApp = {
         },
         handleSaveEvent() {
             const name = document.getElementById('event-name').value.trim();
-            const activity = WellTrackApp.utils.slugify(document.getElementById('event-activity').value.trim());
-            const increment = parseInt(document.getElementById('event-increment').value, 10); // Can be 0
+            const events = WellTrackApp.data.getEvents();
+            const isEditing = !!WellTrackApp.state.currentEditingEvent;
+
+            // Get activity from state if editing, otherwise from form for a new event.
+            // This is more robust than reading from a disabled form field.
+            const activity = isEditing
+                ? WellTrackApp.state.currentEditingEvent.activity
+                : WellTrackApp.utils.slugify(document.getElementById('event-activity').value.trim());
+
+            const increment = parseInt(document.getElementById('event-increment').value, 10);
             const unitType = document.getElementById('event-unit').value.trim();
             const groupType = document.getElementById('event-group').value.trim();
             const isCumulative = document.getElementById('event-is-cumulative').checked;
@@ -1936,9 +1944,6 @@ const WellTrackApp = {
                 WellTrackApp.render.modal.showAlert('Fehler', 'Bezeichnung und Aktivität-ID sind erforderlich.');
                 return;
             }
-            
-            const events = WellTrackApp.data.getEvents();
-            const isEditing = !!WellTrackApp.state.currentEditingEvent;
 
             if (!isEditing && events.some(t => t.activity === activity)) {
                 WellTrackApp.render.modal.showAlert('Fehler', 'Diese Aktivität-ID wird bereits verwendet.');
@@ -1948,8 +1953,10 @@ const WellTrackApp = {
             const newEventData = { name, activity, increment, unitType, groupType, is_cumulative: isCumulative };
 
             if (isEditing) {
-                const index = events.findIndex(t => t.activity === WellTrackApp.state.currentEditingEvent.activity);
-                if (index > -1) { events[index] = newEventData; }
+                const index = events.findIndex(t => t.activity === activity);
+                if (index > -1) {
+                    events[index] = newEventData;
+                }
             } else {
                 events.push(newEventData);
             }
