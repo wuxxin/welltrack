@@ -326,7 +326,7 @@ const WellTrackApp = {
         },
         DEFAULT_EVENTS_JSON: `[
             {"name": "Spaziergang", "activity": "walking", "is_cumulative": true, "increment": 15, "unitType": "min", "groupType": "Bewegung"},
-            {"name": "Kaffee Tassen", "activity": "coffee_cups", "is_cumulative": true, "increment": 1, "unitType": "", "groupType": "Ernährung"},
+            {"name": "Kaffee Tassen", "activity": "coffee_cups", "is_cumulative": false, "increment": 1, "unitType": "", "groupType": "Ernährung"},
             {"name": "Ibuprofen 400mg", "activity": "ibuprofen_400", "is_cumulative": false, "increment": 0, "unitType": "Einnahme", "groupType": "Medikamente"},
             {"name": "Rückenübungen", "activity": "back_exercises", "is_cumulative": true, "increment": 15, "unitType": "min", "groupType": "Bewegung"}
         ]`,
@@ -1655,7 +1655,7 @@ const WellTrackApp = {
                 const detailsText = `${incrementText} ${event.unitType || ''}`;
                 return `
                     <div class="flex items-center gap-3 flex-grow">
-                        <button onclick="WellTrackApp.events.handleShowEventForm(WellTrackApp.data.getEvents()[${index}])" class="text-blue-500 hover:text-blue-700">
+                        <button onclick="WellTrackApp.events.handleShowEventForm(${index})" class="text-blue-500 hover:text-blue-700">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <div>
@@ -1959,7 +1959,8 @@ const WellTrackApp = {
             WellTrackApp.render.manageEventList();
             if(WellTrackApp.state.activePage === 'event') WellTrackApp.render.eventPage();
         },
-        handleShowEventForm(event = null) {
+        handleShowEventForm(index = null) {
+            const event = index !== null ? WellTrackApp.data.getEvents()[index] : null;
             WellTrackApp.state.currentEditingEvent = event;
             document.getElementById('edit-event-form-container').innerHTML = WellTrackApp.render.components.eventForm(event);
             document.getElementById('add-new-event-btn').classList.add('hidden');
