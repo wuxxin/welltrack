@@ -258,7 +258,6 @@
                      <button id="nav-pain" onclick="WellTrackApp.events.showPage('pain')" class="nav-btn rounded-full" title="Schmerzen eintragen">
                         <span class="material-symbols-outlined">personal_injury</span>
                     </button>
-                    <div class="border-l h-6 mx-2 border-gray-300"></div>
                     <button id="nav-history" onclick="WellTrackApp.events.showPage('history')" class="nav-btn rounded-full" title="Verlauf">
                         <span class="material-symbols-outlined">timeline</span>
                     </button>
@@ -1201,11 +1200,8 @@ const WellTrackApp = {
                 <div id="today-summary-cards" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <!-- Mood and Pain cards will be rendered here -->
                 </div>
-                <div id="today-event-groups-card" class="card">
-                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Ereignis-Gruppen</h3>
-                    <div id="today-event-groups" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div id="today-event-groups" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Event group cards will be rendered here -->
-                    </div>
                 </div>
                 <div id="todays-log-card" class="card">
                     <h3 class="text-lg font-semibold mb-2 text-gray-800">Letzte Einträge</h3>
@@ -1353,7 +1349,7 @@ const WellTrackApp = {
                 </div>`;
             },
             fullLogSection: () => `
-                <div class="card"><h2 class="text-2xl font-semibold mb-4 text-gray-700">Protokoll</h2><div id="log-entries-container" class="space-y-4"></div><div id="log-pagination" class="mt-6 flex justify-between items-center"></div></div>`,
+                <h2 class="text-2xl font-semibold mb-4 text-gray-700">Protokoll</h2><div id="log-entries-container" class="space-y-4"></div><div id="log-pagination" class="mt-6 flex justify-between items-center"></div>`,
             settingsSection: () => {
                 const settings = WellTrackApp.data.getSettings();
                 const perm = WellTrackApp.state.notificationPermission;
@@ -1373,7 +1369,7 @@ const WellTrackApp = {
                         <button onclick="WellTrackApp.events.handleDeleteAllData()" class="btn btn-error flex-1"><span class="material-symbols-outlined mr-2">delete_forever</span> Alle Daten löschen</button>
                     </div>
                 </div>
-                <div class="card hidden">
+                <div class="card">
                     <h2 class="text-2xl font-semibold mb-4 text-gray-700">Erinnerungen</h2>
                     <div id="reminder-section" class="space-y-4">
                          <p class="text-sm text-gray-600">Status: <span class="font-bold">${perm === 'granted' ? 'Erlaubt' : (perm === 'denied' ? 'Blockiert' : 'Nicht festgelegt')}</span></p>
