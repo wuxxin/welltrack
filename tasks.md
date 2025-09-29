@@ -38,10 +38,6 @@ This document lists the implementation status of features and refactorings for t
     - [X] Hid timestamps for incrementing (non-timestamp) events.
     - [X] Re-formatted timestamp events to "Um hh:mm: [Event Name]".
 
-## **Resolved Problems and Solutions**
-
-## **New Tasks**
-
 **2025-09-25: Comprehensive Refactoring and UI/UX Enhancements**
 - **Refactored Data Entry Logic:**
   - Removed the `committedIndex` system entirely, simplifying data management.
@@ -88,5 +84,9 @@ This document lists the implementation status of features and refactorings for t
 - **Bug Fix:** A JavaScript `TypeError` that occurred when opening the event editor was resolved by removing obsolete code related to the old "days" selection feature.
 - **CSP Fix:** The Content Security Policy was corrected by removing the `frame-ancestors` directive (which is not supported in meta tags) and adding `https://cdn.jsdelivr.net` to `connect-src` to allow Chart.js to fetch its source maps, resolving console errors.
 
-## **Planned Tasks**
 
+## **Resolved Problems and Solutions**
+
+## **New Tasks**
+
+## **Planned Tasks**
