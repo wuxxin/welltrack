@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Körper Vorderansicht - Klickbar (Angepasste Farben)</title>
+    <style>
+        /*
+         * Angepasste Farbpalette
+         * Hintergrund: #F8F9FA (Sehr helles Grau)
+         * Text (allgemein): #212529 (Dunkelgrau)
+         * Körperteil-Füllung: #CFE5FF (Helles Blau)
+         * Körperteil-Rand & Schrift: #5F6368 (Mittelgrau)
+         * Hover-Füllung: #AECBFA (Etwas dunkleres Blau)
+         * Auswahl-Füllung: #3461FD (Kräftiges Blau)
+         * Auswahl-Rand: #0B429E (Dunkelblau)
+        */
+
+        body {
+            background-color: #F8F9FA; /* Heller Hintergrund */
+            color: #212529; /* Dunkelgrauer Text */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Roboto', sans-serif; /* A common font for Material Design */
+        }
+
+        h2 {
+            font-weight: 400;
+        }
+
+        /* Grundlegende Stile für das SVG */
+        .body-part {
+            fill: #CFE5FF; /* Helles Blau */
+            stroke: #5F6368; /* Mittelgrau für den Rand */
+            stroke-width: 1.5;
+            rx: 15; /* Abrundungsradius für die Ecken */
+            transition: fill 0.2s ease-in-out, stroke 0.2s ease-in-out;
+            cursor: pointer;
+        }
+
+        /* Hover-Effekt: Leuchtet auf, wenn die Maus darüber fährt */
+        .body-part:hover {
+            fill: #AECBFA; /* Etwas dunkleres Blau für Hover */
+        }
+
+        /* "selected"-Klasse: Wird per JavaScript beim Klick hinzugefügt */
+        .body-part.selected {
+            fill: #3461FD; /* Kräftiges Blau für Auswahl */
+            stroke: #0B429E; /* Dunkelblauer Rand für Auswahl */
+            stroke-width: 2.5;
+        }
+        
+        /* Spezieller Stil für den Text auf einem ausgewählten Element */
+        .body-part.selected + .label {
+            fill: #FFFFFF; /* Weißer Text auf dunklem Blau */
+        }
+
+
+        /* Stile für die Beschriftungen */
+        .label {
+            font-family: 'Roboto', sans-serif;
+            font-size: 16px;
+            font-weight: 500; /* Medium weight for labels */
+            fill: #5F6368; /* Mittelgrau für die Schrift */
+            pointer-events: none; /* Text ignoriert Maus-Events */
+            text-anchor: middle; /* Text horizontal zentrieren */
+            dominant-baseline: central; /* Text vertikal zentrieren */
+            transition: fill 0.2s ease-in-out;
+        }
+    </style>
+    <!-- Google Font for Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div style="text-align: center;">
+        <h2>Klickbare Körperregionen (Vorderansicht)</h2>
+        <svg id="body-front" width="400" height="650" viewBox="0 0 400 650">
+            <!-- Gruppe für die gesamte Figur mit Abständen -->
+            <g id="front-figure">
+                <!-- Kopf als Kreis -->
+                <circle id="head" class="body-part" cx="200" cy="50" r="45"></circle>
+                <text class="label" x="200" y="50">K</text>
+
+                <!-- Hals -->
+                <rect id="neck" class="body-part" x="180" y="99" width="40" height="45"></rect>
+                <text class="label" x="200" y="121.5">HWS</text>
+
+                <!-- Schultern -->
+                <rect id="shoulder_left" class="body-part" x="55" y="99" width="121" height="45"></rect>
+                <text class="label" x="115.5" y="121.5">S</text>
+                <rect id="shoulder_right" class="body-part" x="224" y="99" width="121" height="45"></rect>
+                <text class="label" x="284.5" y="121.5">S</text>
+
+                <!-- Rumpf (Vorderseite) -->
+                <rect id="chest" class="body-part" x="125" y="148" width="150" height="80"></rect>
+                <text class="label" x="200" y="188">B</text>
+                
+                <rect id="abdomen" class="body-part" x="128" y="232" width="144" height="60"></rect>
+                <text class="label" x="200" y="262">BA</text>
+
+                <!-- Becken (Vorderseite) -->
+                <rect id="pelvis_left" class="body-part" x="128" y="296" width="62" height="60"></rect>
+                <text class="label" x="159" y="326">P</text>
+                <rect id="pelvis_right" class="body-part" x="210" y="296" width="62" height="60"></rect>
+                <text class="label" x="241" y="326">P</text>
+
+                <!-- Leiste (Groin) -->
+                <rect id="groin" class="body-part" x="190" y="326" width="20" height="40"></rect>
+                <text class="label" x="200" y="346">L</text>
+
+                <!-- Arme -->
+                <g>
+                    <rect id="upper_arm_left" class="body-part" x="51" y="148" width="41" height="100"></rect>
+                    <text class="label" x="71.5" y="198">oA</text>
+                    <rect id="lower_arm_left" class="body-part" x="51" y="252" width="41" height="90"></rect>
+                    <text class="label" x="71.5" y="297">uA</text>
+                    <rect id="hand_left" class="body-part" x="47" y="346" width="50" height="50"></rect>
+                    <text class="label" x="72" y="371">H</text>
+                </g>
+                <g>
+                    <rect id="upper_arm_right" class="body-part" x="308" y="148" width="41" height="100"></rect>
+                    <text class="label" x="328.5" y="198">oA</text>
+                    <rect id="lower_arm_right" class="body-part" x="308" y="252" width="41" height="90"></rect>
+                    <text class="label" x="328.5" y="297">uA</text>
+                    <rect id="hand_right" class="body-part" x="304" y="346" width="50" height="50"></rect>
+                    <text class="label" x="329" y="371">H</text>
+                </g>
+
+                <!-- Beine -->
+                <g>
+                    <rect id="upper_leg_left" class="body-part" x="133" y="360" width="41" height="120"></rect>
+                    <text class="label" x="153.5" y="420">oB</text>
+                    <rect id="lower_leg_left" class="body-part" x="133" y="484" width="41" height="110"></rect>
+                    <text class="label" x="153.5" y="539">uB</text>
+                </g>
+                <g>
+                    <rect id="upper_leg_right" class="body-part" x="227" y="360" width="41" height="120"></rect>
+                    <text class="label" x="247.5" y="420">oB</text>
+                    <rect id="lower_leg_right" class="body-part" x="227" y="484" width="41" height="110"></rect>
+                    <text class="label" x="247.5" y="539">uB</text>
+                </g>
+
+                <!-- Füße -->
+                <rect id="foot_left" class="body-part" x="128" y="598" width="50" height="40"></rect>
+                <text class="label" x="153" y="618">F</text>
+                <rect id="foot_right" class="body-part" x="222" y="598" width="50" height="40"></rect>
+                <text class="label" x="247" y="618">F</text>
+            </g>
+        </svg>
+    </div>
+
+    <script>
+        // JavaScript zum Hinzufügen der Interaktivität
+        document.addEventListener('DOMContentLoaded', () => {
+            const bodyParts = document.querySelectorAll('.body-part');
+            let currentSelected = null;
+            let currentSelectedLabel = null;
+
+            bodyParts.forEach(part => {
+                // Find the corresponding label for each part
+                const label = part.nextElementSibling;
+
+                part.addEventListener('click', () => {
+                    // Deselect previous part and its label
+                    if (currentSelected) {
+                        currentSelected.classList.remove('selected');
+                    }
+                    
+                    // Select the new part and its label
+                    part.classList.add('selected');
+                    
+                    // Update the currently selected items
+                    currentSelected = part;
+                    
+                    // Optional: Gib die ID des geklickten Teils in der Konsole aus
+                    console.log('Clicked part ID:', part.id);
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
