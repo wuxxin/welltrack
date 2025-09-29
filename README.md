@@ -1,6 +1,8 @@
 # **WellTrack Gesundheitstagebuch**
 ![WellTrack Logo](icon-192.png)
 
+**[Klicken Sie hier, um WellTrack direkt im Browser zu nutzen (automatische Updates)](https://your-github-username.github.io/your-repo-name/welltrack.html)**
+
 WellTrack ist ein persönliches und 100 % privates Gesundheitstagebuch, das dabei hilft, Zusammenhänge zwischen Gewohnheiten, dem eigenen Befinden und der allgemeinen Gesundheit zu erkennen.
 
 Als offline-fähige Progressive Web App (PWA) bleiben dabei alle Daten ausschließlich auf dem eigenen Gerät – es gibt keinen Server und keine Cloud. Das ermöglicht vollständige Kontrolle, eine schnelle Nutzung, auch ohne Internetverbindung, auf jeden belibigen Gerät.
@@ -63,8 +65,25 @@ Passen Sie Ereignisarten an, verwalten Sie Ihre Daten durch Import/Export einer 
 * **Interaktive Datenvisualisierung:** Diagramme werden mit Chart.js erstellt.
 * **Abhängigkeiten über CDN:** Alle externen Bibliotheken (z. B. Tailwind CSS, Chart.js) werden über ein CDN geladen, was die Einrichtung vereinfacht und keine Build-Schritte erfordert.
 
-## **Installation & Nutzung**
+## **Nutzung & Installation**
 
-1. **Keine Installation erforderlich:** Öffnen Sie einfach die Datei welltrack.html in einem modernen Webbrowser (wie Chrome, Firefox oder Safari).
-2. **(Optional) Als App installieren:** Suchen Sie in der Adressleiste Ihres Browsers nach dem Installationssymbol, um WellTrack für einen schnellen Zugriff und eine nahtlose Offline-Nutzung wie eine native App zu Ihrem Startbildschirm hinzuzufügen.
-3. **Beginnen Sie mit der Protokollierung:** Nutzen Sie die Navigationssymleiste, um Ihre ersten Einträge zu machen.
+Die einfachste Methode, WellTrack zu nutzen, ist über die gehostete Version, die immer auf dem neuesten Stand ist:
+
+**[Klicken Sie hier, um WellTrack zu starten](https://your-github-username.github.io/your-repo-name/welltrack.html)**
+
+### **Installation auf dem Smartphone**
+
+Für ein App-ähnliches Erlebnis können Sie WellTrack auf Ihrem Smartphone-Startbildschirm installieren.
+
+1. Öffnen Sie WellTrack in Ihrem mobilen Browser (z.B. Chrome oder Safari).
+2. Öffnen Sie das Browser-Menü (oft durch drei Punkte oder ein Teilen-Symbol dargestellt).
+3. Wählen Sie die Option **"Zum Startbildschirm hinzufügen"** (oder eine ähnliche Formulierung).
+
+![Anleitung zum Hinzufügen zum Startbildschirm](screenshots/welltrack-add-to-startscreen.png)
+
+Danach erscheint ein WellTrack-Symbol auf Ihrem Startbildschirm, über das Sie die App wie eine native Anwendung starten können.
+
+### **Lokale Nutzung**
+
+Alternativ können Sie die `welltrack.html`-Datei direkt auf Ihrem Computer speichern und im Browser öffnen.
+**Hinweis:** Wenn Sie diese Methode verwenden, müssen Sie die Datei manuell aktualisieren, um neue Funktionen und Fehlerbehebungen zu erhalten.
