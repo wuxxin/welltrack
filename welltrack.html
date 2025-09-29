@@ -333,10 +333,10 @@ const WellTrackApp = {
             'arousal_level': {
                 name: 'Energie & Motivation',
                 questions: [
-                    { id: 'energy', name: 'Energie', negative: 'Müde/Kraftlos', positive: 'Energiegeladen' },
+                    { id: 'energy', name: 'Energie', negative: 'Müde / Kraftlos', positive: 'Energiegeladen' },
                     { id: 'motivation', name: 'Motivation', negative: 'Lethargisch', positive: 'Motiviert' },
                     { id: 'inner_drive', name: 'Innere Unruhe', negative: 'Getrieben', positive: 'Zentriert' },
-                    { id: 'temperament', name: 'Temperament', negative: 'Geladen/Gereizt', positive: 'Gelassen' },
+                    { id: 'temperament', name: 'Temperament', negative: 'Geladen / Gereizt', positive: 'Gelassen' },
                     { id: 'anxiety', name: 'Angstfreiheit', negative: 'Ängstlich', positive: 'Ruhig/Frei' },
                     { id: 'focus', name: 'Fokus', negative: 'Abgelenkt', positive: 'Fokussiert' }
                 ]
@@ -345,7 +345,7 @@ const WellTrackApp = {
                 name: 'Stimmung & Selbstwert',
                 questions: [
                     { id: 'happiness', name: 'Glücklichkeit', negative: 'Deprimiert', positive: 'Glücklich' },
-                    { id: 'outlook', name: 'Ausblick/Hoffnung', negative: 'Hoffnungslos', positive: 'Hoffnungsvoll' },
+                    { id: 'outlook', name: 'Ausblick / Hoffnung', negative: 'Hoffnungslos', positive: 'Hoffnungsvoll' },
                     { id: 'self_esteem', name: 'Selbstwert', negative: 'Wertlos', positive: 'Wertvoll' },
                     { id: 'stability', name: 'Stabilität', negative: 'Labil', positive: 'Stabil' },
                     { id: 'social_connection', name: 'Soziale Verbindung', negative: 'Zurückgezogen', positive: 'Engagiert' }
@@ -2064,7 +2064,7 @@ const WellTrackApp = {
                 navigator.serviceWorker.getRegistration().then(reg => {
                     if (reg) {
                         reg.showNotification('WellTrack Erinnerung', {
-                            body: 'Zeit für deinen heutigen Tagebucheintrag!',
+                            body: 'Zeit für einen neuen Tagebucheintrag!',
                             icon: 'icon-192.png'
                         });
                     } else {
