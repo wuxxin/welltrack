@@ -73,6 +73,22 @@
             border-radius: 1.5rem;
             padding: 1.5rem;
         }
+        .pill-card {
+            background-color: var(--md-sys-color-surface-container-low);
+            border: 1px solid var(--md-sys-color-surface-variant);
+            border-radius: 9999px; /* This creates the pill shape */
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .pill-card:hover {
+            box-shadow: 0 2px 8px 2px rgba(0,0,0,.1);
+            transform: translateY(-1px);
+        }
         .fab {
             background-color: var(--md-sys-color-primary-container);
             color: var(--md-sys-color-on-primary-container);
@@ -666,14 +682,22 @@ const WellTrackApp = {
 
             // --- Deltas ---
             const renderArrowDelta = (delta, higherIsGood = true) => {
-                if (delta === null || isNaN(delta)) return `<span class="text-lg text-gray-500">...</span>`;
-                if (delta === 0) return ``;
+                if (delta === null || isNaN(delta)) {
+                    return `<span class="text-sm text-gray-500 font-semibold inline-flex items-center gap-1">
+                                <span class="material-symbols-outlined text-base">horizontal_rule</span>--
+                            </span>`;
+                }
+                if (delta === 0) {
+                    return `<span class="text-sm text-gray-500 font-semibold inline-flex items-center gap-1">
+                                <span class="material-symbols-outlined text-base">trending_flat</span>Gleich
+                            </span>`;
+                }
 
                 const isGood = higherIsGood ? (delta > 0) : (delta < 0);
                 const color = isGood ? 'text-green-500' : 'text-red-500';
-                const icon = isGood ? 'arrow_upward' : 'arrow_downward';
+                const icon = isGood ? 'trending_up' : 'trending_down';
 
-                return `<span class="text-sm ${color} font-semibold inline-flex items-center">
+                return `<span class="text-sm ${color} font-semibold inline-flex items-center gap-1">
                             <span class="material-symbols-outlined text-base">${icon}</span>
                             ${Math.abs(Math.round(delta))}
                         </span>`;
@@ -684,23 +708,25 @@ const WellTrackApp = {
 
             const { latestSlot: latestPainSlot, previousSlot: previousPainSlot } = WellTrackApp.utils.getMetricSlots('pain_');
             const painDelta = (latestPainSlot !== null && previousPainSlot !== null) ? latestPainSlot - previousPainSlot : null;
-            const displayPainValue = latestPainSlot !== null ? latestPainSlot : '...';
+            const displayPainValue = latestPainSlot !== null ? latestPainSlot : '-';
 
             const { latestSlot: latestMoodSlot, previousSlot: previousMoodSlot } = WellTrackApp.utils.getMetricSlots('mood_');
             const moodDelta = (latestMoodSlot !== null && previousMoodSlot !== null) ? latestMoodSlot - previousMoodSlot : null;
-            const displayMoodValue = latestMoodSlot !== null ? latestMoodSlot : '...';
+            const displayMoodValue = latestMoodSlot !== null ? latestMoodSlot : '-';
 
             summaryContainer.innerHTML = `
-                <div onclick="WellTrackApp.events.showPage('mood')" class="card cursor-pointer hover:shadow-lg transition-shadow flex justify-between items-center">
-                    <p class="text-lg font-semibold">Stimmung</p>
-                    <div class="text-right">
-                       <p class="text-3xl font-bold">${displayMoodValue}</p>
-                       ${renderArrowDelta(moodDelta, true)}
+                <div onclick="WellTrackApp.events.showPage('mood')" class="pill-card">
+                    <p class="text-lg font-semibold w-2/4">Stimmung</p>
+                    <div class="border-l border-gray-300 h-10"></div>
+                    <div class="flex-grow text-center">
+                        <p class="text-3xl font-bold">${displayMoodValue}</p>
+                        ${renderArrowDelta(moodDelta, true)}
                     </div>
                 </div>
-                <div onclick="WellTrackApp.events.showPage('pain')" class="card cursor-pointer hover:shadow-lg transition-shadow flex justify-between items-center">
-                    <p class="text-lg font-semibold">Schmerzen</p>
-                    <div class="text-right">
+                <div onclick="WellTrackApp.events.showPage('pain')" class="pill-card">
+                    <p class="text-lg font-semibold w-2/4">Schmerzen</p>
+                    <div class="border-l border-gray-300 h-10"></div>
+                    <div class="flex-grow text-center">
                        <p class="text-3xl font-bold">${displayPainValue}</p>
                        ${renderArrowDelta(painDelta, false)}
                     </div>
