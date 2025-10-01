@@ -5,18 +5,20 @@
 
 WellTrack ist ein persönliches und 100 % privates Gesundheitstagebuch, das dabei hilft, Zusammenhänge zwischen Gewohnheiten, dem eigenen Befinden und der allgemeinen Gesundheit zu erkennen.
 
-Als offline-fähige Progressive Web App (PWA) bleiben dabei alle Daten ausschließlich auf dem Gerät des Anwenders – es gibt keinen Server und keine Cloud. Das ermöglicht vollständige Kontrolle und eine schnelle Nutzung, auch ohne Internetverbindung, auf jedem beliebigen Gerät.
+Als offline-fähige Progressive Web App (PWA) bleiben dabei alle Daten ausschließlich auf dem eigenen Gerät – es gibt keinen Server und keine Cloud. Das ermöglicht vollständige Kontrolle und eine schnelle Nutzung, auch ohne Internetverbindung und auf jedem beliebigen Gerät.
 
 Diese Web App ist ein ***Vibecoding - Projekt***. Das bedeutet, sie wurde komplett durch natürliche Sprache mit einer KI erstellt, um für eine Person eine einfache Möglichkeit zu schaffen ihre täglichen Schmerzen, Stimmungen und Trainingszyklen niederschwellig festzuhalten.
 
 Der Code ist nicht oder nur schwer für menschliche Wartung zugänglich.
 Eine größere Veränderung oder Erweiterung des Codes ist - in der momentanen Form - nicht empfehlenswert.
 
-## **Vorteile von WellTrack**
+## **Schwerpunkte von WellTrack**
 
-*   **Schnelle und detaillierte Stimmungseintragung:** Eine detaillierte Erfassung der Stimmung dauert weniger als 30 Sekunden. Die Verwendung von Werten wie -3, -2, -1, +1, +2, +3 ohne eine neutrale Null ermöglicht eine feine Kalibrierung. Dies macht das separate Ausfüllen einzelner Stimmungswerte überflüssig, da alle eingetragenen Werte ungleich Null sind, während fehlende Werte als Null interpretiert werden, ohne das Ergebnis zu verfälschen.
+**Schnelle aber detaillierte Stimmungs und Schmerzerfassung:**
 
-*   **Effiziente Schmerzerfassung:** Die Schmerzeintragung ist schnell und dennoch detailliert. Durch die Reduzierung auf eine Skala von 0-5 (0=kein, 1=leicht, 2=unangenehm, 3=stark, 4=fürchterlich, 5=vernichtend) mit klaren, nachlesbaren Definitionen wird eine eindeutige Kategorisierung der Schmerzintensität ermöglicht. Fehlende Werte werden als 0 behandelt, was zu einem aussagekräftigen Teilergebnis führt.
+Eine detaillierte Erfassung der Stimmung dauert weniger als 30 Sekunden. Die Verwendung von Werten wie -3, -2, -1, +1, +2, +3 ohne eine neutrale Null ermöglicht eine feine Kalibrierung. Dies macht das separate Ausfüllen einzelner Stimmungswerte überflüssig, da alle eingetragenen Werte ungleich Null sind, während fehlende Werte als Null interpretiert werden, ohne das Ergebnis zu verfälschen.
+
+Die Schmerzeintragung ist schnell und dennoch detailliert. Durch die Reduzierung auf eine Skala von 0-5 (0=kein, 1=leicht, 2=unangenehm, 3=stark, 4=fürchterlich, 5=vernichtend) mit klaren, nachlesbaren Definitionen wird eine eindeutige Kategorisierung der Schmerzintensität ermöglicht. Fehlende Werte werden als 0 behandelt, was zu einem aussagekräftigen Teilergebnis führt.
 
 ## **Funktionen**
 
@@ -40,7 +42,9 @@ Die Stimmung kann mithilfe intuitiver Schieberegler für verschiedene Aspekte wi
 
 ### **Schmerzen festhalten**
 
-Auf einer interaktiven Darstellung des menschlichen Körpers können bestimmte Körperteile ausgewählt und die Schmerzintensität auf einer Skala von 0 (kein Schmerz) bis 5 (vernichtender Schmerz) bewertet werden.
+Auf einer interaktiven Darstellung des menschlichen Körpers können bestimmte Körperteile ausgewählt und die Schmerzintensität auf einer Skala von
+0 (kein), 1 (leicht), 2 (unangenehm), 3 (stark) 4(fürchterlich) bis 5 (vernichtend) bewertet werden.
+
 
 ![WellTrack Pain](screenshots/welltrack-pain-entry.png)
 
