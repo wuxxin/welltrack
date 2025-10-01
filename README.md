@@ -30,9 +30,11 @@ Die Startseite bietet eine Zusammenfassung des aktuellen Tages, einschließlich 
 
 ### **Ereignisse eintragen**
 
-Tägliche Aktivitäten wie Spaziergänge, die Einnahme von Medikamenten oder der Kaffeekonsum können protokolliert werden. Die Ereignistypen lassen sich in den Einstellungen anpassen.
+Tägliche Aktivitäten wie Spaziergänge oder der Kaffeekonsum können als kumulative Werte (z.B. "60 min") erfasst werden. Die Ereignistypen lassen sich in den Einstellungen vollständig anpassen.
 
-![WellTrack Event](screenshots/welltrack-event-entry.png)
+Für schnelle, wiederholbare Aktionen wie die Einnahme von Medikamenten gibt es "PushButton"-Ereignisse. Ein Klick erfasst das Ereignis mit einem Zeitstempel. Nach der Erfassung erscheinen Optionen, um die Eingabe rückgängig zu machen oder das Ereignis erneut zu erfassen, was ideal für die Protokollierung von mehreren Dosen ist.
+
+![Screenshot der Pushbutton-Funktion](screenshots/welltrack-pushbutton-event.png)
 
 ### **Stimmung protokollieren**
 
@@ -43,7 +45,7 @@ Die Stimmung kann mithilfe intuitiver Schieberegler für verschiedene Aspekte wi
 ### **Schmerzen festhalten**
 
 Auf einer interaktiven Darstellung des menschlichen Körpers können bestimmte Körperteile ausgewählt und die Schmerzintensität auf einer Skala von
-0 (kein), 1 (leicht), 2 (unangenehm), 3 (stark) 4(fürchterlich) bis 5 (vernichtend) bewertet werden.
+0 (kein), 1 (leicht), 2 (unangenehm), 3 (stark) 4(fürchterlich) bis 5 (vernichtend) bewertet werden. Auf Wunsch werden die Namen der Körperteile beim Überfahren mit der Maus angezeigt.
 
 
 ![WellTrack Pain](screenshots/welltrack-pain-entry.png)
@@ -65,6 +67,10 @@ Ein chronologisches und paginiertes Protokoll aller Einträge, gruppiert nach Ta
 Ereignisarten können angepasst und Daten durch Import/Export einer JSON-Datei verwaltet werden.
 
 ![WellTrack Settings](screenshots/welltrack-settings.png)
+
+### **Optionale Erinnerungen**
+
+WellTrack bietet optional anpassbare Erinnerungen. In den Einstellungen können Browser-Benachrichtigungen aktiviert und mehrere Erinnerungszeiten (z.B. "12:00, 18:00") festgelegt werden, um sicherzustellen, dass keine Einträge vergessen werden.
 
 ## **Technische Merkmale**
 
