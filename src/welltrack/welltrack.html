@@ -1417,7 +1417,7 @@ const WellTrackApp = {
                 const dayName = weekdays[today.getDay()];
                 const dateString = `${dayName} ${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
                 return `
-                <div class="flex justify-between items-center mb-4 px-6">
+                <div class="flex justify-between items-center mb-4 px-2">
                     <h2 class="text-2xl font-semibold text-gray-700">Heute</h2>
                     <span class="text-lg text-gray-800">${dateString}</span>
                 </div>
@@ -1427,8 +1427,8 @@ const WellTrackApp = {
                 <div id="today-event-groups" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
                     <!-- Event group cards will be rendered here -->
                 </div>
-                <h3 class="text-lg font-semibold mb-2 text-gray-800 px-6">Letzte Einträge</h3>
                 <div id="todays-log-card" class="card">
+                    <h3 class="text-lg font-semibold mb-1 text-gray-800">Letzte Einträge:</h3>
                     <ul id="todays-log-container" class="space-y-2">
                         <!-- Log entries will be rendered here -->
                     </ul>
@@ -1893,7 +1893,7 @@ const WellTrackApp = {
             },
             paginationControls: (currentPage, totalPages) => `<button onclick="WellTrackApp.events.handleChangePage(-1)" class="btn btn-tertiary" ${currentPage === 1 ? 'disabled' : ''}>Zurück</button><span class="text-sm text-gray-700">Seite ${currentPage} von ${totalPages}</span><button onclick="WellTrackApp.events.handleChangePage(1)" class="btn btn-tertiary" ${currentPage === totalPages ? 'disabled' : ''}>Weiter</button>`,
             manageEventItem: (event, index) => {
-                const incrementText = event.increment === 0 ? 'Timestamp' : `+${event.increment}`;
+                const incrementText = event.increment === 0 ? 'Zeitstempel' : `+${event.increment}`;
                 const detailsText = `${incrementText} ${event.unitType || ''}`;
                 return `
                     <div class="flex items-center gap-3 flex-grow">
@@ -1940,7 +1940,7 @@ const WellTrackApp = {
                         <div><label for="event-name" class="block mb-1 text-sm font-medium">Bezeichnung</label><input id="event-name" type="text" value="${name}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="z.B. Tassen Kaffee"></div>
                         <div><label for="event-activity" class="block mb-1 text-sm font-medium">Aktivität-ID</label><input id="event-activity" type="text" value="${activity}" ${isEditing ? 'disabled' : ''} class="w-full p-2 border border-gray-300 rounded-lg ${isEditing ? 'bg-gray-100' : ''}" placeholder="z.B. kaffee_tassen"></div>
                         <div class="grid grid-cols-2 gap-4">
-                            <div><label for="event-increment" class="block mb-1 text-sm font-medium">Inkrement (0=Timestamp)</label><input id="event-increment" type="number" value="${increment}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="1"></div>
+                            <div><label for="event-increment" class="block mb-1 text-sm font-medium">Inkrement (0=Zeitstempel)</label><input id="event-increment" type="number" value="${increment}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="1"></div>
                             <div><label for="event-unit" class="block mb-1 text-sm font-medium">Einheit</label><input id="event-unit" type="text" value="${unitType}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="min, x, etc."></div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
@@ -1951,7 +1951,7 @@ const WellTrackApp = {
                             <div class="flex items-end pb-1">
                                 <div class="flex items-center h-full">
                                     <input id="event-is-cumulative" type="checkbox" ${!isEditing || event.is_cumulative ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
-                                    <label for="event-is-cumulative" class="ml-2 text-sm font-medium text-gray-900">kumulativ bei selben Typ</label>
+                                    <label for="event-is-cumulative" class="ml-2 text-sm font-medium text-gray-900">zusammen addieren bei selber Gruppe & Einheit</label>
                                 </div>
                             </div>
                         </div>

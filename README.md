@@ -1,5 +1,5 @@
 # **WellTrack Gesundheitstagebuch**
-![WellTrack Logo](icon-192.png)
+![WellTrack Logo](assets/icon-192.png)
 
 **[Hier klicken , um WellTrack (mit Updates) im Browser zu nutzen](https://wuxxin.github.io/welltrack/welltrack.html)**
 
@@ -26,7 +26,7 @@ Die Schmerzeintragung ist schnell und dennoch detailliert. Durch die Reduzierung
 
 Die Startseite bietet eine Zusammenfassung des aktuellen Tages, einschließlich der wichtigsten Werte für Stimmungen und Schmerzen im Vergleich zum Vortag. Darunter befindet sich ein detailliertes Protokoll aller heutigen Einträge.
 
-![WellTrack Home](screenshots/welltrack-home.png)
+![WellTrack Home](assets/welltrack-home.png)
 
 ### **Ereignisse eintragen**
 
@@ -34,13 +34,13 @@ Tägliche Aktivitäten wie Spaziergänge oder der Kaffeekonsum können als kumul
 
 Für schnelle, wiederholbare Aktionen wie die Einnahme von Medikamenten gibt es "PushButton"-Ereignisse. Ein Klick erfasst das Ereignis mit einem Zeitstempel. Nach der Erfassung erscheinen Optionen, um die Eingabe rückgängig zu machen oder das Ereignis erneut zu erfassen, was ideal für die Protokollierung von mehreren Dosen ist.
 
-![Screenshot der Pushbutton-Funktion](screenshots/welltrack-pushbutton-event.png)
+![Screenshot der Pushbutton-Funktion](assets/welltrack-pushbutton-event.png)
 
 ### **Stimmung protokollieren**
 
 Die Stimmung kann mithilfe intuitiver Schieberegler für verschiedene Aspekte wie Energie, Motivation und Angstfreiheit erfasst werden. Die Stimmungen sind in Gruppen organisiert, um die Eingabe zu vereinfachen.
 
-![WellTrack Mood](screenshots/welltrack-mood-entry.png)
+![WellTrack Mood](assets/welltrack-mood-entry.png)
 
 ### **Schmerzen festhalten**
 
@@ -48,25 +48,25 @@ Auf einer interaktiven Darstellung des menschlichen Körpers können bestimmte K
 0 (kein), 1 (leicht), 2 (unangenehm), 3 (stark) 4(fürchterlich) bis 5 (vernichtend) bewertet werden. Auf Wunsch werden die Namen der Körperteile beim Überfahren mit der Maus angezeigt.
 
 
-![WellTrack Pain](screenshots/welltrack-pain-entry.png)
+![WellTrack Pain](assets/welltrack-pain-entry.png)
 
 ### **Verlauf & Diagramme**
 
 Die gesammelten Daten lassen sich in übersichtlichen Diagrammen visualisieren. Trends für Ereignisse, Stimmungen und Schmerzen können über verschiedene Zeiträume (1 Woche, 1 Monat, 6 Monate) analysiert werden.
 
-![WellTrack Chart](screenshots/welltrack-chart.png)
+![WellTrack Chart](assets/welltrack-chart.png)
 
 ### **Detailliertes Protokoll**
 
 Ein chronologisches und paginiertes Protokoll aller Einträge, gruppiert nach Tagen.
 
-![WellTrack Log](screenshots/welltrack-log.png)
+![WellTrack Log](assets/welltrack-log.png)
 
 ### **Einstellungen & Datenverwaltung**
 
 Ereignisarten können angepasst und Daten durch Import/Export einer JSON-Datei verwaltet werden.
 
-![WellTrack Settings](screenshots/welltrack-settings.png)
+![WellTrack Settings](assets/welltrack-settings.png)
 
 ### **Optionale Erinnerungen**
 
@@ -95,7 +95,7 @@ Für ein App-ähnliches Erlebnis kann WellTrack auf dem Smartphone-Startbildschi
 2.  Das Browser-Menü öffnen (oft durch drei Punkte oder ein Teilen-Symbol dargestellt).
 3.  Die Option **"Zum Startbildschirm hinzufügen"** (oder eine ähnliche Formulierung) wählen.
 
-![Anleitung zum Hinzufügen zum Startbildschirm](screenshots/welltrack-add-to-startscreen.png)
+![Anleitung zum Hinzufügen zum Startbildschirm](assets/welltrack-add-to-startscreen.png)
 
 Danach erscheint ein WellTrack-Symbol auf dem Startbildschirm, über das die App wie eine native Anwendung gestartet werden kann.
 

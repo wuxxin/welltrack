@@ -115,12 +115,6 @@ This document lists the implementation status of features and refactorings for t
   - Provide three options: "Abbrechen" (Cancel), "An bestehende Daten anhängen" (Append), and "Alles überschreiben" (Overwrite).
   - Implement the "Append" logic to merge new event types and chronologically insert new metrics without creating duplicates.
 
-## **Resolved Problems and Solutions**
-
-## **New Tasks**
-
-## **Planned Tasks**
-
 **2025-10-01: UI/UX Enhancements, Logic Refinements, and Documentation**
 - **Settings UI:**
   - [X] **Import Logic:** Ensure that merging data via import does not duplicate identical metrics.
@@ -143,3 +137,7 @@ This document lists the implementation status of features and refactorings for t
     - [X] Include a placeholder for a new screenshot demonstrating the pushbutton event flow.
   - [X] **`tasks.md`:**
     - [X] Update the "Planned Tasks" section with a detailed breakdown of the current work.
+
+## **Planned Tasks**
+
+## **Discovered Tasks**

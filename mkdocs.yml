@@ -1,0 +1,20 @@
+site_name: Welltrack
+site_dir: build/site
+repo_url: https://github.com/wuxxin/welltrack
+theme:
+  name: material
+nav:
+  - README.md
+  - Interactive **Marimo**: marimo
+plugins:
+  - marimo
+markdown_extensions:
+  - smarty
+  - toc:
+      permalink: "#"
+  - pymdownx.magiclink
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format

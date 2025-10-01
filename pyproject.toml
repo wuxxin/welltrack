@@ -1,0 +1,63 @@
+[build-system]
+# make version from git
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# empty
+
+[tool.setuptools_scm]
+# empty
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+
+[project]
+name = "welltrack-lab"
+version = "0.1.0"
+description = "A project for welltrack data analysis, and visualization."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "welltrack_lab",
+    "build",
+    "pandas",
+    "bokeh",
+    "pillow",
+    "matplotlib",
+    "marimo[recommended,lsp]",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "flake8",
+]
+docs = [
+    # mkdocs - Project documentation with Markdown
+    "mkdocs",
+    # A Mermaid graphs plugin for MkDocs
+    "mkdocs-mermaid2-plugin",
+    # Python implementation of Lunr.js (for mkdocs)
+    "lunr",
+    # MkDocs plugin to add a last updated date to your site
+    "mkdocs-git-revision-date-localized-plugin",
+    # Plugin to generate a single PDF file from a MkDocs
+    "mkdocs-with-pdf",
+    # MkDocs plugin to automagically generate relative links
+    "mkdocs-ezlinks-plugin",
+    # Open source plugin for Mkdocs page redirects
+    "mkdocs-redirects",
+    # embed interactive marimo notebooks in your MkDocs documentation
+    "mkdocs-marimo",
+    # Material design theme for MkDocs
+    "mkdocs-material",
+    # Markdown extension resources for MkDocs Material
+    "mkdocs-material-extensions",
+    # MkDocs Material additions used for pymdownx
+    "mkdocs_pymdownx_material_extras",
+]
