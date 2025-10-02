@@ -4,6 +4,12 @@ This document lists the curren implementation status of features and refactoring
 
 ## Planned Tasks
 
+- **`extract_mood_pain.py` script:**
+  - Create a Python script to extract mood and pain entries from a WellTrack JSON export.
+  - The script will accept a start date (`dd.mm.yyyy` or `all`) as a command-line argument.
+  - It will read data from `stdin`, filter entries, and validate them against the current `welltrack.html` configuration.
+  - Invalid entries will be reported to `stderr`, and the filtered, valid JSON will be printed to `stdout`.
+
 This update includes a comprehensive set of UI enhancements, feature additions, and behavioral refinements across the application.
 
 - **UI & Styling:**
