@@ -1,0 +1,17 @@
+# compiled python
+*.pyc
+__pycache__
+__marimo__
+.pytest_cache
+
+# egg-info for now
+src/welltrack_lab.egg-info
+
+# uv locked dependencies
+uv.lock
+
+# python virtualenv
+.venv
+
+# build artifacts
+build

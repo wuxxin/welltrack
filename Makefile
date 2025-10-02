@@ -1,6 +1,6 @@
 # Makefile
 
-.PHONY: help buildenv lab docs docs-serve lint clean
+.PHONY: help buildenv lab docs docs-serve lint clean clean-all
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' | sort
 
@@ -17,7 +17,7 @@ uv.lock: pyproject.toml ensure-uv
 
 .venv/bin/activate: uv.lock
 	@echo "+++ $@"
-	uv venv
+	uv venv --clear
 	uv sync --all-extras
 	@touch $@
 
@@ -37,23 +37,33 @@ build/site/index.html:
 	. .venv/bin/activate && mkdocs build -f mkdocs.yml
 
 docs-mkdocs: build/site/index.html
+	@echo "+++ $@"
+
+build/site/welltrack/welltrack.html: docs-mkdocs
+	mkdir -p build/site/welltrack
+	cp src/welltrack/* build/site/welltrack
+
+docs-welltrack-app: build/site/welltrack/welltrack.html
+	@echo "+++ $@"
 
 build/wheel/welltrack_lab-0.1.0-py3-none-any.whl:
 	mkdir -p build/wheel
 	. .venv/bin/activate && python -m build --wheel --installer uv -o build/wheel
 
 docs-wheel: build/wheel/welltrack_lab-0.1.0-py3-none-any.whl
+	@echo "+++ $@"
 
 build/site/marimo/index.html: docs-wheel
-	mkdir -p build/notebooks/public
-	cp build/wheel/welltrack_lab-*-py3-none-any.whl build/notebooks/public
+	mkdir -p build/welltrack-lab/public
+	cp build/wheel/welltrack_lab-*-py3-none-any.whl build/welltrack-lab/public
 	cp scripts/welltrack-lab.py build/welltrack-lab/
 	. .venv/bin/activate && printf "y\n" | marimo export html-wasm \
 		build/welltrack-lab/welltrack-lab.py -o build/site/marimo --mode run
 
 docs-marimo: build/site/marimo/index.html
+	@echo "+++ $@"
 
-docs: buildenv docs-mkdocs docs-wheel docs-marimo ## Make Documentation and Onlinepage
+docs: buildenv docs-mkdocs docs-welltrack-app docs-wheel docs-marimo ## Make Onlinepage and WebApp
 	@echo "+++ $@"
 
 docs-serve: docs ## Serve Documentation locally
@@ -74,6 +84,10 @@ lint: buildenv ## Run Linting
 
 clean: ## Remove test and build artifacts
 	@echo "+++ $@"
-	rm -rf .venv __marimo__ .pytest_cache build
+	rm -rf __marimo__ .pytest_cache build
 	find . -type d -name "__pycache__" -exec rm -rf {} +
+
+clean-all: clean ## Remove environment and all artifacts
+	@echo "+++ $@"
+	rm -rf .venv
 	for i in uv.lock; do if test -e "$$i"; then rm "$$i"; fi; done

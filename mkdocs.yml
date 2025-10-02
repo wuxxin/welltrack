@@ -1,11 +1,26 @@
 site_name: Welltrack
 site_dir: build/site
+extra_css:
+  - assets/extra.css
 repo_url: https://github.com/wuxxin/welltrack
 theme:
   name: material
+  language: de
+  palette:
+    primary: deep purple
+  logo: assets/icon-192.png
+  favicon: assets/icon-192.png
+  features:
+    - header.integrate
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    # - navigation.tracking
+    # - toc.follow
 nav:
-  - README.md
-  - Interactive **Marimo**: marimo
+  - Dokumentation: README.md
+  - Welltrack WebApp: welltrack/welltrack.html
+  - Daten Analyse App: marimo
 plugins:
   - marimo
 markdown_extensions:

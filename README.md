@@ -7,28 +7,25 @@ WellTrack ist ein persönliches und 100 % privates Gesundheitstagebuch, das dabe
 
 Als offline-fähige Progressive Web App (PWA) bleiben dabei alle Daten ausschließlich auf dem eigenen Gerät – es gibt keinen Server und keine Cloud. Das ermöglicht vollständige Kontrolle und eine schnelle Nutzung, auch ohne Internetverbindung und auf jedem beliebigen Gerät.
 
-Diese Web App ist ein ***Vibecoding - Projekt***. Das bedeutet, sie wurde komplett durch natürliche Sprache mit einer KI erstellt, um für eine Person eine einfache Möglichkeit zu schaffen ihre täglichen Schmerzen, Stimmungen und Trainingszyklen niederschwellig festzuhalten.
+## Funktionsumfang
 
-Der Code ist nicht oder nur schwer für menschliche Wartung zugänglich.
-Eine größere Veränderung oder Erweiterung des Codes ist - in der momentanen Form - nicht empfehlenswert.
+**Der Schwerpunkt der App liegt in der schnellen, einfachen aber detaillierte Daten Erfassung von Schmerz, Stimmung und anderen Ereignissen.**
 
-## **Schwerpunkte von WellTrack**
-
-**Schnelle aber detaillierte Stimmungs und Schmerzerfassung:**
+### Stimmung protokollieren
 
 Eine detaillierte Erfassung der Stimmung dauert weniger als 30 Sekunden. Die Verwendung von Werten wie -3, -2, -1, +1, +2, +3 ohne eine neutrale Null ermöglicht eine feine Kalibrierung. Dies macht das separate Ausfüllen einzelner Stimmungswerte überflüssig, da alle eingetragenen Werte ungleich Null sind, während fehlende Werte als Null interpretiert werden, ohne das Ergebnis zu verfälschen.
 
+Die Stimmung kann mithilfe intuitiver Schieberegler für verschiedene Aspekte wie Energie, Motivation und Angstfreiheit erfasst werden. Die Stimmungen sind in Gruppen organisiert, um die Eingabe zu vereinfachen.
+
+![WellTrack Mood](assets/welltrack-mood-entry.png)
+
+### Schmerzen protokollieren
+
 Die Schmerzeintragung ist schnell und dennoch detailliert. Durch die Reduzierung auf eine Skala von 0-5 (0=kein, 1=leicht, 2=unangenehm, 3=stark, 4=fürchterlich, 5=vernichtend) mit klaren, nachlesbaren Definitionen wird eine eindeutige Kategorisierung der Schmerzintensität ermöglicht. Fehlende Werte werden als 0 behandelt, was zu einem aussagekräftigen Teilergebnis führt.
 
-## **Funktionen**
+![WellTrack Pain](assets/welltrack-pain-entry.png)
 
-### **Tagesübersicht (Dashboard)**
-
-Die Startseite bietet eine Zusammenfassung des aktuellen Tages, einschließlich der wichtigsten Werte für Stimmungen und Schmerzen im Vergleich zum Vortag. Darunter befindet sich ein detailliertes Protokoll aller heutigen Einträge.
-
-![WellTrack Home](assets/welltrack-home.png)
-
-### **Ereignisse eintragen**
+### Ereignisse eintragen
 
 Tägliche Aktivitäten wie Spaziergänge oder der Kaffeekonsum können als kumulative Werte (z.B. "60 min") erfasst werden. Die Ereignistypen lassen sich in den Einstellungen vollständig anpassen.
 
@@ -36,70 +33,76 @@ Für schnelle, wiederholbare Aktionen wie die Einnahme von Medikamenten gibt es 
 
 ![Screenshot der Pushbutton-Funktion](assets/welltrack-pushbutton-event.png)
 
-### **Stimmung protokollieren**
+### Tagesübersicht
 
-Die Stimmung kann mithilfe intuitiver Schieberegler für verschiedene Aspekte wie Energie, Motivation und Angstfreiheit erfasst werden. Die Stimmungen sind in Gruppen organisiert, um die Eingabe zu vereinfachen.
+Die Startseite bietet eine Zusammenfassung des aktuellen Tages, einschließlich der wichtigsten Werte für Stimmungen und Schmerzen im Vergleich zum Vortag. Darunter befindet sich ein detailliertes Protokoll aller heutigen Einträge.
 
-![WellTrack Mood](assets/welltrack-mood-entry.png)
+![WellTrack Home](assets/welltrack-home.png)
 
-### **Schmerzen festhalten**
-
-Auf einer interaktiven Darstellung des menschlichen Körpers können bestimmte Körperteile ausgewählt und die Schmerzintensität auf einer Skala von
-0 (kein), 1 (leicht), 2 (unangenehm), 3 (stark) 4(fürchterlich) bis 5 (vernichtend) bewertet werden. Auf Wunsch werden die Namen der Körperteile beim Überfahren mit der Maus angezeigt.
-
-
-![WellTrack Pain](assets/welltrack-pain-entry.png)
-
-### **Verlauf & Diagramme**
+### Verlaufs-Diagramme
 
 Die gesammelten Daten lassen sich in übersichtlichen Diagrammen visualisieren. Trends für Ereignisse, Stimmungen und Schmerzen können über verschiedene Zeiträume (1 Woche, 1 Monat, 6 Monate) analysiert werden.
 
 ![WellTrack Chart](assets/welltrack-chart.png)
 
-### **Detailliertes Protokoll**
+### Detailliertes Protokoll
 
 Ein chronologisches und paginiertes Protokoll aller Einträge, gruppiert nach Tagen.
 
 ![WellTrack Log](assets/welltrack-log.png)
 
-### **Einstellungen & Datenverwaltung**
+## Einstellungen
 
-Ereignisarten können angepasst und Daten durch Import/Export einer JSON-Datei verwaltet werden.
+### Ereignissarten bearbeiten
 
+Ereignisarten können angepasst
 ![WellTrack Settings](assets/welltrack-settings.png)
 
-### **Optionale Erinnerungen**
+### Daten Import & Export
+Daten durch Import/Export einer JSON-Datei verwaltet werden.
+
+### Optionale Erinnerungen
 
 WellTrack bietet optional anpassbare Erinnerungen. In den Einstellungen können Browser-Benachrichtigungen aktiviert und mehrere Erinnerungszeiten (z.B. "12:00, 18:00") festgelegt werden, um sicherzustellen, dass keine Einträge vergessen werden.
 
-## **Technische Merkmale**
 
-*   **Progressive Web App (PWA):** Kann wie eine native App auf einem Gerät "installiert" werden und funktioniert offline.
-*   **Single-Page-Anwendung (SPA):** Die gesamte Anwendung wird in einer einzigen HTML-Datei geladen, was eine schnelle und nahtlose Navigation ermöglicht.
-*   **Lokale Datenspeicherung:** Alle Daten werden sicher im `localStorage` des Browsers gespeichert. Es ist kein Server oder Backend erforderlich.
-*   **Responsive UI:** Das mit Tailwind CSS erstellte Layout passt sich an verschiedene Bildschirmgrößen an und ist für Mobilgeräte optimiert.
-*   **Interaktive Datenvisualisierung:** Diagramme werden mit Chart.js erstellt.
-*   **Abhängigkeiten über CDN:** Alle externen Bibliotheken (z. B. Tailwind CSS, Chart.js) werden über ein CDN geladen, was die Einrichtung vereinfacht und keine Build-Schritte erfordert.
-
-## **Nutzung & Installation**
+## Nutzung & Installation
 
 Die einfachste Methode, WellTrack zu nutzen, ist über die gehostete Version, die immer auf dem neuesten Stand ist:
 
 **[Klicken Sie hier, um WellTrack zu starten](https://wuxxin.github.io/welltrack/welltrack.html)**
 
-### **Installation auf dem Smartphone**
+### Installation auf dem Smartphone
 
 Für ein App-ähnliches Erlebnis kann WellTrack auf dem Smartphone-Startbildschirm installiert werden.
 
-1.  WellTrack im mobilen Browser (z.B. Chrome oder Safari) öffnen.
-2.  Das Browser-Menü öffnen (oft durch drei Punkte oder ein Teilen-Symbol dargestellt).
-3.  Die Option **"Zum Startbildschirm hinzufügen"** (oder eine ähnliche Formulierung) wählen.
+1. WellTrack im mobilen Browser (z.B. Chrome oder Safari) öffnen.
+2. Das Browser-Menü öffnen (oft durch drei Punkte oder ein Teilen-Symbol dargestellt).
+3. Die Option **"Zum Startbildschirm hinzufügen"** (oder eine ähnliche Formulierung) wählen.
 
 ![Anleitung zum Hinzufügen zum Startbildschirm](assets/welltrack-add-to-startscreen.png)
 
 Danach erscheint ein WellTrack-Symbol auf dem Startbildschirm, über das die App wie eine native Anwendung gestartet werden kann.
 
-### **Lokale Nutzung**
+### Lokale Nutzung
 
 Alternativ kann die `welltrack.html`-Datei direkt auf einem Computer gespeichert und im Browser geöffnet werden.
 **Hinweis:** Bei dieser Methode muss die Datei manuell aktualisiert werden, um neue Funktionen und Fehlerbehebungen zu erhalten.
+
+## Technische Merkmale
+
+* **Progressive Web App (PWA):** Kann wie eine native App auf einem Gerät "installiert" werden und funktioniert offline.
+* **Single-Page-Anwendung (SPA):** Die gesamte Anwendung wird in einer einzigen HTML-Datei geladen, was eine schnelle und nahtlose Navigation ermöglicht.
+* **Lokale Datenspeicherung:** Alle Daten werden sicher im `localStorage` des Browsers gespeichert. Es ist kein Server oder Backend erforderlich.
+* **Responsive UI:** Das mit Tailwind CSS erstellte Layout passt sich an verschiedene Bildschirmgrößen an und ist für Mobilgeräte optimiert.
+* **Interaktive Datenvisualisierung:** Diagramme werden mit Chart.js erstellt.
+* **Abhängigkeiten über CDN:** Alle externen Bibliotheken (z. B. Tailwind CSS, Chart.js) werden über ein CDN geladen, was die Einrichtung vereinfacht und keine Build-Schritte erfordert.
+
+## Lizenz
+
+Diese Web App ist ein ***Vibecoding - Projekt***. Das bedeutet, sie wurde großteils durch natürliche Sprache mit einer KI erstellt, um für eine Person rasch eine einfache Möglichkeit zu schaffen ihre täglichen Schmerzen, Stimmungen und Trainingszyklen niederschwellig festzuhalten.
+
+Der Code ist nicht oder nur schwer für menschliche Wartung zugänglich.
+Eine größere Veränderung oder Erweiterung des Codes ist - in der momentanen Form - nicht empfehlenswert.
+
+Die von Menschen erstellten Teile des Codes sind unter eine BSD 3-Clause [Lizenz](LICENSE) veröffentlicht.

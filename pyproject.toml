@@ -29,7 +29,9 @@ dependencies = [
     "bokeh",
     "pillow",
     "matplotlib",
+    "ipython",
     "marimo[recommended,lsp]",
+    "vega_datasets",
 ]
 
 [project.optional-dependencies]
@@ -38,6 +40,8 @@ test = [
     "flake8",
 ]
 docs = [
+    # cryptography - for scripts/dev_serve.py for make serve-docs local
+    "cryptography",
     # mkdocs - Project documentation with Markdown
     "mkdocs",
     # A Mermaid graphs plugin for MkDocs

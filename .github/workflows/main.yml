@@ -1,0 +1,61 @@
+name: Build and Deploy Welltrack Content to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: "build"
+      cancel-in-progress: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: make buildenv
+
+      - name: Configure Page Url for Github Pages
+        id: pages-configure
+        uses: actions/configure-pages@v5
+
+      - name: Test
+        run: make test
+
+      - name: Lint
+        run: make lint
+
+      - name: Docs
+        run: make docs   
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'build/site'
+
+  deploy:
+    needs: build
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy_pages.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+    steps:  
+      - name: Deploy Artifact to GitHub Pages
+        id: deploy_pages
+        uses: actions/deploy-pages@v4
+  
+    
