@@ -346,10 +346,10 @@ const WellTrackApp = {
             font: { size: 12, weight: 'bold' }
         },
         DEFAULT_EVENTS_JSON: `[
-            {"name": "Spaziergang", "activity": "walking", "is_cumulative": true, "increment": 15, "unitType": "min", "groupType": "Bewegung"},
-            {"name": "Kaffee Tassen", "activity": "coffee_cups", "is_cumulative": false, "increment": 1, "unitType": "", "groupType": "Ernährung"},
-            {"name": "Ibuprofen 400mg", "activity": "ibuprofen_400", "is_cumulative": false, "increment": 0, "unitType": "", "groupType": "Medikamente"},
-            {"name": "Rückenübungen", "activity": "back_exercises", "is_cumulative": true, "increment": 15, "unitType": "min", "groupType": "Bewegung"}
+            {"name": "Spaziergang", "activity": "walking", "displayType": 0, "increment": 15, "unitType": "min", "groupType": "Bewegung"},
+            {"name": "Kaffee Tassen", "activity": "coffee_cups", "displayType": 1, "increment": 1, "unitType": "", "groupType": "Ernährung"},
+            {"name": "Ibuprofen 400mg", "activity": "ibuprofen_400", "displayType": 1, "increment": 0, "unitType": "", "groupType": "Medikamente"},
+            {"name": "Rückenübungen", "activity": "back_exercises", "displayType": 0, "increment": 15, "unitType": "min", "groupType": "Bewegung"}
         ]`,
         MOOD_GROUPS: {
             'arousal_level': {
@@ -472,11 +472,18 @@ const WellTrackApp = {
             const events = localStorage.getItem('wellTrackEvents');
             const processEvents = (eventArray) => {
                 return eventArray.map(e => {
-                    const newEvent = {
-                        ...e,
-                        groupType: e.groupType || '',
-                        is_cumulative: e.is_cumulative !== undefined ? e.is_cumulative : true
-                    };
+                    let newEvent = { ...e };
+                    // Migration from is_cumulative to displayType
+                    if (newEvent.is_cumulative !== undefined) {
+                        newEvent.displayType = newEvent.is_cumulative ? 0 : 1;
+                        delete newEvent.is_cumulative;
+                    }
+                    // Set default if it's still missing
+                    if (newEvent.displayType === undefined) {
+                        newEvent.displayType = 0;
+                    }
+
+                    newEvent.groupType = newEvent.groupType || '';
                     delete newEvent.days; // Ensure 'days' is removed
                     return newEvent;
                 });
@@ -624,46 +631,52 @@ const WellTrackApp = {
                     };
 
                     const appendData = () => {
-                        // 1. Append Event Types
+                        // 1. Append Event Types without overwriting
                         const currentEvents = this.getEvents();
                         const importedEvents = imported.events || [];
-                        const existingActivityIds = new Set(currentEvents.map(e => e.activity));
-                        const newEvents = importedEvents.filter(e => !existingActivityIds.has(e.activity));
-                        if (newEvents.length > 0) {
-                            this.saveEvents([...currentEvents, ...newEvents]);
-                        }
+                        const currentEventActivities = new Set(currentEvents.map(e => e.activity));
+                        const newEventTypes = importedEvents.filter(e => !currentEventActivities.has(e.activity));
 
-                        // 2. Merge Metrics
+                        const finalEvents = [...currentEvents, ...newEventTypes];
+                        this.saveEvents(finalEvents);
+                        const eventsByActivity = new Map(finalEvents.map(e => [e.activity, e]));
+
+                        // 2. Merge Metrics with reconstructed labels
                         const currentMetrics = this.getMetrics();
                         const importedMetrics = imported.metrics || [];
-                        const metricsMap = new Map();
 
-                        // De-duplication is handled by creating a canonical key for each metric.
-                        // The key consists of the timestamp, metric name, and a sorted JSON string of its labels.
-                        // By using a Map, we ensure that any metric with an identical key is only stored once.
-                        const getCanonicalKey = (metric) => {
-                            const sortedLabels = Object.keys(metric.labels).sort().reduce(
-                                (obj, key) => {
-                                    obj[key] = metric.labels[key];
-                                    return obj;
-                                },
-                                {}
-                            );
-                            return `${metric.timestamp}|${metric.metric}|${JSON.stringify(sortedLabels)}`;
-                        };
+                        const existingMetricKeys = new Set(currentMetrics.map(m => `${m.timestamp}|${m.metric}`));
 
-                        currentMetrics.forEach(m => {
-                            metricsMap.set(getCanonicalKey(m), m);
-                        });
+                        const newMetrics = [];
+                        importedMetrics.forEach(metric => {
+                            const key = `${metric.timestamp}|${metric.metric}`;
+                            if (!existingMetricKeys.has(key)) {
+                                let newMetric = { ...metric, labels: {} }; // Start with fresh labels
 
-                        importedMetrics.forEach(m => {
-                            const key = getCanonicalKey(m);
-                            if (!metricsMap.has(key)) {
-                                metricsMap.set(key, m);
+                                if (metric.metric.startsWith('event_')) {
+                                    const activity = metric.labels.activity;
+                                    const eventConfig = eventsByActivity.get(activity);
+                                    if (eventConfig) {
+                                        // Reconstruct labels from current event config
+                                        newMetric.labels = {
+                                            activity: eventConfig.activity,
+                                            name: eventConfig.name,
+                                            unitType: eventConfig.unitType,
+                                            groupType: eventConfig.groupType || ''
+                                        };
+                                    } else {
+                                        return; // Skip metric if its event type doesn't exist
+                                    }
+                                } else {
+                                    // For non-event metrics (mood, pain), keep original labels
+                                    newMetric.labels = metric.labels;
+                                }
+                                newMetrics.push(newMetric);
+                                existingMetricKeys.add(key); // Add to set to handle duplicates within the import file
                             }
                         });
 
-                        const mergedMetrics = Array.from(metricsMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+                        const mergedMetrics = [...currentMetrics, ...newMetrics].sort((a, b) => a.timestamp - b.timestamp);
                         this.saveMetrics(mergedMetrics);
 
                         // 3. Settings are not merged on append.
@@ -710,7 +723,7 @@ const WellTrackApp = {
                 }
                 if (delta === 0) {
                     return `<span class="text-sm text-gray-500 font-semibold inline-flex items-center gap-1">
-                                --> =
+                                <span class="material-symbols-outlined text-base">trending_flat</span> =
                             </span>`;
                 }
 
@@ -768,10 +781,10 @@ const WellTrackApp = {
             const displayItems = [];
             const processedActivities = new Set();
 
-            // Define cumulative groups
+            // Define cumulative groups (displayType 0)
             const cumulativeGroups = {};
             allEvents
-                .filter(e => e.is_cumulative && e.groupType && e.unitType && e.unitType.length > 2)
+                .filter(e => e.displayType === 0 && e.groupType && e.unitType && e.unitType.length > 2)
                 .forEach(e => {
                     const key = `${e.groupType}|${e.unitType}`;
                     if (!cumulativeGroups[key]) {
@@ -788,9 +801,9 @@ const WellTrackApp = {
                 group.activities.forEach(act => processedActivities.add(act));
             });
 
-            // Add remaining individual events that have a value today
+            // Add highlighted individual events (displayType 1) that have a value today
             allEvents
-                .filter(e => !processedActivities.has(e.activity))
+                .filter(e => !processedActivities.has(e.activity) && e.displayType === 1)
                 .forEach(event => {
                     const itemMetrics = todaysEventMetrics.filter(m => m.labels.activity === event.activity);
 
@@ -829,14 +842,14 @@ const WellTrackApp = {
                     }
 
                     const chartKey = item.isGroup ? `${item.name}-${item.unit}` : item.name;
-                    const unitHtml = item.unit ? `<div class="text-base font-medium">${item.unit}</div>` : '';
+                    const unitHtml = item.unit ? `<p class="text-base font-medium">${item.unit}</p>` : '';
                     return `
                         <div class="card !p-0 flex justify-between items-stretch overflow-hidden">
                              <div onclick="WellTrackApp.events.showEventPageForGroup('${item.groupKey}')" class="p-4 flex-grow cursor-pointer hover:bg-gray-200/50 transition-colors flex items-center">
                                 <p class="text-lg font-semibold">${item.name}</p>
                             </div>
                             <div onclick="WellTrackApp.events.showHistoryForEvent('${chartKey}')" class="p-4 cursor-pointer hover:bg-gray-200/50 transition-colors flex items-center justify-center flex-shrink-0">
-                                <div class="text-center">
+                                <div class="flex items-baseline justify-center flex-wrap gap-x-1">
                                     <p class="text-3xl font-bold">${totalValue}</p>
                                     ${unitHtml}
                                 </div>
@@ -985,7 +998,7 @@ const WellTrackApp = {
             eventItems.forEach(item => {
                 const div = document.createElement('div');
                 div.id = `event-item-${item.data.activity}`;
-                div.className = `p-4 rounded-xl flex flex-row items-center justify-between gap-2 sm:gap-4 bg-gray-100`;
+                div.className = `p-4 rounded-xl flex flex-row flex-wrap items-center justify-between gap-y-2 gap-x-4 bg-gray-100`;
                 if(item.data.increment === 0) {
                      div.innerHTML = WellTrackApp.render.components.eventItemTimestamp(item.data, item.value > 0, item.entries);
                 } else {
@@ -1166,10 +1179,10 @@ const WellTrackApp = {
                 const displayGroups = [];
                 const processedActivities = new Set();
 
-                // 1. Identify and create cumulative groups
+                // 1. Identify and create cumulative groups (displayType 0)
                 const cumulativeGroups = {};
                 allEvents
-                    .filter(e => e.is_cumulative && e.groupType && e.unitType && e.unitType.length > 2)
+                    .filter(e => e.displayType === 0 && e.groupType && e.unitType && e.unitType.length > 2)
                     .forEach(e => {
                         const key = `${e.groupType}|${e.unitType}`;
                         if (!cumulativeGroups[key]) {
@@ -1453,7 +1466,7 @@ const WellTrackApp = {
                 <div class="card">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <h2 class="h2-style">Ereignisse</h2>
-                        <div class="flex flex-wrap gap-2" role="group">
+                        <div class="flex flex-wrap gap-2 justify-end" role="group">
                             ${groupButtons}
                         </div>
                     </div>
@@ -1584,10 +1597,10 @@ const WellTrackApp = {
                                 <option value="90" ${WellTrackApp.state.timeRange === 90 ? 'selected' : ''}>Letzte 3 Monate</option>
                             </select>
                         </div>
-                         <div id="history-tabs" class="history-tab-group inline-flex rounded-full shadow-sm" role="group">
-                             <button onclick="WellTrackApp.events.handleHistoryTabClick('event')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100" data-tab="event">Ereignisse</button>
-                            <button onclick="WellTrackApp.events.handleHistoryTabClick('mood')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100" data-tab="mood">Stimmung</button>
-                            <button onclick="WellTrackApp.events.handleHistoryTabClick('pain')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100" data-tab="pain">Schmerz</button>
+                         <div id="history-tabs" class="flex flex-wrap gap-2 justify-end" role="group">
+                             <button onclick="WellTrackApp.events.handleHistoryTabClick('event')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100" data-tab="event">Ereignisse</button>
+                            <button onclick="WellTrackApp.events.handleHistoryTabClick('mood')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100" data-tab="mood">Stimmung</button>
+                            <button onclick="WellTrackApp.events.handleHistoryTabClick('pain')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100" data-tab="pain">Schmerz</button>
                         </div>
                     </div>
                     <div id="chart-container-event" class="chart-container space-y-4"></div>
@@ -1715,15 +1728,13 @@ const WellTrackApp = {
                 }
 
                 return `
-                <div class="flex flex-col flex-1">
                     <div class="flex items-baseline">
                          <span class="text-base sm:text-lg font-medium text-gray-800">${event.name}</span>
                          <span class="text-xs sm:text-sm text-gray-500 font-normal ml-2">${lastTimestampInfo}</span>
                     </div>
-                    <div class="flex items-center gap-2 mt-2 w-full">
-                        ${buttonsHtml.replace(/class="/g, 'class="flex-1 ')}
+                    <div class="flex items-center gap-2 ml-auto">
+                        ${buttonsHtml}
                     </div>
-                </div>
                 `;
             },
             todaysLogEntry: (metric) => {
@@ -1951,6 +1962,7 @@ const WellTrackApp = {
                 const increment = isEditing ? event.increment : 1;
                 const unitType = isEditing ? event.unitType : '';
                 const groupType = isEditing ? event.groupType : '';
+                const displayType = isEditing ? event.displayType : 0;
 
                 return `
                 <div class="p-4 border rounded-lg bg-white mt-4">
@@ -1967,11 +1979,13 @@ const WellTrackApp = {
                                 <label for="event-group" class="block mb-1 text-sm font-medium">Gruppe (optional)</label>
                                 <input id="event-group" type="text" value="${groupType}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="z.B. Medikamente">
                             </div>
-                            <div class="flex items-end pb-1">
-                                <div class="flex items-center h-full">
-                                    <input id="event-is-cumulative" type="checkbox" ${!isEditing || event.is_cumulative ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
-                                    <label for="event-is-cumulative" class="ml-2 text-sm font-medium text-gray-900">zusammen addieren bei selber Gruppe & Einheit</label>
-                                </div>
+                            <div>
+                                <label for="event-display-type" class="block mb-1 text-sm font-medium">Anzeige-Art</label>
+                                <select id="event-display-type" class="w-full p-2 border border-gray-300 rounded-lg">
+                                    <option value="0" ${displayType === 0 ? 'selected' : ''}>Zusammenzählen</option>
+                                    <option value="1" ${displayType === 1 ? 'selected' : ''}>Einzeln, hervorheben</option>
+                                    <option value="2" ${displayType === 2 ? 'selected' : ''}>Einzeln</option>
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -2202,23 +2216,32 @@ const WellTrackApp = {
         handleRemoveEvent(index) {
             const events = WellTrackApp.data.getEvents();
             const eventToDelete = events[index];
-            const allMetrics = WellTrackApp.data.getMetrics();
+            let allMetrics = WellTrackApp.data.getMetrics();
 
-            const isEventUsed = allMetrics.some(metric =>
+            const usedMetricsCount = allMetrics.filter(metric =>
                 metric.labels && metric.labels.activity === eventToDelete.activity
-            );
+            ).length;
 
-            if (isEventUsed) {
-                WellTrackApp.render.modal.showAlert('Fehler', 'Ereignissart kann nicht gelöscht werden, da es bereits Einträge dieser Art gibt.');
-                return;
-            }
+            const message = `Möchten Sie das Ereignis "${eventToDelete.name}" wirklich entfernen? Es sind ${usedMetricsCount} Einträge dieser Art vorhanden, die ebenfalls gelöscht werden.`;
 
-            const eventNameToDelete = eventToDelete.name;
-            WellTrackApp.render.modal.showConfirmation('Ereignis löschen', `Möchten Sie das Ereignis "${eventNameToDelete}" wirklich entfernen?`, () => {
+            WellTrackApp.render.modal.showConfirmation('Ereignis löschen', message, () => {
+                // Remove the event type
                 events.splice(index, 1);
                 WellTrackApp.data.saveEvents(events);
+
+                // Remove the associated metrics if any
+                if (usedMetricsCount > 0) {
+                    const newMetrics = allMetrics.filter(metric =>
+                        !metric.labels || metric.labels.activity !== eventToDelete.activity
+                    );
+                    WellTrackApp.data.saveMetrics(newMetrics);
+                }
+
+                // Re-render UI
                 WellTrackApp.render.settingsPage();
-                if(['event'].includes(WellTrackApp.state.activePage)) WellTrackApp.render.eventPage();
+                if (['event', 'today', 'history', 'log'].includes(WellTrackApp.state.activePage)) {
+                    WellTrackApp.events.showPage(WellTrackApp.state.activePage);
+                }
             }, 'Löschen', 'Abbrechen');
         },
         handleToggleDay(event) {
@@ -2241,7 +2264,7 @@ const WellTrackApp = {
             const increment = parseInt(document.getElementById('event-increment').value, 10);
             const unitType = document.getElementById('event-unit').value.trim();
             const groupType = document.getElementById('event-group').value.trim();
-            const isCumulative = document.getElementById('event-is-cumulative').checked;
+            const displayType = parseInt(document.getElementById('event-display-type').value, 10);
 
             if (!name || !activity) {
                 WellTrackApp.render.modal.showAlert('Fehler', 'Bezeichnung und Aktivität-ID sind erforderlich.');
@@ -2253,7 +2276,7 @@ const WellTrackApp = {
                 return;
             }
 
-            const newEventData = { name, activity, increment, unitType, groupType, is_cumulative: isCumulative };
+            const newEventData = { name, activity, increment, unitType, groupType, displayType };
 
             if (isEditing) {
                 const index = events.findIndex(t => t.activity === activity);
