@@ -3,6 +3,7 @@ site_dir: build/site
 # extra_css:
 #   - assets/extra.css
 repo_url: https://github.com/wuxxin/welltrack
+edit_uri: blob/main
 theme:
   name: mkdocs
   language: de
