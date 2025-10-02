@@ -25,13 +25,16 @@ requires-python = ">=3.10"
 dependencies = [
     "welltrack_lab",
     "build",
-    "pandas",
+    "altair",
     "bokeh",
-    "pillow",
-    "matplotlib",
     "ipython",
-    "marimo[recommended,lsp]",
+    "matplotlib",
+    "narwhals",
+    "numpy",
+    "pandas",
+    "pillow",
     "vega_datasets",
+    "marimo[recommended,lsp]",
 ]
 
 [project.optional-dependencies]
