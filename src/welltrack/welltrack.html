@@ -1571,7 +1571,7 @@ const WellTrackApp = {
                             <select id="time-range-selector" onchange="WellTrackApp.events.handleTimeRangeChange(event)" class="border border-gray-300 rounded-full text-sm focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5">
                                 <option value="7" ${WellTrackApp.state.timeRange === 7 ? 'selected' : ''}>Letzte 7 Tage</option>
                                 <option value="30" ${WellTrackApp.state.timeRange === 30 ? 'selected' : ''}>Letzte 30 Tage</option>
-                                <option value="180" ${WellTrackApp.state.timeRange === 180 ? 'selected' : ''}>Letzte 6 Monate</option>
+                                <option value="90" ${WellTrackApp.state.timeRange === 90 ? 'selected' : ''}>Letzte 3 Monate</option>
                             </select>
                         </div>
                          <div id="history-tabs" class="history-tab-group inline-flex rounded-full shadow-sm" role="group">
