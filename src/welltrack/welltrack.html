@@ -137,6 +137,12 @@
             font-size: 0.875rem;
         }
 
+        .h2-style {
+            font-size: 1.25rem; /* 20px */
+            font-weight: 600;
+            color: #4A5568; /* gray-700 */
+        }
+
         .day-btn.selected { background-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); border-color: var(--md-sys-color-primary); }
         .view-toggle-btn.active { background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); border-color: var(--md-sys-color-primary-container); z-index: 10; }
         
@@ -511,14 +517,26 @@ const WellTrackApp = {
                     }
                 }
 
+                const lastPainFreeEntry = todaysPainMetrics.find(m => m.metric === 'pain_free_level');
+                const isPainFreeActive = lastPainFreeEntry && (now - lastPainFreeEntry.timestamp < 600000);
+
+                document.querySelectorAll('.pain-free-btn circle').forEach(circle => {
+                    circle.style.fill = isPainFreeActive ? '#86efac' : WellTrackApp.config.DEFAULT_BODY_COLOR;
+                });
+
                 document.querySelectorAll('.body-part').forEach(part => {
-                    const latestEntry = todaysPainMetrics.filter(m => m.labels.body_part === part.id).pop();
-                    if (latestEntry && (now - latestEntry.timestamp < 600000)) {
-                        part.style.fill = WellTrackApp.config.PAIN_LEVELS[latestEntry.value].color;
-                        part.dataset.level = latestEntry.value;
-                    } else {
+                    if (isPainFreeActive) {
                         part.style.fill = WellTrackApp.config.DEFAULT_BODY_COLOR;
                         delete part.dataset.level;
+                    } else {
+                        const latestEntry = todaysPainMetrics.filter(m => m.labels.body_part === part.id).pop();
+                        if (latestEntry && (now - latestEntry.timestamp < 600000)) {
+                            part.style.fill = WellTrackApp.config.PAIN_LEVELS[latestEntry.value].color;
+                            part.dataset.level = latestEntry.value;
+                        } else {
+                            part.style.fill = WellTrackApp.config.DEFAULT_BODY_COLOR;
+                            delete part.dataset.level;
+                        }
                     }
                 });
             } else if (page === 'mood') {
@@ -692,7 +710,7 @@ const WellTrackApp = {
                 }
                 if (delta === 0) {
                     return `<span class="text-sm text-gray-500 font-semibold inline-flex items-center gap-1">
-                                <span class="material-symbols-outlined text-base">trending_flat</span>Gleich
+                                --> =
                             </span>`;
                 }
 
@@ -719,23 +737,25 @@ const WellTrackApp = {
 
             summaryContainer.innerHTML = `
                 <div class="pill-card !p-0 overflow-hidden">
-                    <div onclick="WellTrackApp.events.showPage('mood')" class="w-2/4 h-full flex items-center pl-6 pr-2 cursor-pointer hover:bg-gray-200/50 transition-colors">
+                    <div onclick="WellTrackApp.events.showPage('mood')" class="w-1/2 h-full flex items-center pl-6 pr-2 cursor-pointer hover:bg-gray-200/50 transition-colors">
                         <p class="text-lg font-semibold">Stimmung</p>
                     </div>
-                    <div class="border-l border-gray-300 h-10"></div>
-                    <div onclick="WellTrackApp.events.showHistoryFor('mood')" class="flex-grow text-center h-full flex flex-col justify-center pr-6 pl-2 cursor-pointer hover:bg-gray-200/50 transition-colors">
+                    <div onclick="WellTrackApp.events.showHistoryFor('mood')" class="w-1/2 h-full flex items-center justify-center relative cursor-pointer hover:bg-gray-200/50 transition-colors pr-6 pl-2">
                         <p class="text-3xl font-bold">${displayMoodValue}</p>
-                        ${renderArrowDelta(moodDelta, true)}
+                        <div class="absolute top-1 right-3">
+                           ${renderArrowDelta(moodDelta, true)}
+                        </div>
                     </div>
                 </div>
                 <div class="pill-card !p-0 overflow-hidden">
-                     <div onclick="WellTrackApp.events.showPage('pain')" class="w-2/4 h-full flex items-center pl-6 pr-2 cursor-pointer hover:bg-gray-200/50 transition-colors">
+                     <div onclick="WellTrackApp.events.showPage('pain')" class="w-1/2 h-full flex items-center pl-6 pr-2 cursor-pointer hover:bg-gray-200/50 transition-colors">
                         <p class="text-lg font-semibold">Schmerzen</p>
                     </div>
-                    <div class="border-l border-gray-300 h-10"></div>
-                    <div onclick="WellTrackApp.events.showHistoryFor('pain')" class="flex-grow text-center h-full flex flex-col justify-center pr-6 pl-2 cursor-pointer hover:bg-gray-200/50 transition-colors">
+                    <div onclick="WellTrackApp.events.showHistoryFor('pain')" class="w-1/2 h-full flex items-center justify-center relative cursor-pointer hover:bg-gray-200/50 transition-colors pr-6 pl-2">
                        <p class="text-3xl font-bold">${displayPainValue}</p>
-                       ${renderArrowDelta(painDelta, false)}
+                       <div class="absolute top-1 right-3">
+                          ${renderArrowDelta(painDelta, false)}
+                       </div>
                     </div>
                 </div>
             `;
@@ -809,14 +829,17 @@ const WellTrackApp = {
                     }
 
                     const chartKey = item.isGroup ? `${item.name}-${item.unit}` : item.name;
-                    const unitHtml = item.unit ? `<span class="text-base font-medium ml-1">${item.unit}</span>` : '';
+                    const unitHtml = item.unit ? `<div class="text-base font-medium">${item.unit}</div>` : '';
                     return `
                         <div class="card !p-0 flex justify-between items-stretch overflow-hidden">
                              <div onclick="WellTrackApp.events.showEventPageForGroup('${item.groupKey}')" class="p-4 flex-grow cursor-pointer hover:bg-gray-200/50 transition-colors flex items-center">
                                 <p class="text-lg font-semibold">${item.name}</p>
                             </div>
-                            <div onclick="WellTrackApp.events.showHistoryForEvent('${chartKey}')" class="p-4 cursor-pointer hover:bg-gray-200/50 transition-colors flex items-center flex-shrink-0">
-                                <p class="text-3xl font-bold">${totalValue}${unitHtml}</p>
+                            <div onclick="WellTrackApp.events.showHistoryForEvent('${chartKey}')" class="p-4 cursor-pointer hover:bg-gray-200/50 transition-colors flex items-center justify-center flex-shrink-0">
+                                <div class="text-center">
+                                    <p class="text-3xl font-bold">${totalValue}</p>
+                                    ${unitHtml}
+                                </div>
                             </div>
                         </div>
                     `;
@@ -1106,20 +1129,6 @@ const WellTrackApp = {
                     order: -1 // Render line on top
                 });
                 
-                // Moving average line
-                const movingAverageData = WellTrackApp.utils.calculateMovingAverage(dailyData.map(d => ({x: d.timestamp, y: d.total})), 'pain_');
-                if (movingAverageData.length > 0) {
-                    datasets.push({
-                        type: 'line',
-                        label: 'Durchschnitt (Gesamtschmerz)',
-                        data: movingAverageData,
-                        borderColor: 'rgba(96, 165, 250, 0.8)',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0.4
-                    });
-                }
                 
                 const yAxisOptions = {
                     stacked: true,
@@ -1311,19 +1320,6 @@ const WellTrackApp = {
                     }
                 ];
 
-                const movingAverageData = WellTrackApp.utils.calculateMovingAverage(dailyData.map(d => ({x: d.timestamp, y: d.total})), 'mood_');
-                if (movingAverageData.length > 0) {
-                    datasets.push({
-                        type: 'line',
-                        label: 'Durchschnitt (Gesamtwert)',
-                        data: movingAverageData,
-                        borderColor: 'rgba(96, 165, 250, 0.8)', // blue-400
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0.4
-                    });
-                }
                 
                 const yAxisOptions = {
                     stacked: true,
@@ -1404,8 +1400,8 @@ const WellTrackApp = {
                 const content = `<h3 class="text-xl font-medium mb-4">${title}</h3><p class="mb-6">${message}</p><div class="flex justify-end"><button onclick="WellTrackApp.render.modal.hide()" class="btn btn-primary">OK</button></div>`;
                 this.show(content);
             },
-            showConfirmation(title, message, onConfirm) {
-                 const content = `<h3 class="text-xl font-medium mb-4">${title}</h3><p class="mb-6">${message}</p><div class="flex justify-end gap-4"><button onclick="WellTrackApp.render.modal.hide()" class="btn btn-tertiary">Abbrechen</button><button id="confirm-action-btn" class="btn btn-error-primary">Bestätigen</button></div>`;
+            showConfirmation(title, message, onConfirm, confirmText = 'Bestätigen', abortText = 'Abbrechen') {
+                 const content = `<h3 class="text-xl font-medium mb-4">${title}</h3><p class="mb-6">${message}</p><div class="flex justify-end gap-4"><button onclick="WellTrackApp.render.modal.hide()" class="btn btn-tertiary">${abortText}</button><button id="confirm-action-btn" class="btn btn-error-primary">${confirmText}</button></div>`;
                 this.show(content);
                 document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); this.hide(); };
             }
@@ -1418,7 +1414,7 @@ const WellTrackApp = {
                 const dateString = `${dayName} ${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
                 return `
                 <div class="flex justify-between items-center mb-4 px-2">
-                    <h2 class="text-2xl font-semibold text-gray-700">Heute</h2>
+                    <h2 class="h2-style">Heute</h2>
                     <span class="text-lg text-gray-800">${dateString}</span>
                 </div>
                 <div id="today-summary-cards" class="grid grid-cols-2 gap-4 mb-6">
@@ -1446,24 +1442,22 @@ const WellTrackApp = {
                     WellTrackApp.state.activeEventGroup = groups[0];
                 }
                 
-                let groupButtons = groups.map((group, index) => {
+                let groupButtons = groups.map((group) => {
                     const groupName = group === '*' ? 'Ohne Gruppe' : group;
-                    const firstClass = index === 0 ? 'rounded-l-full' : '';
-                    const lastClass = index === groups.length - 1 ? 'rounded-r-full' : '';
                     const activeClass = WellTrackApp.state.activeEventGroup === group ? 'active' : '';
 
-                    return `<button type="button" onclick="WellTrackApp.events.handleEventGroupToggle('${group}')" id="btn-event-group-${group}" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 ${firstClass} ${lastClass} ${activeClass}">${groupName}</button>`
+                    return `<button type="button" onclick="WellTrackApp.events.handleEventGroupToggle('${group}')" id="btn-event-group-${group}" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full ${activeClass}">${groupName}</button>`
                 }).join('');
 
                 return `
                 <div class="card">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
-                        <h2 class="text-2xl font-semibold text-gray-700">Ereignisse</h2>
-                        <div class="inline-flex rounded-full shadow-sm" role="group">
+                        <h2 class="h2-style">Ereignisse</h2>
+                        <div class="flex flex-wrap gap-2" role="group">
                             ${groupButtons}
                         </div>
                     </div>
-                    <div id="todays-event-container" class="space-y-4"></div>
+                    <div id="todays-event-container" class="space-y-2"></div>
                 </div>`;
             },
             moodSection: () => {
@@ -1478,7 +1472,7 @@ const WellTrackApp = {
                 <div class="card">
                      <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
                         <div class="flex items-center gap-2">
-                            <h2 id="mood-section-title" class="text-xl md:text-2xl font-semibold text-gray-700">Stimmung</h2>
+                            <h2 id="mood-section-title" class="h2-style">Stimmung</h2>
                             <span id="mood-last-entry-time" class="text-sm text-gray-500"></span>
                         </div>
                         <div class="w-full sm:w-auto flex justify-end items-center gap-4">
@@ -1496,7 +1490,7 @@ const WellTrackApp = {
                 <div class="card">
                     <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <div class="flex items-center gap-2">
-                            <h2 id="pain-section-title" class="text-xl md:text-2xl font-semibold text-gray-700">Schmerzen</h2>
+                            <h2 id="pain-section-title" class="h2-style">Schmerzen</h2>
                             <span id="pain-last-entry-time" class="text-sm text-gray-500"></span>
                         </div>
                         <div class="w-full sm:w-auto flex justify-end items-center gap-4">
@@ -1530,6 +1524,14 @@ const WellTrackApp = {
                                 <rect     id="front_lower_leg_right" data-name="Unterschenkel (R)" class="body-part" x="227" y="484" width="41" height="110" rx="10"><title>Unterschenkel (R)</title></rect>
                                 <rect     id="front_foot_left"     data-name="Fuß (L)" class="body-part" x="128" y="598" width="50" height="40" rx="10"><title>Fuß (L)</title></rect>
                                 <rect     id="front_foot_right"    data-name="Fuß (R)" class="body-part" x="222" y="598" width="50" height="40" rx="10"><title>Fuß (R)</title></rect>
+                                <g class="pain-free-btn" onclick="WellTrackApp.events.handlePainFreeClick()" style="cursor: pointer;">
+                                    <circle cx="350" cy="50" r="25" fill="var(--md-sys-color-surface-container-highest)" stroke="var(--md-sys-color-outline)" stroke-width="0.5"></circle>
+                                    <text x="350" y="45" class="svg-label" text-anchor="middle">
+                                        <tspan x="350" dy="0em">Schmerz</tspan>
+                                        <tspan x="350" dy="1.2em">Frei</tspan>
+                                    </text>
+                                    <title>Schmerz Frei</title>
+                                </g>
                             </g>
                             <g id="body-back" class="${currentView === 'back' ? '' : 'hidden'}">
                                 <circle   id="back_head"           data-name="Hinterkopf" class="body-part" cx="200" cy="50" r="45"><title>Hinterkopf</title></circle>
@@ -1556,6 +1558,14 @@ const WellTrackApp = {
                                 <rect     id="back_lower_leg_right" data-name="Unterschenkel (R, h)" class="body-part" x="227" y="484" width="41" height="110" rx="10"><title>Unterschenkel (R, h)</title></rect>
                                 <rect     id="back_foot_left"      data-name="Fuß (L, h)" class="body-part" x="128" y="598" width="50" height="40" rx="10"><title>Fuß (L, h)</title></rect>
                                 <rect     id="back_foot_right"     data-name="Fuß (R, h)" class="body-part" x="222" y="598" width="50" height="40" rx="10"><title>Fuß (R, h)</title></rect>
+                                <g class="pain-free-btn" onclick="WellTrackApp.events.handlePainFreeClick()" style="cursor: pointer;">
+                                    <circle cx="350" cy="50" r="25" fill="var(--md-sys-color-surface-container-highest)" stroke="var(--md-sys-color-outline)" stroke-width="0.5"></circle>
+                                    <text x="350" y="45" class="svg-label" text-anchor="middle">
+                                        <tspan x="350" dy="0em">Schmerz</tspan>
+                                        <tspan x="350" dy="1.2em">Frei</tspan>
+                                    </text>
+                                    <title>Schmerz Frei</title>
+                                </g>
                             </g>
                         </svg>
                     </div>
@@ -1567,7 +1577,7 @@ const WellTrackApp = {
                 <div class="card">
                      <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
                         <div class="flex items-center gap-4">
-                           <h2 id="log-title" class="text-2xl font-semibold text-gray-700">Verlauf</h2>
+                           <h2 id="log-title" class="h2-style">Verlauf</h2>
                             <select id="time-range-selector" onchange="WellTrackApp.events.handleTimeRangeChange(event)" class="border border-gray-300 rounded-full text-sm focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5">
                                 <option value="7" ${WellTrackApp.state.timeRange === 7 ? 'selected' : ''}>Letzte 7 Tage</option>
                                 <option value="30" ${WellTrackApp.state.timeRange === 30 ? 'selected' : ''}>Letzte 30 Tage</option>
@@ -1587,7 +1597,7 @@ const WellTrackApp = {
             },
             fullLogSection: () => `
                 <div class="card">
-                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Protokoll</h2>
+                    <h2 class="h2-style mb-4">Protokoll</h2>
                     <div id="log-entries-container" class="space-y-4"></div>
                     <div id="log-pagination" class="mt-6 flex justify-between items-center"></div>
                 </div>`,
@@ -1625,13 +1635,13 @@ const WellTrackApp = {
                 return `
                 <div class="space-y-6">
                     <div class="card">
-                        <h2 class="text-2xl font-semibold mb-4 text-gray-700">Ereignisarten</h2>
+                        <h2 class="h2-style mb-4">Ereignisarten</h2>
                         <div id="manage-event-list" class="space-y-2 mb-4"></div>
                         <div id="edit-event-form-container"></div>
                         <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-secondary w-full"><span class="material-symbols-outlined mr-2">add</span>Neue hinzufügen</button></div>
                     </div>
                     <div class="card">
-                        <h2 class="text-2xl font-semibold mb-4 text-gray-700">Datenverwaltung</h2>
+                        <h2 class="h2-style mb-4">Datenverwaltung</h2>
                         <p class="text-sm text-gray-600 mb-4">Sie können Ihre Daten als JSON-Datei exportieren oder eine zuvor exportierte Datei wieder importieren.</p>
                         <div class="flex flex-col md:flex-row gap-4">
                             <button onclick="WellTrackApp.data.exportData()" class="btn btn-secondary flex-1"><span class="material-symbols-outlined mr-2">download</span> Daten exportieren</button>
@@ -1640,13 +1650,13 @@ const WellTrackApp = {
                         </div>
                     </div>
                     <div class="card">
-                        <h2 class="text-2xl font-semibold mb-4 text-gray-700">Erinnerungen</h2>
+                        <h2 class="h2-style mb-4">Erinnerungen</h2>
                         <div id="reminder-section" class="space-y-4">
                             ${reminderContentHtml}
                         </div>
                     </div>
                     <div class="card">
-                        <h2 class="text-2xl font-semibold mb-4 text-gray-700">Über diese WebApp</h2>
+                        <h2 class="h2-style mb-4">Über diese WebApp</h2>
                         <div class="text-sm text-gray-700 space-y-4">
                             <p>WellTrack ist ein persönliches und 100% privates Gesundheitstagebuch. Alle Daten bleiben ausschließlich auf dem eigenen Gerät.</p>
                             <div>
@@ -1667,7 +1677,7 @@ const WellTrackApp = {
                     <button onclick="WellTrackApp.events.handleEventIncrement('${event.activity}', -${event.increment})" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0">
                         <span class="material-symbols-outlined">remove</span>
                     </button>
-                    <span id="value-${event.activity}" class="text-xl sm:text-2xl font-semibold w-20 sm:w-24 text-center">${value} ${event.unitType}</span>
+                    <span id="value-${event.activity}" class="tabular-nums text-xl sm:text-2xl font-semibold w-20 sm:w-24 text-center">${value} ${event.unitType}</span>
                     <button onclick="WellTrackApp.events.handleEventIncrement('${event.activity}', ${event.increment})" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0">
                         <span class="material-symbols-outlined">add</span>
                     </button>
@@ -1705,16 +1715,22 @@ const WellTrackApp = {
                 }
 
                 return `
-                <span class="text-base sm:text-lg font-medium text-gray-800 flex-1">
-                    ${event.name}
-                    <span class="text-xs sm:text-sm text-gray-500 font-normal ml-2">${lastTimestampInfo}</span>
-                </span>
-                <div class="flex items-center gap-2">
-                    ${buttonsHtml}
-                </div>`;
+                <div class="flex flex-col flex-1">
+                    <div class="flex items-baseline">
+                         <span class="text-base sm:text-lg font-medium text-gray-800">${event.name}</span>
+                         <span class="text-xs sm:text-sm text-gray-500 font-normal ml-2">${lastTimestampInfo}</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-2 w-full">
+                        ${buttonsHtml.replace(/class="/g, 'class="flex-1 ')}
+                    </div>
+                </div>
+                `;
             },
             todaysLogEntry: (metric) => {
                 const time = new Date(metric.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                if (metric.metric === 'pain_free_level') {
+                    return `(${time}) Status: <span class="font-bold px-2 py-1 rounded" style="background-color:#86efac;">Schmerz Frei</span>`;
+                }
                 if (metric.metric.startsWith('pain_')) {
                     const level = metric.value;
                     const props = WellTrackApp.config.PAIN_LEVELS[level] || {};
@@ -1819,6 +1835,9 @@ const WellTrackApp = {
                         const totalColor = totalScore > 0 ? 'text-red-600' : 'text-gray-600';
 
                         const detailsMatrix = group.map(p => {
+                            if (p.metric === 'pain_free_level') {
+                                return `<div class="p-2 rounded-lg flex justify-center items-center font-semibold" style="background-color: #86efac">Schmerz Frei</div>`;
+                            }
                             const props = WellTrackApp.config.PAIN_LEVELS[p.value] || {};
                             const textColor = (p.value > 2 && p.value < 6) ? 'text-white' : 'text-black';
                             return `
@@ -1844,7 +1863,7 @@ const WellTrackApp = {
                     html += `
                         <div>
                             <div class="flex justify-between items-baseline">
-                               <h4 class="font-bold text-xl mb-2 text-primary-dark">Ereignisse</h4>
+                               <h4 class="font-semibold text-lg mb-2 text-gray-800">Ereignisse</h4>
                                <h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3>
                             </div>
                             <div class="pl-4">${eventsHtml}</div>
@@ -1853,7 +1872,7 @@ const WellTrackApp = {
                     if (moodHtml) {
                         html += `
                             <div class="mt-4 pt-4 border-t border-gray-200">
-                                <h4 class="font-bold text-xl mb-2 text-primary-dark">Stimmung</h4>
+                                <h4 class="font-semibold text-lg mb-2 text-gray-800">Stimmung</h4>
                                 <div class="pl-4">${moodHtml}</div>
                             </div>
                         `;
@@ -1861,7 +1880,7 @@ const WellTrackApp = {
                     if (painHtml) {
                          html += `
                             <div class="mt-4 pt-4 border-t border-gray-200">
-                                <h4 class="font-bold text-xl mb-2 text-primary-dark">Schmerz</h4>
+                                <h4 class="font-semibold text-lg mb-2 text-gray-800">Schmerz</h4>
                                 <div class="pl-4">${painHtml}</div>
                             </div>
                         `;
@@ -1872,7 +1891,7 @@ const WellTrackApp = {
                     if (moodHtml) {
                          html += `
                             <div>
-                                <h4 class="font-bold text-xl mb-2 text-primary-dark">Stimmung</h4>
+                                <h4 class="font-semibold text-lg mb-2 text-gray-800">Stimmung</h4>
                                 <div class="pl-4">${moodHtml}</div>
                             </div>
                         `;
@@ -1882,7 +1901,7 @@ const WellTrackApp = {
                         const dividerClass = isFirstSection ? '' : 'mt-4 pt-4 border-t border-gray-200';
                         html += `
                             <div class="${dividerClass}">
-                                <h4 class="font-bold text-xl mb-2 text-primary-dark">Schmerz</h4>
+                                <h4 class="font-semibold text-lg mb-2 text-gray-800">Schmerz</h4>
                                 <div class="pl-4">${painHtml}</div>
                             </div>
                         `;
@@ -1976,7 +1995,7 @@ const WellTrackApp = {
                         <div class="mood-slider-tick-container">
                             ${Array.from({length: 6}).map(() => `<div class="mood-slider-tick"></div>`).join('')}
                         </div>
-                        <input type="range" min="0" max="5" step="1" value="2.5" class="mood-slider w-full is-default" id="mood-slider-${question.id}" oninput="this.classList.remove('is-default')" onchange="WellTrackApp.events.handleMoodChange('${question.id}')">
+                        <input type="range" min="0" max="5" step="1" value="2.5" class="mood-slider w-full is-default" id="mood-slider-${question.id}" oninput="this.classList.remove('is-default')" onpointerdown="WellTrackApp.events.handleMoodRulerMouseDown(event)" onchange="WellTrackApp.events.handleMoodChange('${question.id}')">
                         <div class="mood-slider-default-indicator">
                              <span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1">star</span>
                         </div>
@@ -2032,12 +2051,54 @@ const WellTrackApp = {
             const view = frontView.classList.contains('hidden') ? 'back' : 'front';
             WellTrackApp.render.modal.showPainSelector(event.target, view);
         },
+        handlePainFreeClick() {
+            let metrics = WellTrackApp.data.getMetrics();
+            const now = Date.now();
+            const tenMinutesAgo = now - 600000;
+
+            // Check if a pain_free entry exists in the last 10 mins
+            const existingPainFreeIndex = metrics.findIndex(m =>
+                m.metric === 'pain_free_level' && m.timestamp >= tenMinutesAgo
+            );
+
+            if (existingPainFreeIndex > -1) {
+                // If it exists, toggle it OFF by removing it.
+                metrics.splice(existingPainFreeIndex, 1);
+            } else {
+                // If it doesn't exist, toggle it ON.
+                // 1. Remove all other pain_* entries from the last 10 mins.
+                metrics = metrics.filter(m =>
+                    !(m.metric.startsWith('pain_') && m.timestamp >= tenMinutesAgo)
+                );
+                // 2. Add the new pain_free_level entry.
+                metrics.push({
+                    metric: 'pain_free_level',
+                    timestamp: now,
+                    labels: { name: 'Schmerz Frei' },
+                    value: 0
+                });
+            }
+
+            WellTrackApp.data.saveMetrics(metrics);
+            WellTrackApp.data.loadTodaysState(); // Reload UI
+        },
         handleSetPainLevel(level) {
             const part = WellTrackApp.state.currentPainPart; if (!part) return;
             
+            let metrics = WellTrackApp.data.getMetrics();
+            const now = Date.now();
+            const tenMinutesAgo = now - 600000;
+            const existingPainFreeIndex = metrics.findIndex(m =>
+                m.metric === 'pain_free_level' && m.timestamp >= tenMinutesAgo
+            );
+            if (existingPainFreeIndex > -1) {
+                metrics.splice(existingPainFreeIndex, 1);
+                WellTrackApp.data.saveMetrics(metrics);
+            }
+
             const newEntry = {
                 metric: `pain_${part.id}_level`,
-                timestamp: Date.now(),
+                timestamp: now,
                 labels: { body_part: part.id, name: part.dataset.name }, 
                 value: parseInt(level, 10)
             };
@@ -2140,13 +2201,25 @@ const WellTrackApp = {
         },
         handleRemoveEvent(index) {
             const events = WellTrackApp.data.getEvents();
-            const eventNameToDelete = events[index].name;
+            const eventToDelete = events[index];
+            const allMetrics = WellTrackApp.data.getMetrics();
+
+            const isEventUsed = allMetrics.some(metric =>
+                metric.labels && metric.labels.activity === eventToDelete.activity
+            );
+
+            if (isEventUsed) {
+                WellTrackApp.render.modal.showAlert('Fehler', 'Ereignissart kann nicht gelöscht werden, da es bereits Einträge dieser Art gibt.');
+                return;
+            }
+
+            const eventNameToDelete = eventToDelete.name;
             WellTrackApp.render.modal.showConfirmation('Ereignis löschen', `Möchten Sie das Ereignis "${eventNameToDelete}" wirklich entfernen?`, () => {
                 events.splice(index, 1);
                 WellTrackApp.data.saveEvents(events);
                 WellTrackApp.render.settingsPage();
                 if(['event'].includes(WellTrackApp.state.activePage)) WellTrackApp.render.eventPage();
-            });
+            }, 'Löschen', 'Abbrechen');
         },
         handleToggleDay(event) {
             const button = event.target.closest('.day-btn');
@@ -2248,6 +2321,17 @@ const WellTrackApp = {
             slider.dispatchEvent(changeEvent);
         },
         handleMoodChange(moodId) {
+            const startPos = WellTrackApp.state.sliderClickStartPosition;
+            if (startPos) {
+                const dScrollY = Math.abs(window.scrollY - startPos.scrollY);
+                const dScrollX = Math.abs(window.scrollX - startPos.scrollX);
+                if (dScrollX > 0 || dScrollY > 0) {
+                    WellTrackApp.state.sliderClickStartPosition = null; // Reset state
+                    return; // Abort change if scroll was detected
+                }
+            }
+            WellTrackApp.state.sliderClickStartPosition = null; // Reset state on successful change
+
             const slider = document.getElementById(`mood-slider-${moodId}`);
             if (!slider) return;
 
@@ -2365,7 +2449,9 @@ const WellTrackApp = {
                     localStorage.removeItem('wellTrackSettings');
                     // Manually reset app state and re-render without a full page reload
                     WellTrackApp.init();
-                }
+                },
+                'Löschen',
+                'Abbrechen'
             );
         }
     },
@@ -2462,20 +2548,9 @@ const WellTrackApp = {
             });
 
             const dailyTotals = filteredData.reduce((acc, entry) => {
-                let timestamp = new Date(entry.timestamp);
-                let dayKey;
-
-                // For mood and pain, group by rounded timestamp to see intra-day changes
-                if (metricPrefix === 'mood_' || metricPrefix === 'pain_') {
-                    const minutes = timestamp.getMinutes();
-                    const roundedMinutes = Math.round(minutes / 10) * 10;
-                    timestamp.setMinutes(roundedMinutes, 0, 0);
-                    dayKey = timestamp.getTime(); // Use MS for the key
-                } else {
-                    const d = new Date(entry.timestamp);
-                    d.setHours(0, 0, 0, 0);
-                    dayKey = d.getTime(); // For events, group by day (already in MS)
-                }
+                const d = new Date(entry.timestamp);
+                d.setHours(0, 0, 0, 0);
+                const dayKey = d.getTime();
 
                 if (!acc[dayKey]) acc[dayKey] = { total: 0, positiveSum: 0, negativeSum: 0, values: {}, details: {} };
                 
