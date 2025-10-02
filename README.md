@@ -100,7 +100,7 @@ Alternativ kann die `welltrack.html`-Datei direkt auf einem Computer gespeichert
 
 ## Lizenz
 
-Der Code ist frei verfügbar, die von Menschen erstellten Teile des Codes sind unter der liberalen OpenSource [Lizenz *BSD 3-Clause*](LICENSE)  veröffentlicht.
+Der Code ist frei verfügbar, die von Menschen erstellten Teile des Codes sind unter der liberalen OpenSource [Lizenz *BSD 3-Clause*](https://github.com/wuxxin/welltrack/blob/main/LICENSE) veröffentlicht. Der Sourcecode ist unter [github.com/wuxxin/welltrack](https://github.com/wuxxin/welltrack) verfügbar.
 
 Diese Web App ist ein ***Vibecoding - Projekt***.
 Sie wurde großteils durch natürliche Sprache zusammen mit einer KI erstellt.
