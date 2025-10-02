@@ -9,7 +9,7 @@ Als offline-fähige Progressive Web App (PWA) bleiben dabei alle Daten ausschlie
 
 ## Funktionsumfang
 
-**Der Schwerpunkt der App liegt in der schnellen, einfachen aber detaillierte Daten Erfassung von Schmerz, Stimmung und anderen Ereignissen.**
+**Der Schwerpunkt der App liegt in der schnellen, einfachen aber detaillierte Datenerfassung von Schmerz, Stimmung und anderen Ereignissen.**
 
 ### Stimmung protokollieren
 
@@ -100,9 +100,11 @@ Alternativ kann die `welltrack.html`-Datei direkt auf einem Computer gespeichert
 
 ## Lizenz
 
-Diese Web App ist ein ***Vibecoding - Projekt***. Das bedeutet, sie wurde großteils durch natürliche Sprache mit einer KI erstellt, um für eine Person rasch eine einfache Möglichkeit zu schaffen ihre täglichen Schmerzen, Stimmungen und Trainingszyklen niederschwellig festzuhalten.
+Der Code ist frei verfügnar, die von Menschen erstellten Teile des Codes sind unter der liberalen OpenSource [Lizenz *BSD 3-Clause*](LICENSE)  veröffentlicht.
 
-Der Code ist nicht oder nur schwer für menschliche Wartung zugänglich.
-Eine größere Veränderung oder Erweiterung des Codes ist - in der momentanen Form - nicht empfehlenswert.
+Diese Web App ist ein ***Vibecoding - Projekt***.
+Sie wurde großteils durch natürliche Sprache zusammen mit einer KI erstellt.
 
-Die von Menschen erstellten Teile des Codes sind unter eine BSD 3-Clause [Lizenz](LICENSE) veröffentlicht.
+Ziel war es rasch eine einfache Möglichkeit zu schaffen um es einer Person  niederschwellig zu ermöglichen ihre täglichen Schmerzen, Stimmungen und Trainingszyklen festzuhalten.
+
+Der Code ist nicht oder nur schwer für menschliche Wartung zugänglich. Eine größere Veränderung oder Erweiterung des Codes ist - in der momentanen Form - nicht empfehlenswert.
