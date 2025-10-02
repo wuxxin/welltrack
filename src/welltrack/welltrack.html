@@ -356,7 +356,7 @@ const WellTrackApp = {
         DEFAULT_EVENTS_JSON: `[
             {"name": "Spaziergang", "activity": "walking", "displayType": 0, "increment": 15, "unitType": "min", "groupType": "Bewegung"},
             {"name": "Kaffee Tassen", "activity": "coffee_cups", "displayType": 1, "increment": 1, "unitType": "", "groupType": "Ernährung"},
-            {"name": "Ibuprofen 400mg", "activity": "ibuprofen_400", "displayType": 1, "increment": 0, "unitType": "", "groupType": "Medikamente"},
+            {"name": "Ibuprofen 400mg", "activity": "ibuprofen_400", "displayType": 2, "increment": 0, "unitType": "", "groupType": "Medikamente"},
             {"name": "Rückenübungen", "activity": "back_exercises", "displayType": 0, "increment": 15, "unitType": "min", "groupType": "Bewegung"}
         ]`,
         MOOD_GROUPS: {
@@ -1694,9 +1694,9 @@ const WellTrackApp = {
 
                 return `
                 <div>
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="h2-style">Einstellungen</h2>
-                         <div class="inline-flex rounded-full shadow-sm" role="group">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                        <h2 class="h2-style mb-2">Einstellungen</h2>
+                        <div class="inline-flex rounded-full shadow-sm" role="group">
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('eventTypes')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100" data-tab="eventTypes">Ereignisarten</button>
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('data')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100" data-tab="data">Datenverwaltung</button>
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('reminders')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100" data-tab="reminders">Erinnerungen</button>
@@ -1705,6 +1705,7 @@ const WellTrackApp = {
                     </div>
 
                     <div id="settings-tab-eventTypes" class="settings-tab-content card">
+                        <h2 class="h2-style mb-4">Ereignisarten</h2>
                         <div id="manage-event-list" class="space-y-2 mb-4"></div>
                         <div id="edit-event-form-container"></div>
                         <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-secondary w-full"><span class="material-symbols-outlined mr-2">add</span>Neue hinzufügen</button></div>
