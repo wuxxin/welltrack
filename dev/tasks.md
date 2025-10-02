@@ -10,10 +10,10 @@ This update includes a comprehensive set of UI enhancements, feature additions, 
   - Redesigned "Today" tab pills for mood, pain, and events to improve readability and handle long text. The "gleichbleibend" trend indicator now correctly uses a right-arrow icon and an equals sign. Event pills now default to a horizontal layout and wrap vertically when needed.
   - Cleaned up the "Event Entry" tab by reorganizing buttons to appear on the same line as the event name when space permits.
   - Standardized all tab and section heading sizes for a consistent look and feel.
-  - Adjusted subgroup selectors on the "Event Entry" and "Verlauf" tabs to wrap and align to the right on smaller screens.
-  - Adjusted history chart data aggregation to ensure daily bars render correctly and removed the moving average line for clarity.
+  - Reverted the subgroup selectors on the "Event Entry" and "Verlauf" tabs to their original "connected" style.
 
 - **Features & Logic:**
+  - Updated the data aggregation for mood and pain charts to group data into 10-minute timeslots, allowing for intra-day visualization.
   - Implemented a "Pain-Free" button on the pain entry screen to allow users to log periods of no pain.
   - Refined the mood slider to prevent accidental selections when scrolling.
   - Updated the "delete event type" logic to count existing entries, display a detailed confirmation message, and delete both the event type and its associated data.
