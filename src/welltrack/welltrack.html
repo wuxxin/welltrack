@@ -259,17 +259,6 @@
             border-color: var(--md-sys-color-primary-container);
             z-index: 10;
         }
-        .settings-tab {
-            border-color: transparent;
-            color: var(--md-sys-color-on-surface-variant);
-        }
-        .settings-tab.active {
-            border-color: var(--md-sys-color-primary);
-            color: var(--md-sys-color-primary);
-        }
-        .settings-tab:hover:not(.active) {
-            border-color: var(--md-sys-color-on-surface-variant);
-        }
         .settings-tab-content {
             display: none;
         }
@@ -402,13 +391,13 @@ const WellTrackApp = {
         if (savedPainView) {
             this.state.currentPainView = savedPainView;
         }
-        const savedSettingsTab = localStorage.getItem('wellTrackActiveSettingsTab');
-        if (savedSettingsTab) {
-            this.state.activeSettingsTab = savedSettingsTab;
-        }
         const savedLogVisibility = localStorage.getItem('wellTrackLogVisibility');
         if (savedLogVisibility) {
             this.state.isTodaysLogVisible = JSON.parse(savedLogVisibility);
+        }
+        const savedSettingsTab = localStorage.getItem('wellTrackActiveSettingsTab');
+        if (savedSettingsTab) {
+            this.state.activeSettingsTab = savedSettingsTab;
         }
         document.addEventListener('DOMContentLoaded', () => {
             this.events.showPage(this.state.activePage);
@@ -754,9 +743,9 @@ const WellTrackApp = {
                             </span>`;
                 }
 
+                const isGood = higherIsGood ? (delta > 0) : (delta < 0);
+                const color = isGood ? 'text-green-500' : 'text-red-500';
                 const icon = delta > 0 ? 'trending_up' : 'trending_down';
-                const isChangeGood = higherIsGood ? (delta > 0) : (delta < 0);
-                const color = isChangeGood ? 'text-green-500' : 'text-red-500';
 
                 return `<span class="text-sm ${color} font-semibold inline-flex items-center gap-1">
                             <span class="material-symbols-outlined text-base">${icon}</span>
@@ -889,26 +878,43 @@ const WellTrackApp = {
             }
 
             // --- Render Todays Log ---
-            const logContainer = document.getElementById('todays-log-container');
-            const logCard = document.getElementById('todays-log-card');
-            const existingNoEntriesP = document.getElementById('no-entries-today');
-            if(existingNoEntriesP) existingNoEntriesP.remove();
+            const logSection = document.getElementById('todays-log-section');
+            const entryCount = summarizedToday.length;
+            const isVisible = WellTrackApp.state.isTodaysLogVisible;
 
-            if (summarizedToday.length === 0) {
-                if(logCard) logCard.classList.add('hidden');
-                const appContainer = document.getElementById('app-container');
-                if(!document.getElementById('no-entries-today')) {
-                    appContainer.insertAdjacentHTML('beforeend', '<p id="no-entries-today" class="text-gray-500 text-center py-4">Noch keine Einträge für heute.</p>');
-                }
+            let logHtml = '';
+
+            if (entryCount === 0) {
+                logHtml = `
+                    <div class="card text-center text-gray-500 font-semibold">
+                        Noch keine Einträge für Heute
+                    </div>
+                `;
             } else {
-                if(logCard) logCard.classList.remove('hidden');
+                const buttonText = `${entryCount} heutige Einträge`;
+                const icon = isVisible ? 'expand_less' : 'expand_more';
+                const listVisibilityClass = isVisible ? '' : 'hidden';
 
                 let listHtml = '';
-                summarizedToday.sort((a,b) => b.timestamp - a.timestamp).forEach(metric => {
-                     listHtml += `<li class="text-sm text-gray-700">${this.components.todaysLogEntry(metric)}</li>`;
-                });
-                logContainer.innerHTML = listHtml;
+                if (isVisible) {
+                    summarizedToday.sort((a,b) => b.timestamp - a.timestamp).forEach(metric => {
+                        listHtml += `<li class="text-sm text-gray-700 py-1 border-b border-gray-200 last:border-b-0">${this.components.todaysLogEntry(metric)}</li>`;
+                    });
+                }
+
+                logHtml = `
+                    <div class="card !p-2">
+                        <button onclick="WellTrackApp.events.toggleTodaysLog()" class="w-full flex justify-center items-center font-semibold text-gray-800 p-2 rounded-lg hover:bg-gray-200/50">
+                            <span>${buttonText}</span>
+                            <span class="material-symbols-outlined">${icon}</span>
+                        </button>
+                        <ul id="todays-log-container" class="space-y-1 mt-2 px-2 ${listVisibilityClass}">
+                            ${listHtml}
+                        </ul>
+                    </div>
+                `;
             }
+            if(logSection) logSection.innerHTML = logHtml;
         },
         eventPage() {
             const container = document.getElementById('app-container');
@@ -931,7 +937,7 @@ const WellTrackApp = {
             container.innerHTML = this.components.settingsSection();
             const activeTab = WellTrackApp.state.activeSettingsTab;
 
-            const tabButton = document.querySelector(`.settings-tab[data-tab='${activeTab}']`);
+            const tabButton = document.querySelector(`.view-toggle-btn[data-tab='${activeTab}']`);
             if (tabButton) {
                 tabButton.classList.add('active');
             }
@@ -1478,11 +1484,8 @@ const WellTrackApp = {
                 <div id="today-event-groups" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-6">
                     <!-- Event group cards will be rendered here -->
                 </div>
-                <div id="todays-log-card" class="card">
-                    <button onclick="WellTrackApp.events.toggleTodaysLog()" class="w-full text-center font-semibold text-gray-800 mb-1">Letzte Einträge</button>
-                    <ul id="todays-log-container" class="space-y-2 ${WellTrackApp.state.isTodaysLogVisible ? '' : 'hidden'}">
-                        <!-- Log entries will be rendered here -->
-                    </ul>
+                <div id="todays-log-section" class="mb-6">
+                    <!-- Collapsible log will be rendered here by todayPage() -->
                 </div>
                 `;
             },
@@ -1527,13 +1530,15 @@ const WellTrackApp = {
 
                 return `
                 <div class="card">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex items-baseline gap-2">
+                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                        <div class="flex items-center gap-2">
                             <h2 id="mood-section-title" class="h2-style">Stimmung</h2>
                             <span id="mood-last-entry-time" class="text-sm text-gray-500"></span>
                         </div>
-                        <div class="inline-flex rounded-full shadow-sm" role="group">
-                            ${groupButtons}
+                        <div class="sm:w-auto flex justify-end items-center gap-4">
+                            <div class="inline-flex rounded-full shadow-sm" role="group">
+                                ${groupButtons}
+                            </div>
                         </div>
                     </div>
                     <div id="mood-container" class="space-y-8">${activeGroup.questions.map(q => WellTrackApp.render.components.moodSlider(q)).join('')}</div>
@@ -1543,14 +1548,16 @@ const WellTrackApp = {
                 const currentView = WellTrackApp.state.currentPainView;
                 return `
                 <div class="card">
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="flex items-baseline gap-2">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                        <div class="flex items-center gap-2">
                             <h2 id="pain-section-title" class="h2-style">Schmerzen</h2>
                             <span id="pain-last-entry-time" class="text-sm text-gray-500"></span>
                         </div>
-                        <div class="inline-flex rounded-full shadow-sm" role="group">
-                            <button type="button" onclick="WellTrackApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100 ${currentView === 'front' ? 'active' : ''}">Vorderseite</button>
-                            <button type="button" onclick="WellTrackApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100 ${currentView === 'back' ? 'active' : ''}">Rückseite</button>
+                        <div class="sm:w-auto flex justify-end items-center gap-4">
+                            <div class="inline-flex rounded-full shadow-sm" role="group">
+                                <button type="button" onclick="WellTrackApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100 ${currentView === 'front' ? 'active' : ''}">Vorderseite</button>
+                                <button type="button" onclick="WellTrackApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100 ${currentView === 'back' ? 'active' : ''}">Rückseite</button>
+                            </div>
                         </div>
                     </div>
                     <div class="flex justify-center">
@@ -1628,19 +1635,19 @@ const WellTrackApp = {
                 const activeTab = WellTrackApp.state.activeHistoryTab;
                 return `
                 <div class="card">
-                     <div class="flex flex-wrap items-center gap-4 mb-4">
+                     <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
+                        <h2 id="log-title" class="h2-style">Verlauf</h2>
                         <div class="flex items-center gap-4">
-                           <h2 id="log-title" class="h2-style">Verlauf</h2>
                             <select id="time-range-selector" onchange="WellTrackApp.events.handleTimeRangeChange(event)" class="border border-gray-300 rounded-full text-sm focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5">
                                 <option value="7" ${WellTrackApp.state.timeRange === 7 ? 'selected' : ''}>Letzte 7 Tage</option>
                                 <option value="30" ${WellTrackApp.state.timeRange === 30 ? 'selected' : ''}>Letzte 30 Tage</option>
                                 <option value="90" ${WellTrackApp.state.timeRange === 90 ? 'selected' : ''}>Letzte 3 Monate</option>
                             </select>
-                        </div>
-                         <div id="history-tabs" class="history-tab-group inline-flex rounded-full shadow-sm ml-auto" role="group">
-                             <button onclick="WellTrackApp.events.handleHistoryTabClick('event')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100" data-tab="event">Ereignisse</button>
-                            <button onclick="WellTrackApp.events.handleHistoryTabClick('mood')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100" data-tab="mood">Stimmung</button>
-                            <button onclick="WellTrackApp.events.handleHistoryTabClick('pain')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100" data-tab="pain">Schmerz</button>
+                            <div id="history-tabs" class="history-tab-group inline-flex rounded-full shadow-sm" role="group">
+                                <button onclick="WellTrackApp.events.handleHistoryTabClick('event')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100" data-tab="event">Ereignisse</button>
+                                <button onclick="WellTrackApp.events.handleHistoryTabClick('mood')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100" data-tab="mood">Stimmung</button>
+                                <button onclick="WellTrackApp.events.handleHistoryTabClick('pain')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100" data-tab="pain">Schmerz</button>
+                            </div>
                         </div>
                     </div>
                     <div id="chart-container-event" class="chart-container space-y-4"></div>
@@ -1657,7 +1664,6 @@ const WellTrackApp = {
             settingsSection: () => {
                 const settings = WellTrackApp.data.getSettings();
                 const perm = WellTrackApp.state.notificationPermission;
-                const activeTab = WellTrackApp.state.activeSettingsTab;
 
                 let reminderContentHtml = '';
                 if (perm === 'denied') {
@@ -1690,49 +1696,44 @@ const WellTrackApp = {
                 <div>
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="h2-style">Einstellungen</h2>
-                    </div>
-                    <div class="border-b border-gray-200 mb-4">
-                        <nav class="-mb-px flex space-x-6" aria-label="Tabs">
-                            <button onclick="WellTrackApp.events.handleSettingsTabClick('eventTypes')" class="settings-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="eventTypes">Ereignisarten</button>
-                            <button onclick="WellTrackApp.events.handleSettingsTabClick('data')" class="settings-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="data">Datenverwaltung</button>
-                            <button onclick="WellTrackApp.events.handleSettingsTabClick('reminders')" class="settings-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="reminders">Erinnerungen</button>
-                            <button onclick="WellTrackApp.events.handleSettingsTabClick('about')" class="settings-tab whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm" data-tab="about">Über</button>
-                        </nav>
+                         <div class="inline-flex rounded-full shadow-sm" role="group">
+                            <button onclick="WellTrackApp.events.handleSettingsTabClick('eventTypes')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100" data-tab="eventTypes">Ereignisarten</button>
+                            <button onclick="WellTrackApp.events.handleSettingsTabClick('data')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100" data-tab="data">Datenverwaltung</button>
+                            <button onclick="WellTrackApp.events.handleSettingsTabClick('reminders')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100" data-tab="reminders">Erinnerungen</button>
+                            <button onclick="WellTrackApp.events.handleSettingsTabClick('about')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100" data-tab="about">Über</button>
+                        </div>
                     </div>
 
-                    <div class="space-y-6">
-                        <div id="settings-tab-eventTypes" class="settings-tab-content card">
-                            <h2 class="h2-style mb-4">Ereignisarten</h2>
-                            <div id="manage-event-list" class="space-y-2 mb-4"></div>
-                            <div id="edit-event-form-container"></div>
-                            <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-secondary w-full"><span class="material-symbols-outlined mr-2">add</span>Neue hinzufügen</button></div>
+                    <div id="settings-tab-eventTypes" class="settings-tab-content card">
+                        <div id="manage-event-list" class="space-y-2 mb-4"></div>
+                        <div id="edit-event-form-container"></div>
+                        <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-secondary w-full"><span class="material-symbols-outlined mr-2">add</span>Neue hinzufügen</button></div>
+                    </div>
+                    <div id="settings-tab-data" class="settings-tab-content card">
+                        <h2 class="h2-style mb-4">Datenverwaltung</h2>
+                        <p class="text-sm text-gray-600 mb-4">Sie können Ihre Daten als JSON-Datei exportieren oder eine zuvor exportierte Datei wieder importieren.</p>
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <button onclick="WellTrackApp.data.exportData()" class="btn btn-secondary flex-1"><span class="material-symbols-outlined mr-2">download</span> Daten exportieren</button>
+                            <label class="btn btn-error flex-1 cursor-pointer"><span class="material-symbols-outlined mr-2">upload</span><span>Daten importieren</span><input type="file" id="import-file" class="hidden" accept=".json" onchange="WellTrackApp.data.importData(event)"></label>
+                            <button onclick="WellTrackApp.events.handleDeleteAllData()" class="btn btn-error flex-1"><span class="material-symbols-outlined mr-2">delete_forever</span> Alle Daten löschen</button>
                         </div>
-                        <div id="settings-tab-data" class="settings-tab-content card">
-                            <h2 class="h2-style mb-4">Datenverwaltung</h2>
-                            <p class="text-sm text-gray-600 mb-4">Sie können Ihre Daten als JSON-Datei exportieren oder eine zuvor exportierte Datei wieder importieren.</p>
-                            <div class="flex flex-col md:flex-row gap-4">
-                                <button onclick="WellTrackApp.data.exportData()" class="btn btn-secondary flex-1"><span class="material-symbols-outlined mr-2">download</span> Daten exportieren</button>
-                                <label class="btn btn-error flex-1 cursor-pointer"><span class="material-symbols-outlined mr-2">upload</span><span>Daten importieren</span><input type="file" id="import-file" class="hidden" accept=".json" onchange="WellTrackApp.data.importData(event)"></label>
-                                <button onclick="WellTrackApp.events.handleDeleteAllData()" class="btn btn-error flex-1"><span class="material-symbols-outlined mr-2">delete_forever</span> Alle Daten löschen</button>
-                            </div>
+                    </div>
+                    <div id="settings-tab-reminders" class="settings-tab-content card">
+                        <h2 class="h2-style mb-4">Erinnerungen</h2>
+                        <div id="reminder-section" class="space-y-4">
+                            ${reminderContentHtml}
                         </div>
-                        <div id="settings-tab-reminders" class="settings-tab-content card">
-                            <h2 class="h2-style mb-4">Erinnerungen</h2>
-                            <div id="reminder-section" class="space-y-4">
-                                ${reminderContentHtml}
-                            </div>
-                        </div>
-                        <div id="settings-tab-about" class="settings-tab-content card">
-                            <h2 class="h2-style mb-4">Über diese WebApp</h2>
-                            <div class="text-sm text-gray-700 space-y-4">
-                                <p>WellTrack ist ein persönliches und 100% privates Gesundheitstagebuch. Alle Daten bleiben ausschließlich auf dem eigenen Gerät.</p>
-                                <div>
-                                    <ul class="list-disc list-inside mt-2 space-y-1">
-                                        <li><a href="https://wuxxin.github.io/welltrack/" target="_blank" class="text-blue-600 hover:underline">Homepage & Dokumentation</a></li>
-                                        <li><a href="https://github.com/wuxxin/welltrack" target="_blank" class="text-blue-600 hover:underline">Quellcode auf GitHub</a></li>
-                                        <li><a href="https://github.com/wuxxin/welltrack/blob/main/LICENSE" target="_blank" class="text-blue-600 hover:underline">Lizenz (BSD 3-Clause License)</a></li>
-                                    </ul>
-                                </div>
+                    </div>
+                    <div id="settings-tab-about" class="settings-tab-content card">
+                        <h2 class="h2-style mb-4">Über diese WebApp</h2>
+                        <div class="text-sm text-gray-700 space-y-4">
+                            <p>WellTrack ist ein persönliches und 100% privates Gesundheitstagebuch. Alle Daten bleiben ausschließlich auf dem eigenen Gerät.</p>
+                            <div>
+                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                    <li><a href="https://wuxxin.github.io/welltrack/" target="_blank" class="text-blue-600 hover:underline">Homepage & Dokumentation</a></li>
+                                    <li><a href="https://github.com/wuxxin/welltrack" target="_blank" class="text-blue-600 hover:underline">Quellcode auf GitHub</a></li>
+                                    <li><a href="https://github.com/wuxxin/welltrack/blob/main/LICENSE" target="_blank" class="text-blue-600 hover:underline">Lizenz (BSD 3-Clause License)</a></li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -2257,9 +2258,9 @@ const WellTrackApp = {
             if (newPage >= 1 && newPage <= totalPages) {
                 WellTrackApp.render.fullLogPage(newPage);
                 setTimeout(() => {
-                    const logPagination = document.getElementById('log-pagination');
-                    if (logPagination) {
-                        logPagination.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    const paginationEl = document.getElementById('log-pagination');
+                    if (paginationEl) {
+                        paginationEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
                     }
                 }, 100);
             }
