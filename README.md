@@ -1,4 +1,4 @@
-# **WellTrack Gesundheitstagebuch**
+# WellTrack
 ![WellTrack Logo](assets/icon-192.png)
 
 **[Hier klicken , um WellTrack (mit Updates) im Browser zu nutzen](https://wuxxin.github.io/welltrack/welltrack/welltrack.html)**
@@ -98,7 +98,7 @@ Alternativ kann die `welltrack.html`-Datei direkt auf einem Computer gespeichert
 * **Interaktive Datenvisualisierung:** Diagramme werden mit Chart.js erstellt.
 * **Abhängigkeiten über CDN:** Alle externen Bibliotheken (z. B. Tailwind CSS, Chart.js) werden über ein CDN geladen, was die Einrichtung vereinfacht und keine Build-Schritte erfordert.
 
-## Lizenz
+## Lizenz und Sourcecode
 
 Der Sourcecode ist unter [github.com/wuxxin/welltrack](https://github.com/wuxxin/welltrack) frei verfügbar. Die von Menschen erstellten Teile des Codes sind unter der liberalen OpenSource [Lizenz *BSD 3-Clause*](https://github.com/wuxxin/welltrack/blob/main/LICENSE) veröffentlicht.
 
