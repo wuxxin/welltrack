@@ -84,7 +84,7 @@ Für ein App-ähnliches Erlebnis kann WellTrack auf dem Smartphone-Startbildschi
 
 Danach erscheint ein WellTrack-Symbol auf dem Startbildschirm, über das die App wie eine native Anwendung gestartet werden kann.
 
-### Lokale Nutzung
+### Lokale Nutzung auf dem Laptop/PC
 
 Alternativ kann die `welltrack.html`-Datei direkt auf einem Computer gespeichert und im Browser geöffnet werden.
 **Hinweis:** Bei dieser Methode muss die Datei manuell aktualisiert werden, um neue Funktionen und Fehlerbehebungen zu erhalten.
