@@ -7,7 +7,7 @@ based on a specified start date. It validates the entries against the
 current application configuration found in 'welltrack.html'.
 
 Usage:
-    cat welltrack_export.json | python scripts/extract_mood_pain.py <dd.mm.yyyy|all>
+    cat welltrack_export.json | python scripts/extract_mood_pain.py <epochseconds|all>
 """
 
 import json
@@ -18,7 +18,7 @@ from datetime import datetime
 def show_usage():
     """Prints the usage information to stderr."""
     print(
-        "Usage: cat <export_file.json> | python extract_mood_pain.py <dd.mm.yyyy|all>",
+        "Usage: cat <export_file.json> | python extract_mood_pain.py <epochseconds|all>",
         file=sys.stderr
     )
     sys.exit(1)
@@ -65,10 +65,9 @@ def main():
     start_timestamp = 0
     if date_arg.lower() != 'all':
         try:
-            start_date = datetime.strptime(date_arg, "%d.%m.%Y").replace(hour=0, minute=0, second=0, microsecond=0)
-            start_timestamp = int(start_date.timestamp() * 1000)
+            start_timestamp = int(date_arg) * 1000
         except ValueError:
-            print(f"Error: Invalid date format '{date_arg}'. Please use dd.mm.yyyy.", file=sys.stderr)
+            print(f"Error: Invalid date format '{date_arg}'. Please use epochseconds.", file=sys.stderr)
             sys.exit(1)
 
     try:
@@ -90,7 +89,11 @@ def main():
 
     filtered_metrics = []
     for metric in input_data.get("metrics", []):
+        if metric.get("timestamp", 0) < 10000000000:
+          metric["timestamp"] = metric["timestamp"] * 1000
+          # crude hack to change second epoch to ms epoch
         if metric.get("timestamp", 0) < start_timestamp:
+            print("entry {name} is to old {epoch} < {minepoch}".format(name=metric["metric"], epoch=metric["timestamp"], minepoch=start_timestamp), file=sys.stderr)
             continue
 
         metric_name = metric.get("metric", "")
