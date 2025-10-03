@@ -1,0 +1,14 @@
++++ ensure-uv
++++ uv.lock
+uv lock
++++ buildenv
++++ docs-mkdocs
+mkdir -p build/site/welltrack
+cp src/welltrack/* build/site/welltrack
++++ docs-welltrack-app
++++ docs-wheel
+mkdir -p build/welltrack-lab/public
+cp build/wheel/welltrack_lab-*-py3-none-any.whl build/welltrack-lab/public
+cp scripts/welltrack-lab.py build/welltrack-lab/
+. .venv/bin/activate && printf "y\n" | marimo export html-wasm \
+	build/welltrack-lab/welltrack-lab.py -o build/site/marimo --mode run

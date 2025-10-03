@@ -20,9 +20,11 @@ theme:
   #   - navigation.tracking
   #   - toc.follow
 nav:
-  - Dokumentation: README.md
-  - Welltrack-WebApp: welltrack/welltrack.html
-  - Daten-Analyse-WebApp: marimo
+  - 'Dokumentation':
+    - 'Übersicht': 'README.md'
+    - 'Stimmung & Schmerz': 'mood-and-pain.md'
+  - 'Welltrack-WebApp': 'welltrack/welltrack.html'
+  - 'Daten-Analyse-WebApp': 'marimo'
 plugins:
   - marimo
 markdown_extensions:
