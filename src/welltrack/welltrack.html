@@ -334,7 +334,8 @@ const WellTrackApp = {
         activeSettingsTab: 'eventTypes', // eventTypes, data, reminders, about
         isTodaysLogVisible: false,
         sliderClickStartPosition: null,
-        currentPainView: 'back'
+        currentPainView: 'back',
+        currentLogWeekStart: null
     },
 
     // --- CONFIGURATION ---
@@ -530,16 +531,6 @@ const WellTrackApp = {
            
             if (page === 'pain') {
                 const todaysPainMetrics = todaysMetrics.filter(e => e.metric.startsWith('pain_'));
-                const lastEntryTimeSpan = document.getElementById('pain-last-entry-time');
-                if (lastEntryTimeSpan) {
-                    if (todaysPainMetrics.length > 0) {
-                        const lastEntry = todaysPainMetrics[todaysPainMetrics.length - 1]; // Already sorted
-                        lastEntryTimeSpan.textContent = `(zuletzt um ${new Date(lastEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
-                    } else {
-                        lastEntryTimeSpan.textContent = '';
-                    }
-                }
-
                 const lastPainFreeEntry = todaysPainMetrics.find(m => m.metric === 'pain_free_level');
                 const isPainFreeActive = lastPainFreeEntry && (now - lastPainFreeEntry.timestamp < 600000);
 
@@ -564,16 +555,6 @@ const WellTrackApp = {
                 });
             } else if (page === 'mood') {
                 const todaysMoodMetrics = todaysMetrics.filter(e => e.metric.startsWith('mood_'));
-                const lastEntryTimeSpan = document.getElementById('mood-last-entry-time');
-                if (lastEntryTimeSpan) {
-                    if (todaysMoodMetrics.length > 0) {
-                        const lastEntry = todaysMoodMetrics[todaysMoodMetrics.length-1];
-                        lastEntryTimeSpan.textContent = `(zuletzt um ${new Date(lastEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
-                    } else {
-                        lastEntryTimeSpan.textContent = '';
-                    }
-                }
-
                 if (!WellTrackApp.state.activeMoodGroup) {
                     WellTrackApp.state.activeMoodGroup = 'arousal_level';
                 }
@@ -701,15 +682,15 @@ const WellTrackApp = {
                     };
 
                     const content = `
-                        <h3 class="text-xl font-medium mb-4">Daten importieren</h3>
-                        <p class="mb-6">Möchten Sie die aktuellen Daten wirklich überschreiben? Diese Aktion kann nicht rückgängig gemacht werden.</p>
-                        <div class="flex flex-col gap-2">
-                            <button id="import-append-btn" class="btn btn-error w-full">Daten vereinen</button>
-                            <button id="import-overwrite-btn" class="btn btn-error w-full">Daten überschreiben</button>
-                            <button onclick="WellTrackApp.render.modal.hide()" class="btn btn-tertiary w-full mt-4">Abbrechen</button>
+                        <h3 class="text-3xl font-medium mb-4">Daten importieren</h3>
+                        <p class="mb-6 text-xl">Wählen Sie, wie die Daten aus der Datei importiert werden sollen. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+                        <div class="flex flex-col gap-3">
+                            <button id="import-overwrite-btn" class="btn btn-error-primary w-full text-xl py-3">Daten überschreiben</button>
+                            <button id="import-append-btn" class="btn btn-error w-full text-xl py-3">Daten vereinen</button>
+                            <button onclick="WellTrackApp.render.modal.hide()" class="btn btn-tertiary w-full mt-4 text-xl py-3">Abbrechen</button>
                         </div>
                     `;
-                    WellTrackApp.render.modal.show(content);
+                    WellTrackApp.render.modal.show(content, { modalClass: 'w-full' });
                     document.getElementById('import-overwrite-btn').onclick = overwriteData;
                     document.getElementById('import-append-btn').onclick = appendData;
 
@@ -733,13 +714,13 @@ const WellTrackApp = {
             // --- Deltas ---
             const renderArrowDelta = (delta, higherIsGood = true) => {
                 if (delta === null || isNaN(delta)) {
-                    return `<span class="text-sm text-gray-500 font-semibold inline-flex items-center gap-1">
-                                <span class="material-symbols-outlined text-base">horizontal_rule</span>--
+                    return `<span class="text-lg text-gray-500 font-semibold inline-flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xl">horizontal_rule</span>
                             </span>`;
                 }
                 if (delta === 0) {
-                    return `<span class="text-sm text-gray-500 font-semibold inline-flex items-center gap-1">
-                                <span class="material-symbols-outlined text-base">trending_flat</span> =
+                    return `<span class="text-lg text-gray-500 font-semibold inline-flex items-center gap-1">
+                                <span class="material-symbols-outlined text-xl">trending_flat</span>
                             </span>`;
                 }
 
@@ -747,8 +728,8 @@ const WellTrackApp = {
                 const color = isGood ? 'text-green-500' : 'text-red-500';
                 const icon = delta > 0 ? 'trending_up' : 'trending_down';
 
-                return `<span class="text-sm ${color} font-semibold inline-flex items-center gap-1">
-                            <span class="material-symbols-outlined text-base">${icon}</span>
+                return `<span class="text-lg ${color} font-semibold inline-flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xl">${icon}</span>
                             ${Math.abs(Math.round(delta))}
                         </span>`;
             };
@@ -766,25 +747,21 @@ const WellTrackApp = {
 
             summaryContainer.innerHTML = `
                 <div class="pill-card !p-0 overflow-hidden">
-                    <div onclick="WellTrackApp.events.showPage('mood')" class="w-1/2 h-full flex items-center pl-6 pr-2 cursor-pointer hover:bg-gray-200/50 transition-colors">
-                        <p class="text-lg font-semibold">Stimmung</p>
+                    <div onclick="WellTrackApp.events.showPage('mood')" class="w-1/2 h-full flex items-center justify-start pl-6 pr-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
+                        <p class="text-xl font-bold">Stimmung</p>
                     </div>
-                    <div onclick="WellTrackApp.events.showHistoryFor('mood')" class="w-1/2 h-full flex items-center justify-center relative cursor-pointer hover:bg-gray-200/50 transition-colors pr-6 pl-2">
-                        <p class="text-3xl font-bold">${displayMoodValue}</p>
-                        <div class="absolute top-1 right-3">
-                           ${renderArrowDelta(moodDelta, true)}
-                        </div>
+                    <div onclick="WellTrackApp.events.showHistoryFor('mood')" class="w-1/2 h-full flex items-baseline justify-end gap-3 pr-6 pl-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
+                        <p class="text-5xl font-bold">${displayMoodValue}</p>
+                        ${renderArrowDelta(moodDelta, true)}
                     </div>
                 </div>
                 <div class="pill-card !p-0 overflow-hidden">
-                     <div onclick="WellTrackApp.events.showPage('pain')" class="w-1/2 h-full flex items-center pl-6 pr-2 cursor-pointer hover:bg-gray-200/50 transition-colors">
-                        <p class="text-lg font-semibold">Schmerzen</p>
+                     <div onclick="WellTrackApp.events.showPage('pain')" class="w-1/2 h-full flex items-center justify-start pl-6 pr-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
+                        <p class="text-xl font-bold">Schmerzen</p>
                     </div>
-                    <div onclick="WellTrackApp.events.showHistoryFor('pain')" class="w-1/2 h-full flex items-center justify-center relative cursor-pointer hover:bg-gray-200/50 transition-colors pr-6 pl-2">
-                       <p class="text-3xl font-bold">${displayPainValue}</p>
-                       <div class="absolute top-1 right-3">
-                          ${renderArrowDelta(painDelta, false)}
-                       </div>
+                    <div onclick="WellTrackApp.events.showHistoryFor('pain')" class="w-1/2 h-full flex items-baseline justify-end gap-3 pr-6 pl-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
+                       <p class="text-5xl font-bold">${displayPainValue}</p>
+                       ${renderArrowDelta(painDelta, false)}
                     </div>
                 </div>
             `;
@@ -963,51 +940,69 @@ const WellTrackApp = {
             this.charts.renderAll();
             WellTrackApp.events.handleHistoryTabClick(WellTrackApp.state.activeHistoryTab, false);
         },
-        fullLogPage(page = 1) {
+        fullLogPage() {
             const container = document.getElementById('app-container');
             container.innerHTML = this.components.fullLogSection();
+
+            if (!WellTrackApp.state.currentLogWeekStart) {
+                WellTrackApp.state.currentLogWeekStart = WellTrackApp.utils.getStartOfWeek(new Date());
+            }
+
+            const weekStart = WellTrackApp.state.currentLogWeekStart;
+            const weekEnd = dateFns.endOfWeek(weekStart, { weekStartsOn: 1 });
+
+            const allMetrics = WellTrackApp.data.getMetrics();
+            const weekMetrics = allMetrics.filter(m => {
+                const metricDate = new Date(m.timestamp);
+                return metricDate >= weekStart && metricDate <= weekEnd;
+            });
             
-            WellTrackApp.state.currentPage = page;
             const logContainer = document.getElementById('log-entries-container');
             if (!logContainer) return;
             logContainer.innerHTML = '';
-            const groupedData = {};
             
-            WellTrackApp.data.getMetrics().forEach(metric => {
+            if (weekMetrics.length === 0) {
+                logContainer.innerHTML = '<div class="card"><p class="text-gray-500 text-center py-8">Keine Einträge in dieser Woche vorhanden.</p></div>';
+            } else {
+                const groupedData = {};
+                weekMetrics.forEach(metric => {
                     const d = new Date(metric.timestamp);
-                    const dateKey = `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
+                    const dateKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
                     if (!groupedData[dateKey]) groupedData[dateKey] = [];
                     groupedData[dateKey].push(metric);
-            });
+                });
 
-            const sortedDates = Object.keys(groupedData).sort((a, b) => {
-                const dateA = a.split('.').reverse().join('-');
-                const dateB = b.split('.').reverse().join('-');
-                return new Date(dateB) - new Date(dateA);
-            });
+                const sortedDates = Object.keys(groupedData).sort((a, b) => new Date(b) - new Date(a));
 
-            if (sortedDates.length === 0) {
-                logContainer.innerHTML = '<p class="text-gray-500 text-center py-8">Noch keine Einträge vorhanden.</p>';
-                document.getElementById('log-pagination').innerHTML = ''; return;
-            }
-            const startIndex = (page - 1) * WellTrackApp.config.ENTRIES_PER_PAGE;
-            const endIndex = page * WellTrackApp.config.ENTRIES_PER_PAGE;
-            const paginatedDates = sortedDates.slice(startIndex, endIndex);
-            
-            paginatedDates.forEach(dateString => {
-                const dateParts = dateString.split('.').map(part => parseInt(part, 10));
-                const dateObj = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
-                const weekdays = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-                const dayName = weekdays[dateObj.getDay()];
-                const formattedDate = `${dayName} ${dateString}`;
+                sortedDates.forEach(dateKey => {
+                    const dateObj = new Date(dateKey);
+                    const weekdays = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+                    const dayName = weekdays[dateObj.getDay()];
+                    const formattedDate = `${dayName} ${dateObj.getDate()}.${dateObj.getMonth() + 1}.${dateObj.getFullYear()}`;
 
-                const div = document.createElement('div');
+                    const div = document.createElement('div');
                     div.className = 'py-4 border-b border-gray-200 last:border-b-0';
-                const summarizedMetrics = WellTrackApp.utils.summarizeMetrics(groupedData[dateString]);
-                div.innerHTML = this.components.logEntry(formattedDate, summarizedMetrics);
-                logContainer.appendChild(div);
-            });
-            this.pagination(sortedDates.length);
+                    div.id = `log-day-${dateKey}`;
+                    const summarizedMetrics = WellTrackApp.utils.summarizeMetrics(groupedData[dateKey]);
+                    div.innerHTML = this.components.logEntry(formattedDate, summarizedMetrics);
+                    logContainer.appendChild(div);
+                });
+            }
+
+            // Update pagination controls
+            const weekDisplay = document.getElementById('log-week-display');
+            if (weekDisplay) {
+                weekDisplay.textContent = WellTrackApp.utils.formatWeekRange(weekStart);
+            }
+
+            const earliestEntry = allMetrics.length > 0 ? allMetrics[0].timestamp : Date.now();
+            const isLatestWeek = dateFns.isSameWeek(weekStart, new Date(), { weekStartsOn: 1 });
+            const isEarliestWeek = dateFns.isSameWeek(weekStart, new Date(earliestEntry), { weekStartsOn: 1 });
+
+            document.getElementById('log-week-next').disabled = isLatestWeek;
+            document.getElementById('log-week-today').disabled = isLatestWeek;
+            document.getElementById('log-week-prev').disabled = isEarliestWeek;
+            document.getElementById('log-week-first').disabled = isEarliestWeek;
         },
         eventListByGroup(groupType) {
             const eventContainer = document.getElementById('todays-event-container');
@@ -1426,8 +1421,14 @@ const WellTrackApp = {
             }
         },
         modal: {
-            show(content) {
-                document.getElementById('modal-content').innerHTML = content;
+            show(content, options = {}) {
+                const modalContent = document.getElementById('modal-content');
+                // Reset to default classes, except for the base ones
+                modalContent.className = 'bg-white rounded-3xl p-6 shadow-xl w-full max-h-[90vh] overflow-y-auto';
+                const modalClass = options.modalClass || 'max-w-md';
+                modalContent.classList.add(...modalClass.split(' '));
+
+                modalContent.innerHTML = content;
                 document.getElementById('modal-container').classList.remove('hidden');
             },
             hide() {
@@ -1461,9 +1462,15 @@ const WellTrackApp = {
                 const content = `<h3 class="text-xl font-medium mb-4">${title}</h3><p class="mb-6">${message}</p><div class="flex justify-end"><button onclick="WellTrackApp.render.modal.hide()" class="btn btn-primary">OK</button></div>`;
                 this.show(content);
             },
-            showConfirmation(title, message, onConfirm, confirmText = 'Bestätigen', abortText = 'Abbrechen') {
-                 const content = `<h3 class="text-xl font-medium mb-4">${title}</h3><p class="mb-6">${message}</p><div class="flex justify-end gap-4"><button onclick="WellTrackApp.render.modal.hide()" class="btn btn-tertiary">${abortText}</button><button id="confirm-action-btn" class="btn btn-error-primary">${confirmText}</button></div>`;
-                this.show(content);
+            showConfirmation(title, message, onConfirm, options = {}) {
+                const {
+                    confirmText = 'Bestätigen',
+                    abortText = 'Abbrechen',
+                    modalClass = 'max-w-md',
+                    confirmButtonClass = 'btn-error-primary'
+                } = options;
+                const content = `<h3 class="text-xl font-medium mb-4">${title}</h3><p class="mb-6">${message}</p><div class="flex justify-end gap-4"><button onclick="WellTrackApp.render.modal.hide()" class="btn btn-tertiary">${abortText}</button><button id="confirm-action-btn" class="btn ${confirmButtonClass}">${confirmText}</button></div>`;
+                this.show(content, { modalClass });
                 document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); this.hide(); };
             }
         },
@@ -1499,21 +1506,18 @@ const WellTrackApp = {
                 if (WellTrackApp.state.activeEventGroup === null && groups.length > 0) {
                     WellTrackApp.state.activeEventGroup = groups[0];
                 }
-                
-                let groupButtons = groups.map((group, index) => {
-                    const groupName = group === '*' ? 'Ohne Gruppe' : group;
-                    const firstClass = index === 0 ? 'rounded-l-full' : '';
-                    const lastClass = index === groups.length - 1 ? 'rounded-r-full' : '';
-                    const activeClass = WellTrackApp.state.activeEventGroup === group ? 'active' : '';
 
-                    return `<button type="button" onclick="WellTrackApp.events.handleEventGroupToggle('${group}')" id="btn-event-group-${group}" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 ${firstClass} ${lastClass} ${activeClass}">${groupName}</button>`
+                let groupButtons = groups.map((group) => {
+                    const groupName = group === '*' ? 'Ohne Gruppe' : group;
+                    const activeClass = WellTrackApp.state.activeEventGroup === group ? 'active' : '';
+                    return `<button type="button" onclick="WellTrackApp.events.handleEventGroupToggle('${group}')" id="btn-event-group-${group}" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full ${activeClass}">${groupName}</button>`
                 }).join('');
 
                 return `
                 <div class="card">
-                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
-                        <h2 class="h2-style">Ereignisse</h2>
-                        <div class="inline-flex rounded-full shadow-sm" role="group">
+                    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+                        <h2 class="h2-style flex-shrink-0">Ereignisse</h2>
+                        <div class="flex flex-wrap items-center justify-start gap-2" role="group">
                             ${groupButtons}
                         </div>
                     </div>
@@ -1524,21 +1528,16 @@ const WellTrackApp = {
                 const moodGroups = WellTrackApp.config.MOOD_GROUPS;
                 const activeGroupKey = WellTrackApp.state.activeMoodGroup;
                 const activeGroup = moodGroups[activeGroupKey];
-                 let groupButtons = Object.keys(moodGroups).map(groupId => 
-                    `<button type="button" onclick="WellTrackApp.events.handleMoodGroupToggle('${groupId}')" id="btn-mood-${groupId}" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 ${activeGroupKey === groupId ? 'active' : ''} ${Object.keys(moodGroups).indexOf(groupId) === 0 ? 'rounded-l-full' : ''} ${Object.keys(moodGroups).indexOf(groupId) === Object.keys(moodGroups).length - 1 ? 'rounded-r-full' : ''}">${moodGroups[groupId].name}</button>`
+                 let groupButtons = Object.keys(moodGroups).map(groupId =>
+                    `<button type="button" onclick="WellTrackApp.events.handleMoodGroupToggle('${groupId}')" id="btn-mood-${groupId}" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full ${activeGroupKey === groupId ? 'active' : ''}">${moodGroups[groupId].name}</button>`
                 ).join('');
 
                 return `
                 <div class="card">
-                     <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                        <div class="flex items-center gap-2">
-                            <h2 id="mood-section-title" class="h2-style">Stimmung</h2>
-                            <span id="mood-last-entry-time" class="text-sm text-gray-500"></span>
-                        </div>
-                        <div class="sm:w-auto flex justify-end items-center gap-4">
-                            <div class="inline-flex rounded-full shadow-sm" role="group">
-                                ${groupButtons}
-                            </div>
+                     <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+                        <h2 id="mood-section-title" class="h2-style flex-shrink-0">Stimmung</h2>
+                        <div class="flex flex-wrap items-center justify-start gap-2" role="group">
+                            ${groupButtons}
                         </div>
                     </div>
                     <div id="mood-container" class="space-y-8">${activeGroup.questions.map(q => WellTrackApp.render.components.moodSlider(q)).join('')}</div>
@@ -1548,16 +1547,11 @@ const WellTrackApp = {
                 const currentView = WellTrackApp.state.currentPainView;
                 return `
                 <div class="card">
-                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
-                        <div class="flex items-center gap-2">
-                            <h2 id="pain-section-title" class="h2-style">Schmerzen</h2>
-                            <span id="pain-last-entry-time" class="text-sm text-gray-500"></span>
-                        </div>
-                        <div class="sm:w-auto flex justify-end items-center gap-4">
-                            <div class="inline-flex rounded-full shadow-sm" role="group">
-                                <button type="button" onclick="WellTrackApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100 ${currentView === 'front' ? 'active' : ''}">Vorderseite</button>
-                                <button type="button" onclick="WellTrackApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100 ${currentView === 'back' ? 'active' : ''}">Rückseite</button>
-                            </div>
+                    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+                        <h2 id="pain-section-title" class="h2-style flex-shrink-0">Schmerzen</h2>
+                        <div class="flex flex-wrap items-center justify-start gap-2" role="group">
+                            <button type="button" onclick="WellTrackApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100 ${currentView === 'front' ? 'active' : ''}">Vorderseite</button>
+                            <button type="button" onclick="WellTrackApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100 ${currentView === 'back' ? 'active' : ''}">Rückseite</button>
                         </div>
                     </div>
                     <div class="flex justify-center">
@@ -1634,33 +1628,52 @@ const WellTrackApp = {
             historySection: () => {
                 const activeTab = WellTrackApp.state.activeHistoryTab;
                 return `
-                <div class="card">
-                     <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
-                        <h2 id="log-title" class="h2-style">Verlauf</h2>
-                        <div class="flex items-center gap-4">
-                            <select id="time-range-selector" onchange="WellTrackApp.events.handleTimeRangeChange(event)" class="border border-gray-300 rounded-full text-sm focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5">
-                                <option value="7" ${WellTrackApp.state.timeRange === 7 ? 'selected' : ''}>Letzte 7 Tage</option>
-                                <option value="30" ${WellTrackApp.state.timeRange === 30 ? 'selected' : ''}>Letzte 30 Tage</option>
-                                <option value="90" ${WellTrackApp.state.timeRange === 90 ? 'selected' : ''}>Letzte 3 Monate</option>
-                            </select>
-                            <div id="history-tabs" class="history-tab-group inline-flex rounded-full shadow-sm" role="group">
-                                <button onclick="WellTrackApp.events.handleHistoryTabClick('event')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100" data-tab="event">Ereignisse</button>
-                                <button onclick="WellTrackApp.events.handleHistoryTabClick('mood')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100" data-tab="mood">Stimmung</button>
-                                <button onclick="WellTrackApp.events.handleHistoryTabClick('pain')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100" data-tab="pain">Schmerz</button>
+                <div class="container mx-auto max-w-4xl">
+                    <div class="card mb-6">
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                            <div class="flex items-center gap-4">
+                                <h2 id="log-title" class="h2-style flex-shrink-0">Verlauf</h2>
+                                <select id="time-range-selector" onchange="WellTrackApp.events.handleTimeRangeChange(event)" class="border border-gray-300 rounded-full text-sm focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5">
+                                    <option value="7" ${WellTrackApp.state.timeRange === 7 ? 'selected' : ''}>Letzte 7 Tage</option>
+                                    <option value="30" ${WellTrackApp.state.timeRange === 30 ? 'selected' : ''}>Letzte 30 Tage</option>
+                                    <option value="90" ${WellTrackApp.state.timeRange === 90 ? 'selected' : ''}>Letzte 3 Monate</option>
+                                </select>
+                            </div>
+                            <div id="history-tabs" class="flex flex-wrap items-center justify-start gap-2" role="group">
+                                <button onclick="WellTrackApp.events.handleHistoryTabClick('event')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="event">Ereignisse</button>
+                                <button onclick="WellTrackApp.events.handleHistoryTabClick('mood')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="mood">Stimmung</button>
+                                <button onclick="WellTrackApp.events.handleHistoryTabClick('pain')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="pain">Schmerz</button>
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="card w-full">
                     <div id="chart-container-event" class="chart-container space-y-4"></div>
                     <div id="chart-container-mood" class="chart-container hidden" style="position: relative; height: 700px;"><canvas id="moodChart"></canvas></div>
                     <div id="chart-container-pain" class="chart-container hidden" style="position: relative; height: 700px;"><canvas id="painChart"></canvas></div>
                 </div>`;
             },
             fullLogSection: () => `
-                <div class="card">
-                    <h2 class="h2-style mb-4">Protokoll</h2>
-                    <div id="log-entries-container" class="space-y-4"></div>
-                    <div id="log-pagination" class="mt-6 flex justify-between items-center"></div>
-                </div>`,
+                <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
+                    <h2 class="h2-style">Protokoll</h2>
+                    <div id="log-pagination" class="flex items-center justify-end gap-1 bg-gray-100 p-1 rounded-full">
+                        <button id="log-week-first" onclick="WellTrackApp.events.handleWeekChange('first')" class="btn btn-secondary !rounded-full !p-2" title="Erste Woche">
+                            <span class="material-symbols-outlined">keyboard_double_arrow_left</span>
+                        </button>
+                        <button id="log-week-prev" onclick="WellTrackApp.events.handleWeekChange('prev')" class="btn btn-secondary !rounded-full !p-2" title="Woche zurück">
+                            <span class="material-symbols-outlined">chevron_left</span>
+                        </button>
+                        <span id="log-week-display" class="tabular-nums font-semibold text-gray-700 px-3"></span>
+                        <button id="log-week-next" onclick="WellTrackApp.events.handleWeekChange('next')" class="btn btn-secondary !rounded-full !p-2" title="Woche vor">
+                            <span class="material-symbols-outlined">chevron_right</span>
+                        </button>
+                        <button id="log-week-today" onclick="WellTrackApp.events.handleWeekChange('today')" class="btn btn-secondary !rounded-full !p-2" title="Heutige Woche">
+                            <span class="material-symbols-outlined">today</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="log-entries-container" class="card"></div>
+            `,
             settingsSection: () => {
                 const settings = WellTrackApp.data.getSettings();
                 const perm = WellTrackApp.state.notificationPermission;
@@ -1694,13 +1707,13 @@ const WellTrackApp = {
 
                 return `
                 <div>
-                    <div class="flex flex-wrap justify-between items-center gap-4 mb-4">
-                        <h2 class="h2-style mb-2">Einstellungen</h2>
-                        <div class="inline-flex rounded-full shadow-sm" role="group">
-                            <button onclick="WellTrackApp.events.handleSettingsTabClick('eventTypes')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-l-full hover:bg-gray-100" data-tab="eventTypes">Ereignisarten</button>
-                            <button onclick="WellTrackApp.events.handleSettingsTabClick('data')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100" data-tab="data">Datenverwaltung</button>
-                            <button onclick="WellTrackApp.events.handleSettingsTabClick('reminders')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100" data-tab="reminders">Erinnerungen</button>
-                            <button onclick="WellTrackApp.events.handleSettingsTabClick('about')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-r-full hover:bg-gray-100" data-tab="about">Über</button>
+                     <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+                        <h2 class="h2-style flex-shrink-0">Einstellungen</h2>
+                        <div class="flex flex-wrap items-center justify-start gap-2" role="group">
+                            <button onclick="WellTrackApp.events.handleSettingsTabClick('eventTypes')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="eventTypes">Ereignisarten</button>
+                            <button onclick="WellTrackApp.events.handleSettingsTabClick('data')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="data">Datenverwaltung</button>
+                            <button onclick="WellTrackApp.events.handleSettingsTabClick('reminders')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="reminders">Erinnerungen</button>
+                            <button onclick="WellTrackApp.events.handleSettingsTabClick('about')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="about">Über</button>
                         </div>
                     </div>
 
@@ -2090,14 +2103,21 @@ const WellTrackApp = {
         },
         showPage(pageName) {
             WellTrackApp.state.activePage = pageName;
-            
+
             document.querySelectorAll('#header-left .nav-btn, #main-nav .nav-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.id === `nav-${pageName}`);
             });
 
+            const appContainer = document.getElementById('app-container');
+            if (pageName === 'history') {
+                appContainer.classList.remove('max-w-4xl');
+            } else {
+                appContainer.classList.add('max-w-4xl');
+            }
+
             switch(pageName) {
                 case 'today': WellTrackApp.render.todayPage(); break;
-                case 'event': 
+                case 'event':
                     WellTrackApp.render.eventPage();
                     break;
                 case 'mood': WellTrackApp.render.moodPage(); break;
@@ -2252,18 +2272,29 @@ const WellTrackApp = {
                 WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
             }
         },
-        handleChangePage(direction) {
-            const totalItems = Object.keys(WellTrackApp.data.getMetrics().reduce((acc, metric) => { acc[new Date(metric.timestamp).toLocaleDateString('de-DE')] = true; return acc; }, {})).length;
-            const totalPages = Math.ceil(totalItems / WellTrackApp.config.ENTRIES_PER_PAGE);
-            const newPage = WellTrackApp.state.currentPage + direction;
-            if (newPage >= 1 && newPage <= totalPages) {
-                WellTrackApp.render.fullLogPage(newPage);
-                setTimeout(() => {
-                    const paginationEl = document.getElementById('log-pagination');
-                    if (paginationEl) {
-                        paginationEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                    }
-                }, 100);
+        handleWeekChange(direction) {
+            let newWeekStart;
+            const currentStart = WellTrackApp.state.currentLogWeekStart;
+
+            if (direction === 'next') {
+                newWeekStart = dateFns.addWeeks(currentStart, 1);
+            } else if (direction === 'prev') {
+                newWeekStart = dateFns.subWeeks(currentStart, 1);
+            } else if (direction === 'today') {
+                newWeekStart = WellTrackApp.utils.getStartOfWeek(new Date());
+            } else if (direction === 'first') {
+                const allMetrics = WellTrackApp.data.getMetrics();
+                if (allMetrics.length > 0) {
+                    const earliestEntry = allMetrics[0].timestamp; // Assumes metrics are sorted
+                    newWeekStart = WellTrackApp.utils.getStartOfWeek(new Date(earliestEntry));
+                } else {
+                    newWeekStart = WellTrackApp.utils.getStartOfWeek(new Date());
+                }
+            }
+
+            if (newWeekStart) {
+                WellTrackApp.state.currentLogWeekStart = newWeekStart;
+                WellTrackApp.render.fullLogPage();
             }
         },
         handleViewToggle(view) {
@@ -2287,7 +2318,7 @@ const WellTrackApp = {
                 metric.labels && metric.labels.activity === eventToDelete.activity
             ).length;
 
-            const message = `Möchten Sie das Ereignis "${eventToDelete.name}" wirklich entfernen? Es sind ${usedMetricsCount} Einträge dieser Art vorhanden, die ebenfalls gelöscht werden.`;
+            const message = `<span class="text-lg">Möchten Sie das Ereignis "${eventToDelete.name}" wirklich entfernen? Es sind ${usedMetricsCount} Einträge dieser Art vorhanden, die ebenfalls gelöscht werden.</span>`;
 
             WellTrackApp.render.modal.showConfirmation('Ereignis löschen', message, () => {
                 // Remove the event type
@@ -2307,7 +2338,7 @@ const WellTrackApp = {
                 if (['event', 'today', 'history', 'log'].includes(WellTrackApp.state.activePage)) {
                     WellTrackApp.events.showPage(WellTrackApp.state.activePage);
                 }
-            }, 'Löschen', 'Abbrechen');
+            }, { confirmText: 'Löschen', abortText: 'Abbrechen', modalClass: 'max-w-lg' });
         },
         handleToggleDay(event) {
             const button = event.target.closest('.day-btn');
@@ -2360,8 +2391,17 @@ const WellTrackApp = {
         handleShowEventForm(index = null) {
             const event = index !== null ? WellTrackApp.data.getEvents()[index] : null;
             WellTrackApp.state.currentEditingEvent = event;
-            document.getElementById('edit-event-form-container').innerHTML = WellTrackApp.render.components.eventForm(event);
+            const formContainer = document.getElementById('edit-event-form-container');
+            formContainer.innerHTML = WellTrackApp.render.components.eventForm(event);
             document.getElementById('add-new-event-btn').classList.add('hidden');
+
+            // Scroll the form into view
+            setTimeout(() => {
+                const elementToScroll = document.querySelector('#edit-event-form-container > div');
+                if (elementToScroll) {
+                    elementToScroll.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }
+            }, 100);
         },
         handleHideEventForm() {
             WellTrackApp.state.currentEditingEvent = null;
@@ -2563,6 +2603,16 @@ const WellTrackApp = {
         },
         isToday(date) {
             return this.isSameDay(date, new Date());
+        },
+        getStartOfWeek(date) {
+            return dateFns.startOfWeek(date, { weekStartsOn: 1 });
+        },
+        formatWeekRange(startDate) {
+            if (!startDate) return '';
+            const endDate = dateFns.endOfWeek(startDate, { weekStartsOn: 1 });
+            const startFormat = 'dd.MM';
+            const endFormat = 'dd.MM';
+            return `${dateFns.format(startDate, startFormat)}-${dateFns.format(endDate, endFormat)}`;
         },
         slugify(text) {
             return text.toString().toLowerCase()
