@@ -17,11 +17,15 @@ Eine detaillierte Erfassung der Stimmung dauert weniger als 30 Sekunden. Die Ver
 
 Die Stimmung kann mithilfe intuitiver Schieberegler für verschiedene Aspekte wie Energie, Motivation und Angstfreiheit erfasst werden. Die Stimmungen sind in Gruppen organisiert, um die Eingabe zu vereinfachen.
 
+**[Eine detaillierte Anleitung zur Selbsteinschätzung der Stimmungen finden Sie hier.](docs/mood-and-pain.md#stimmung-erfassen-ein-leitfaden-zur-selbsteinschätzung)**
+
 ![WellTrack Mood](assets/welltrack-mood-entry.png)
 
 ### Schmerzen protokollieren
 
 Die Schmerzeintragung ist schnell und dennoch detailliert. Durch die Reduzierung auf eine Skala von 0-5 (0=kein, 1=leicht, 2=unangenehm, 3=stark, 4=fürchterlich, 5=vernichtend) mit klaren, nachlesbaren Definitionen wird eine eindeutige Kategorisierung der Schmerzintensität ermöglicht. Fehlende Werte werden als 0 behandelt, was zu einem aussagekräftigen Teilergebnis führt.
+
+**[Eine detaillierte Anleitung zur Selbsteinschätzung der Schmerzen finden Sie hier.](docs/mood-and-pain.md#schmerz-erfassen-eine-skala-für-klarheit)**
 
 ![WellTrack Pain](assets/welltrack-pain-entry.png)
 
