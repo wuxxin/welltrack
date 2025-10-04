@@ -102,14 +102,14 @@ class CustomHTTPRequestHandler(server.SimpleHTTPRequestHandler):
 
     def end_headers(self) -> None:
         """Send additional headers for WASM compatibility and security."""
-        self.send_header("Cross-Origin-Opener-Policy", "same-origin")
-        self.send_header("Cross-Origin-Embedder-Policy", "credentialless")
+        # self.send_header("Cross-Origin-Opener-Policy", "same-origin")
+        # self.send_header("Cross-Origin-Embedder-Policy", "credentialless")
         super().end_headers()
 
     def send_head(self) -> Optional[BinaryIO]:
         """
         Common header sending logic.
-        This version handles COOP/COEP and correct MIME types. No Gzip.
+        Handles correct MIME types. Redirect /dir to /dir/ and /dir/ to "index.html" if exists.
         Returns a file-like object (BytesIO or original file) or None.
         """
         translated_path_str = self.translate_path(self.path)
@@ -128,14 +128,12 @@ class CustomHTTPRequestHandler(server.SimpleHTTPRequestHandler):
                 new_url = urllib.parse.urlunsplit(new_parts)
                 self.send_header("Location", new_url)
                 self.send_header("Content-Length", "0")
-                self.end_headers()  # Adds COOP/COEP
+                self.end_headers()
                 return None
 
-            for index_name in "index.html", "index.htm":
-                index_file: Path = current_path / index_name
-                if index_file.exists():
-                    current_path = index_file
-                    break
+            index_file: Path = current_path / "index.html"
+            if index_file.exists():
+                current_path = index_file
             else:
                 return self.list_directory(str(current_path))
 
@@ -161,7 +159,7 @@ class CustomHTTPRequestHandler(server.SimpleHTTPRequestHandler):
 
                     if last_modified_dt <= ims_dt:
                         self.send_response(HTTPStatus.NOT_MODIFIED)
-                        self.end_headers()  # Adds COOP/COEP
+                        self.end_headers()
                         return None
                 except (TypeError, IndexError, OverflowError, ValueError) as e:
                     logger.debug(f"Invalid If-Modified-Since header: {e}")
@@ -173,7 +171,7 @@ class CustomHTTPRequestHandler(server.SimpleHTTPRequestHandler):
             file_content: bytes = original_file.read()
             self.send_header("Content-Length", str(len(file_content)))
             f = io.BytesIO(file_content)
-            self.end_headers()  # Adds COOP/COEP
+            self.end_headers()
             return f
 
         except FileNotFoundError:
@@ -269,9 +267,7 @@ def main() -> None:
     logger.info(f"HTTP Protocol Version: {CustomHTTPRequestHandler.protocol_version}")
     logger.info(f"MIME type for .wasm: {mimetypes.guess_type('file.wasm')[0]}")
     logger.info(f"MIME type for .js: {mimetypes.guess_type('file.js')[0]}")
-    logger.info(
-        "Will send Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy headers."
-    )
+    # logger.info("Using Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy.")
 
     cert_data = generate_self_signed_certificate(args.hostname)
     httpd: Optional[SSLThreadingHTTPServer] = None
