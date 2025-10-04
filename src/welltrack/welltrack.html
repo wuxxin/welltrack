@@ -339,7 +339,8 @@ const WellTrackApp = {
         sliderClickStartPosition: null,
         currentPainView: 'back',
         currentLogWeekStart: null,
-        isReorderingEventTypes: false
+        isReorderingEventTypes: false,
+        draggingElementIndex: null
     },
 
     // --- CONFIGURATION ---
@@ -1150,9 +1151,13 @@ const WellTrackApp = {
             const formContainer = document.getElementById('edit-event-form-container');
 
             if (reorderBtn) {
-                reorderBtn.innerHTML = isReordering
-                    ? `<span class="material-symbols-outlined mr-2">check</span>Fertig`
-                    : `<span class="material-symbols-outlined mr-2">reorder</span>Reihenfolge ändern`;
+                if (isReordering) {
+                    reorderBtn.innerHTML = `<span class="material-symbols-outlined">lock</span>`;
+                    reorderBtn.title = 'Reihenfolge speichern';
+                } else {
+                    reorderBtn.innerHTML = `<span class="material-symbols-outlined">link_off</span>`;
+                    reorderBtn.title = 'Reihenfolge ändern';
+                }
             }
             if (addBtn) {
                 addBtn.disabled = isReordering;
@@ -2360,6 +2365,7 @@ const WellTrackApp = {
             const formContainer = document.getElementById('edit-event-form-container');
             formContainer.innerHTML = WellTrackApp.render.components.eventForm(eventType);
             document.getElementById('add-new-event-btn').classList.add('hidden');
+            document.getElementById('reorder-event-types-btn').disabled = true;
 
             // Scroll the form into view
             setTimeout(() => {
@@ -2378,6 +2384,10 @@ const WellTrackApp = {
             const addBtn = document.getElementById('add-new-event-btn');
             if (addBtn) {
                 addBtn.classList.remove('hidden');
+            }
+            const reorderBtn = document.getElementById('reorder-event-types-btn');
+            if (reorderBtn) {
+                reorderBtn.disabled = false;
             }
         },
         handleToggleReorderEventTypes() {
@@ -2399,20 +2409,21 @@ const WellTrackApp = {
         },
         handleDragStart(e) {
             e.target.style.opacity = '0.4';
+            WellTrackApp.state.draggingElementIndex = parseInt(e.target.dataset.index, 10);
             e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', e.target.dataset.index);
+            // setData is required for drag-and-drop to work in Firefox
+            e.dataTransfer.setData('text/plain', WellTrackApp.state.draggingElementIndex);
         },
         handleDragEnd(e) {
             e.target.style.opacity = '1';
-            // Clean up any drag-over styling if needed
-            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            WellTrackApp.state.draggingElementIndex = null;
         },
         handleDragOver(e) {
-            e.preventDefault(); // Necessary to allow drop
-            e.dataTransfer.dropEffect = 'move';
-
+            e.preventDefault();
             const container = e.currentTarget;
-            const draggingEl = container.querySelector('[style*="opacity: 0.4"]');
+            if (WellTrackApp.state.draggingElementIndex === null) return;
+
+            const draggingEl = container.querySelector(`[data-index='${WellTrackApp.state.draggingElementIndex}']`);
             if (!draggingEl) return;
 
             const afterElement = WellTrackApp.events.getDragAfterElement(container, e.clientY);
@@ -2423,7 +2434,7 @@ const WellTrackApp = {
             }
         },
         getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('[draggable="true"]:not([style*="opacity: 0.4"])')];
+            const draggableElements = [...container.querySelectorAll(`[draggable="true"]:not([data-index='${WellTrackApp.state.draggingElementIndex}'])`)];
 
             return draggableElements.reduce((closest, child) => {
                 const box = child.getBoundingClientRect();
