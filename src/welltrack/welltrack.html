@@ -1956,27 +1956,23 @@ const WellTrackApp = {
                 const detailsText = `${incrementText} ${eventType.unitType || ''}`;
                 const isReordering = WellTrackApp.state.isReorderingEventTypes;
 
-                const buttons = `
-                    <button onclick="WellTrackApp.events.handleShowEventForm(${index})" class="text-blue-500 hover:text-blue-700" ${isReordering ? 'disabled' : ''}>
-                        <span class="material-symbols-outlined">edit</span>
-                    </button>
-                    <button onclick="WellTrackApp.events.handleRemoveEvent(${index})" class="text-red-400 hover:text-red-600" ${isReordering ? 'disabled' : ''}>
-                        <span class="material-symbols-outlined">delete</span>
-                    </button>
-                `;
-
-                const dragHandle = `<span class="material-symbols-outlined cursor-move text-gray-500">drag_indicator</span>`;
+                const dragHandle = `<span class="material-symbols-outlined cursor-move text-gray-500 mr-2">drag_indicator</span>`;
 
                 return `
                     <div class="flex items-center gap-3 flex-grow">
-                        ${isReordering ? dragHandle : buttons}
+                        ${isReordering ? dragHandle : ''}
                         <div>
                             <span>${eventType.name} <span class="text-xs text-gray-400">(${detailsText})</span></span>
                             <span class="text-xs text-gray-500 block">Gruppe: ${eventType.groupType || 'Keine'}</span>
                         </div>
                     </div>
                     <div class="flex items-center">
-                        ${isReordering ? '' : ''}
+                        <button onclick="WellTrackApp.events.handleShowEventForm(${index})" class="text-blue-500 hover:text-blue-700 p-1" ${isReordering ? 'disabled' : ''}>
+                            <span class="material-symbols-outlined">edit</span>
+                        </button>
+                        <button onclick="WellTrackApp.events.handleRemoveEvent(${index})" class="text-red-400 hover:text-red-600 p-1" ${isReordering ? 'disabled' : ''}>
+                            <span class="material-symbols-outlined">delete</span>
+                        </button>
                     </div>`;
             },
             painModalContent: (partName, viewName) => {
@@ -2419,7 +2415,7 @@ const WellTrackApp = {
             const draggingEl = container.querySelector('[style*="opacity: 0.4"]');
             if (!draggingEl) return;
 
-            const afterElement = this.getDragAfterElement(container, e.clientY);
+            const afterElement = WellTrackApp.events.getDragAfterElement(container, e.clientY);
             if (afterElement == null) {
                 container.appendChild(draggingEl);
             } else {
