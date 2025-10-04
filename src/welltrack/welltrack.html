@@ -70,8 +70,11 @@
         .card {
             background-color: var(--md-sys-color-surface-container-low);
             border: 1px solid var(--md-sys-color-surface-variant);
-            border-radius: 1rem;
-            padding: 1rem;
+            border-radius: 2px;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
         }
         .pill-card {
             background-color: var(--md-sys-color-surface-container-low);
@@ -303,7 +306,7 @@
     </header>
 
     <!-- Main Content -->
-    <main id="app-container" class="container mx-auto max-w-4xl px-4 pb-4 md:pb-6">
+    <main id="app-container" class="container mx-auto max-w-4xl px-1 pb-4 md:pb-6">
         <!-- Page content will be dynamically inserted here -->
     </main>
     
@@ -757,7 +760,7 @@ const WellTrackApp = {
                 </div>
                 <div class="pill-card !p-0 overflow-hidden">
                      <div onclick="WellTrackApp.events.showPage('pain')" class="w-1/2 h-full flex items-center justify-start pl-6 pr-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
-                        <p class="text-xl font-bold">Schmerzen</p>
+                        <p class="text-xl font-bold">Schmerz</p>
                     </div>
                     <div onclick="WellTrackApp.events.showHistoryFor('pain')" class="w-1/2 h-full flex items-baseline justify-end gap-3 pr-6 pl-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
                        <p class="text-5xl font-bold">${displayPainValue}</p>
@@ -880,7 +883,7 @@ const WellTrackApp = {
                 }
 
                 logHtml = `
-                    <div class="card !p-2">
+                    <div class="card pt-1">
                         <button onclick="WellTrackApp.events.toggleTodaysLog()" class="w-full flex justify-center items-center font-semibold text-gray-800 p-2 rounded-lg hover:bg-gray-200/50">
                             <span>${buttonText}</span>
                             <span class="material-symbols-outlined">${icon}</span>
@@ -1481,7 +1484,7 @@ const WellTrackApp = {
                 const dayName = weekdays[today.getDay()];
                 const dateString = `${dayName} ${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
                 return `
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex justify-between items-center px-2 mb-4">
                     <h2 class="h2-style">Heute</h2>
                     <span class="text-lg text-gray-800">${dateString}</span>
                 </div>
@@ -1514,8 +1517,8 @@ const WellTrackApp = {
                 }).join('');
 
                 return `
-                <div class="card">
-                    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+                <div class="card pt-1">
+                    <div class="flex md:flex-row md:justify-between md:items-center gap-3 mb-6">
                         <h2 class="h2-style flex-shrink-0">Ereignisse</h2>
                         <div class="flex flex-wrap items-center justify-start gap-1" role="group">
                             ${groupButtons}
@@ -1533,21 +1536,21 @@ const WellTrackApp = {
                 ).join('');
 
                 return `
-                <div class="card">
-                     <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+                <div class="card pt-1">
+                     <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-6">
                         <h2 id="mood-section-title" class="h2-style flex-shrink-0">Stimmung</h2>
                         <div class="flex flex-wrap items-center justify-start gap-1" role="group">
                             ${groupButtons}
                         </div>
                     </div>
-                    <div id="mood-container" class="space-y-8">${activeGroup.questions.map(q => WellTrackApp.render.components.moodSlider(q)).join('')}</div>
+                    <div id="mood-container" class="space-y-4">${activeGroup.questions.map(q => WellTrackApp.render.components.moodSlider(q)).join('')}</div>
                 </div>`;
             },
             painSection: () => {
                 const currentView = WellTrackApp.state.currentPainView;
                 return `
-                <div class="card">
-                    <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+                <div class="card pt-1">
+                    <div class="flex md:flex-row md:justify-between md:items-center gap-3">
                         <h2 id="pain-section-title" class="h2-style flex-shrink-0">Schmerzen</h2>
                         <div class="flex flex-wrap items-center justify-start gap-1" role="group">
                             <button type="button" onclick="WellTrackApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100 ${currentView === 'front' ? 'active' : ''}">Vorderseite</button>
@@ -1629,8 +1632,8 @@ const WellTrackApp = {
                 const activeTab = WellTrackApp.state.activeHistoryTab;
                 return `
                 <div class="container mx-auto max-w-4xl">
-                    <div class="card mb-6">
-                        <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                    <div class="card pt-1 mb-6">
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
                             <div class="flex items-center gap-4">
                                 <h2 id="log-title" class="h2-style flex-shrink-0">Verlauf</h2>
                                 <select id="time-range-selector" onchange="WellTrackApp.events.handleTimeRangeChange(event)" class="border border-gray-300 rounded-full text-sm focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5">
@@ -1706,7 +1709,7 @@ const WellTrackApp = {
                 }
 
                 return `
-                <div class="card">
+                <div class="card pt-1">
                      <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                         <h2 class="h2-style flex-shrink-0">Einstellungen</h2>
                         <div class="flex flex-wrap items-center justify-start gap-1" role="group">
@@ -2063,7 +2066,7 @@ const WellTrackApp = {
             },
             moodSlider: (question) => `
                 <div>
-                    <div class="flex justify-between items-center text-center mb-3">
+                    <div class="flex justify-between items-center text-center mb-2">
                         <span class="w-1/3 text-sm text-gray-600 text-left font-medium">${question.negative}</span>
                         <label class="w-1/3 text-gray-800 font-semibold">${question.name}</label>
                         <span class="w-1/3 text-sm text-gray-600 text-right font-medium">${question.positive}</span>

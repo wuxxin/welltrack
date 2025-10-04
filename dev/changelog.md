@@ -7,13 +7,13 @@ This document lists the implementation status of features and refactorings for t
 **2025-09-23: Major Refactoring of Data Logic and UI**
 - Switched all internal timestamps from ISO strings to epoch seconds for more efficient processing.
 - Reworked data entry logic for all metric types (Events, Mood, Pain).
-  - **Events:** Incrementing events on the same day now update a single entry instead of creating new ones.
-  - **Mood & Pain:** Entries are now updated if made within a 10-minute window, otherwise a new, separate entry is created. UI fields are automatically cleared after this 10-minute window.
+- **Events:** Incrementing events on the same day now update a single entry instead of creating new ones.
+- **Mood & Pain:** Entries are now updated if made within a 10-minute window, otherwise a new, separate entry is created. UI fields are automatically cleared after this 10-minute window.
 - Updated UI components:
-  - Removed "+1" buttons for mood/pain, as the new logic makes them obsolete.
-  - The pain tracking page now has a static title "Schmerzen".
-  - The time of the last entry is now displayed next to the "Stimmung" and "Schmerzen" titles.
-  - The detailed log view ("Protokoll") now groups multiple timestamp-based events for a cleaner summary.
+- Removed "+1" buttons for mood/pain, as the new logic makes them obsolete.
+- The pain tracking page now has a static title "Schmerzen".
+- The time of the last entry is now displayed next to the "Stimmung" and "Schmerzen" titles.
+- The detailed log view ("Protokoll") now groups multiple timestamp-based events for a cleaner summary.
 - Rebuilt the pain history chart to be a stacked bar chart (for individual pain points) with a cumulative line graph and moving average, similar to the mood chart.
 - Standardized all user-facing dates and times to German format (dd.mm.yyyy, HH:MM).
 - Corrected the CDN link for the `date-fns` library.
@@ -22,21 +22,21 @@ This document lists the implementation status of features and refactorings for t
 - Update `create_sampledata.py` to generate timestamps in milliseconds.
 
 **2025-09-24: UI/UX Improvements and Refactoring**
-- [X] **Mood Entry:** Prevented mood ruler clicks during page scroll by distinguishing between click and drag events.
-- [X] **Today Page:**
-    - [X] Redesigned header to split "Heute" and the date for better readability.
-    - [X] Redesigned summary cards to be more compact, space-efficient, and visually informative.
-- [X] **Event Entry:** Improved layout of event items to fit on a single line, even on smaller screens.
-- [X] **History Charts:**
-    - [X] Set a height of 600px for all charts.
-    - [X] Reverted dynamic width scaling for charts, maintaining a consistent 100% width.
-- [X] **Log Page (Protokoll):**
-    - [X] Made log cards wider with a larger base font size for better readability.
-    - [X] Restructured the card layout with the date positioned in the top-right, in the normal content flow.
-    - [X] Implemented a structured matrix/grid display (3-4 columns) for Mood and Pain sub-metrics.
-    - [X] Applied consistent color-coding to all relevant values.
-    - [X] Hid timestamps for incrementing (non-timestamp) events.
-    - [X] Re-formatted timestamp events to "Um hh:mm: [Event Name]".
+- **Mood Entry:** Prevented mood ruler clicks during page scroll by distinguishing between click and drag events.
+- **Today Page:**
+    - Redesigned header to split "Heute" and the date for better readability.
+    - Redesigned summary cards to be more compact, space-efficient, and visually informative.
+- **Event Entry:** Improved layout of event items to fit on a single line, even on smaller screens.
+- **History Charts:**
+    - Set a height of 600px for all charts.
+    - Reverted dynamic width scaling for charts, maintaining a consistent 100% width.
+- **Log Page (Protokoll):**
+    - Made log cards wider with a larger base font size for better readability.
+    - Restructured the card layout with the date positioned in the top-right, in the normal content flow.
+    - Implemented a structured matrix/grid display (3-4 columns) for Mood and Pain sub-metrics.
+    - Applied consistent color-coding to all relevant values.
+    - Hid timestamps for incrementing (non-timestamp) events.
+    - Re-formatted timestamp events to "Um hh:mm: [Event Name]".
 
 **2025-09-25: Comprehensive Refactoring and UI/UX Enhancements**
 - **Refactored Data Entry Logic:**
@@ -117,26 +117,26 @@ This document lists the implementation status of features and refactorings for t
 
 **2025-10-01: UI/UX Enhancements, Logic Refinements, and Documentation**
 - **Settings UI:**
-  - [X] **Import Logic:** Ensure that merging data via import does not duplicate identical metrics.
-  - [X] **Button Colors:**
-    - [X] The confirmation button in deletion modals ("Bestätigen") will use the primary error color for high visibility.
-    - [X] In the "edit event" modal, the "Speichern" (Save) button will match the color of the "Neue hinzufügen" (Add New) button.
-    - [X] In the data import modal, the "Daten vereinen" (Merge Data) and "Daten überschreiben" (Overwrite Data) buttons will be styled as warning/error buttons.
+  - **Import Logic:** Ensure that merging data via import does not duplicate identical metrics.
+  - **Button Colors:**
+    - The confirmation button in deletion modals ("Bestätigen") will use the primary error color for high visibility.
+    - In the "edit event" modal, the "Speichern" (Save) button will match the color of the "Neue hinzufügen" (Add New) button.
+    - In the data import modal, the "Daten vereinen" (Merge Data) and "Daten überschreiben" (Overwrite Data) buttons will be styled as warning/error buttons.
 - **"Today" Page UI:**
-  - [X] **Card Click Behavior:**
-    - [X] The main mood and pain summary cards will be split into two clickable zones: the left side (label) will navigate to the data entry page, while the right side (value/trend) will navigate to the corresponding history chart.
-    - [X] Event cards will also be split: the left side (name) will go to the event entry page, and the right side (value) will navigate to the history page and scroll to that event's specific chart.
+  - **Card Click Behavior:**
+    - The main mood and pain summary cards will be split into two clickable zones: the left side (label) will navigate to the data entry page, while the right side (value/trend) will navigate to the corresponding history chart.
+    - Event cards will also be split: the left side (name) will go to the event entry page, and the right side (value) will navigate to the history page and scroll to that event's specific chart.
 - **Event Entry UI:**
-  - [X] The initial button for "pushbutton" (timestamp) events (e.g., "+ Einnahme") will be styled to match the subsequent "Erneute Einnahme" (Log Again) button for color consistency.
+  - The initial button for "pushbutton" (timestamp) events (e.g., "+ Einnahme") will be styled to match the subsequent "Erneute Einnahme" (Log Again) button for color consistency.
 - **Pain Entry UI:**
-  - [X] Tooltips will be added to the body part SVGs, revealing the full name of the body part on hover.
+  - Tooltips will be added to the body part SVGs, revealing the full name of the body part on hover.
 - **Documentation:**
-  - [X] **`README.md`:**
-    - [X] Add a new section describing the optional reminder settings feature.
-    - [X] Add a section explaining the functionality of "pushbutton" events.
-    - [X] Include a placeholder for a new screenshot demonstrating the pushbutton event flow.
-  - [X] **`tasks.md`:**
-    - [X] Update the "Planned Tasks" section with a detailed breakdown of the current work.
+  - **`README.md`:**
+    - Add a new section describing the optional reminder settings feature.
+    - Add a section explaining the functionality of "pushbutton" events.
+    - Include a placeholder for a new screenshot demonstrating the pushbutton event flow.
+  - **`tasks.md`:**
+    - Update the "Planned Tasks" section with a detailed breakdown of the current work.
 
 **2025-10-03: comprehensive set of UI enhancements, feature additions, and behavioral refinements**
 - **Today Page Enhancements:**
@@ -169,3 +169,17 @@ This document lists the implementation status of features and refactorings for t
   - Updated the "delete event type" logic to count existing entries, display a detailed confirmation message, and delete both the event type and its associated data.
   - Refactored the `is_cumulative` field into a new `displayType` setting with three options ("Zusammenzählen," "Einzeln, hervorheben," "Einzeln") to control how events are grouped and displayed.
   - Enhanced the data import/merge functionality to prevent overwriting existing event configurations and to reconstruct metric labels based on current app settings.
+
+
+**2025-10-03 (Follow-up)**: UI Refinements and Layout Adjustments
+- **Spacing & Alignment:** Reduced top-level spacing and ensured consistent title alignment across all pages.
+- **Log Page Header:** Placed title and week selector on a single responsive line.
+- **Sub-Tabs:** Decreased spacing between sub-tab buttons for a more cohesive look.
+- **History Page Charts:** Removed card container to make charts span the full viewport width.
+
+- **2025-10-03**: Full-stack UI Refactoring and Feature Implementation
+- **Modals & Settings UI:** Improved modal dialogs (delete event, data import) for better viewport fit and readability. Auto-scrolled to the edit form.
+- **Today Page:** Redesigned Mood/Pain pills for better visual prominence of data.
+- **Tab/Sub-Tab Layout:** Refactored all sub-tab selectors for consistent, mobile-first, and appealing overflow behavior.
+- **History Page:** Moved charts to a full-width container for better visibility.
+- **Log Page:** Implemented a new week-based, sticky pagination system and updated the log display accordingly.

@@ -12,18 +12,57 @@ required changes:
 
 ## nice to have
 
-npx @google/jules
+verlauf:refactor mood chart:
++ prepare chart data: for the timerange (plus mvag days added if data is available) selected go through all mood entrys
++ begin with the first entry, collect all mood data in 10 minute (from the first entry) in one group,
+then create 6 buckets and fill them according there mood value (-3,-2,-1,1,2,3),
+ then create 6 buckets , -2, -1 , 1, 2, 3 sum of this bucket, and create a this then
 
-is not from the right value, right value is the mavg of the totalsum (gesamtschmerz, gesamtwert stimmung) value
+Total -3 , Ziemlich -2 , Ein Wenig -1
+verlauf: stimmung 1 is broken:
+    + does not correctly count. uses either negativ or positiv, but not the value.
+
++ verlauf: mood chart:
+    + data
+verlauf: mood and pain chart: mavg of the totalsum (gesamtschmerz, gesamtwert stimmung) value
 
 verlauf mood and pain: also on both: should not be bar type for negativ positiv, and pain body parts, but stacked area, and total and mavg should be colored and drawed distintivly over the area
 
-make an additional dark theme, add switch to settings after Erinnerungen, "Darstellung", "Design", "Hell | Dunkel" , default hell
 
-make icon bar switchable between up and down location, add switch to settings, after "Erinnerungen", "Darstellung" , "Menübalken" "Oben" | "Unten", default "Oben"
+npx @google/jules
 
-make browser forward and browser back work as go through recorded selected subtabs, eg. clicked on today, mood, go to mood entry, click browser back, return to today.
 
-make translations that are inside welltrack.html and are selected automatically on browser agent preferences, and switchable in settings "Darstellung" "Sprache", "Default", "Deutsch", "English", defaulting to "default" which uses the browser preferred language, if available, or English if not available.
++ Documentation: document mood pairs, document pain levels, add to docs/mood-and-pain.md
+    describe each mood pair how to sense a value for it, describe pain levels, and practical examples to sense a value for it.
 
-mood: gedankenschleifen , wenn immer neue da bin ich zb. das opfer gewesen, oder da war jemand asozial, und ich habe mich darüber geärgert, versuche ein gegensatz paar zu finden
++ Gui Dark Theme
+    +make an additional dark theme, add switch to settings after Erinnerungen, "Darstellung", "Design", "Hell | Dunkel" , default hell
+
++ Gui Icon-Bar Placement
+    make icon bar switchable between up and down location, add switch to settings, after "Erinnerungen", "Darstellung" , "Menübalken" "Oben" | "Unten", default "Oben"
+
++ Gui browser Forward/Back Utilization
+    make browser forward and browser back work as go through recorded selected subtabs, eg. clicked on today, mood, go to mood entry, click browser back, return to today.
+
++ Gui Translation
+    make translations that are inside welltrack.html and are selected automatically on browser agent preferences, and switchable in settings "Darstellung" "Sprache", "Default", "Deutsch", "English", defaulting to "default" which uses the browser preferred language, if available, or English if not available.
+
+
+
+
+### Document Tasks
+
+Your task is to thoroughly document this entire repository. Please follow these steps meticulously:
+
+Read dev/system-workflow.md, dev/product-requirements.md, dev/project-structure.md, README.md, and src/welltrack/welltrack.html.
+
+Full Docstring Coverage: Systematically scan every source file. Add a complete docstring to every single public function, method, and class. Do not skip any, regardless of their apparent simplicity.
+
+High-Quality Docstrings: For each docstring, ensure you clearly explain:
+
+The purpose or main action of the code.
+A description for every parameter/argument.
+A description of the return value.
+Follow Conventions: Adhere to the standard documentation style for the repository's programming language (e.g., JSDoc, Google Style Python Docstrings, GoDoc).
+
+Update or create dev/project-structure.md: Review and update to be a complete guide for a new developer, covering purpose, setup, build and usage. Describe The Data Architecture, the different ind of metric entries, time based value entries, push button events, and mood and pain entries that have moving 10min timeslots, the export format, and each gui tab for what it displays.
