@@ -4,6 +4,13 @@ This document lists the curren implementation status of features and refactoring
 
 ## Planned Tasks
 
+- **2025-10-04 (Refactoring & Feature Update)**:
+    - **Refactor Naming:** Rename `getEvents` to `getEventTypes`, `wellTrackEvents` to `wellTrackEventTypes`, and related variables to improve clarity.
+    - **Refactor LocalStorage:** Consolidate `wellTrackPainView`, `wellTrackLogVisibility`, and `wellTrackActiveSettingsTab` into the main `wellTrackSettings` object.
+    - **Sortable Event Types:** Implement a "Reihenfolge verändern" (Change Order) mode in the settings to allow users to reorder event types via drag-and-drop.
+    - **New Display Type:** Add a "Nur Aufzeichnen" (Record Only) display type for events, which will not appear on the Today page or in history charts.
+    - **Log Sorting:** Sort log entries on the "Protokoll" and "Today" pages by newest first and remove the unused `ENTRIES_PER_PAGE` config.
+
 - **2025-10-03 (Final Polish)**: Final UI Polish
     - **Card Styling:** Reduce padding and border-radius on all cards for a tighter layout.
 

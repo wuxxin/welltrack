@@ -328,7 +328,7 @@ const WellTrackApp = {
         currentPainPart: null,
         charts: {}, // pain, event, mood will be dynamically populated
         currentPage: 1,
-        currentEditingEvent: null,
+        currentEditingEventType: null,
         timeRange: 7,
         notificationPermission: Notification.permission,
         activeMoodGroup: 'arousal_level',
@@ -338,13 +338,13 @@ const WellTrackApp = {
         isTodaysLogVisible: false,
         sliderClickStartPosition: null,
         currentPainView: 'back',
-        currentLogWeekStart: null
+        currentLogWeekStart: null,
+        isReorderingEventTypes: false
     },
 
     // --- CONFIGURATION ---
     // Static configuration and UI strings
     config: {
-        ENTRIES_PER_PAGE: 10,
         DEFAULT_BODY_COLOR: '#E6E0E9',
         PAIN_LEVELS: {
             0: { label: "Kein Schmerz", short: "-", color: "#86efac" },
@@ -391,18 +391,11 @@ const WellTrackApp = {
 
     // --- INITIALIZATION ---
     init() {
-        const savedPainView = localStorage.getItem('wellTrackPainView');
-        if (savedPainView) {
-            this.state.currentPainView = savedPainView;
-        }
-        const savedLogVisibility = localStorage.getItem('wellTrackLogVisibility');
-        if (savedLogVisibility) {
-            this.state.isTodaysLogVisible = JSON.parse(savedLogVisibility);
-        }
-        const savedSettingsTab = localStorage.getItem('wellTrackActiveSettingsTab');
-        if (savedSettingsTab) {
-            this.state.activeSettingsTab = savedSettingsTab;
-        }
+        const settings = this.data.getSettings();
+        this.state.currentPainView = settings.painView;
+        this.state.isTodaysLogVisible = settings.logVisibility;
+        this.state.activeSettingsTab = settings.activeSettingsTab;
+
         document.addEventListener('DOMContentLoaded', () => {
             this.events.showPage(this.state.activePage);
             this.events.initEventListeners();
@@ -414,16 +407,22 @@ const WellTrackApp = {
     data: {
         getSettings() {
             let settings = JSON.parse(localStorage.getItem('wellTrackSettings')) || {};
-            const defaults = { reminderTimes: '', reminders_active: false };
+            const defaults = {
+                reminderTimes: '',
+                reminders_active: false,
+                painView: 'back',
+                logVisibility: false,
+                activeSettingsTab: 'eventTypes'
+            };
             return { ...defaults, ...settings };
         },
         saveSettings(settings) {
-            localStorage.setItem('wellTrackSettings', JSON.stringify(rest));
+            localStorage.setItem('wellTrackSettings', JSON.stringify(settings));
         },
         getExportableData() {
             return {
                 metrics: this.getMetrics(),
-                events: this.getEvents(),
+                eventTypes: this.getEventTypes(),
                 settings: this.getSettings()
             };
         },
@@ -476,43 +475,54 @@ const WellTrackApp = {
             localStorage.setItem('wellTrackMetrics', JSON.stringify(metrics));
             if(WellTrackApp.state.activePage === 'today') WellTrackApp.render.todayPage();
         },
-        getEvents() {
-            const events = localStorage.getItem('wellTrackEvents');
-            const processEvents = (eventArray) => {
-                return eventArray.map(e => {
-                    let newEvent = { ...e };
+        getEventTypes() {
+            let eventTypesData = localStorage.getItem('wellTrackEventTypes');
+            // --- Migration: Check for the old key if the new one doesn't exist ---
+            if (!eventTypesData) {
+                const oldEventTypesData = localStorage.getItem('wellTrackEvents');
+                if (oldEventTypesData) {
+                    eventTypesData = oldEventTypesData;
+                    this.saveEventTypes(JSON.parse(eventTypesData)); // Save it under the new key
+                    localStorage.removeItem('wellTrackEvents');    // Remove the old key
+                }
+            }
+            // --- End Migration ---
+
+            const processEventTypes = (eventTypeArray) => {
+                return eventTypeArray.map(e => {
+                    let newEventType = { ...e };
                     // Migration from is_cumulative to displayType
-                    if (newEvent.is_cumulative !== undefined) {
-                        newEvent.displayType = newEvent.is_cumulative ? 0 : 1;
-                        delete newEvent.is_cumulative;
+                    if (newEventType.is_cumulative !== undefined) {
+                        newEventType.displayType = newEventType.is_cumulative ? 0 : 1;
+                        delete newEventType.is_cumulative;
                     }
                     // Set default if it's still missing
-                    if (newEvent.displayType === undefined) {
-                        newEvent.displayType = 0;
+                    if (newEventType.displayType === undefined) {
+                        newEventType.displayType = 0;
                     }
 
-                    newEvent.groupType = newEvent.groupType || '';
-                    delete newEvent.days; // Ensure 'days' is removed
-                    return newEvent;
+                    newEventType.groupType = newEventType.groupType || '';
+                    delete newEventType.days; // Ensure 'days' is removed
+                    return newEventType;
                 });
             };
 
-            if (events) {
-                const parsedEvents = JSON.parse(events);
-                const updatedEvents = processEvents(parsedEvents);
+            if (eventTypesData) {
+                const parsedEventTypes = JSON.parse(eventTypesData);
+                const updatedEventTypes = processEventTypes(parsedEventTypes);
                 // If migration happened, save it back
-                if (JSON.stringify(parsedEvents) !== JSON.stringify(updatedEvents)) {
-                    this.saveEvents(updatedEvents);
+                if (JSON.stringify(parsedEventTypes) !== JSON.stringify(updatedEventTypes)) {
+                    this.saveEventTypes(updatedEventTypes);
                 }
-                return updatedEvents;
+                return updatedEventTypes;
             } else {
-                const defaultEvents = processEvents(JSON.parse(WellTrackApp.config.DEFAULT_EVENTS_JSON));
-                this.saveEvents(defaultEvents);
-                return defaultEvents;
+                const defaultEventTypes = processEventTypes(JSON.parse(WellTrackApp.config.DEFAULT_EVENTS_JSON));
+                this.saveEventTypes(defaultEventTypes);
+                return defaultEventTypes;
             }
         },
-        saveEvents(events) {
-            localStorage.setItem('wellTrackEvents', JSON.stringify(events));
+        saveEventTypes(eventTypes) {
+            localStorage.setItem('wellTrackEventTypes', JSON.stringify(eventTypes));
         },
         loadTodaysState() {
             const page = WellTrackApp.state.activePage;
@@ -589,15 +599,15 @@ const WellTrackApp = {
                 try {
                     const imported = JSON.parse(e.target.result);
 
-                    const isValidStructure = 
+                    const isValidStructure =
                         imported &&
-                        Array.isArray(imported.metrics) && 
-                        Array.isArray(imported.events) && 
-                        typeof imported.settings === 'object' && 
+                        Array.isArray(imported.metrics) &&
+                        Array.isArray(imported.eventTypes) &&
+                        typeof imported.settings === 'object' &&
                         imported.settings !== null;
 
                     if (!isValidStructure) {
-                         WellTrackApp.render.modal.showAlert('Fehler', 'Die Importdatei hat ein ungültiges Grundformat oder es fehlen erforderliche Daten (metrics, events, settings).');
+                         WellTrackApp.render.modal.showAlert('Fehler', 'Die Importdatei hat ein ungültiges Grundformat oder es fehlen erforderliche Daten (metrics, eventTypes, settings).');
                          event.target.value = '';
                          return;
                     }
@@ -612,7 +622,7 @@ const WellTrackApp = {
 
                     const overwriteData = () => {
                         this.saveMetrics(imported.metrics);
-                        this.saveEvents(imported.events);
+                        this.saveEventTypes(imported.eventTypes);
                         this.saveSettings(imported.settings);
                         WellTrackApp.render.modal.hide();
                         location.reload();
@@ -620,14 +630,14 @@ const WellTrackApp = {
 
                     const appendData = () => {
                         // 1. Append Event Types without overwriting
-                        const currentEvents = this.getEvents();
-                        const importedEvents = imported.events || [];
-                        const currentEventActivities = new Set(currentEvents.map(e => e.activity));
-                        const newEventTypes = importedEvents.filter(e => !currentEventActivities.has(e.activity));
+                        const currentEventTypes = this.getEventTypes();
+                        const importedEventTypes = imported.eventTypes || [];
+                        const currentEventActivities = new Set(currentEventTypes.map(e => e.activity));
+                        const newEventTypes = importedEventTypes.filter(e => !currentEventActivities.has(e.activity));
 
-                        const finalEvents = [...currentEvents, ...newEventTypes];
-                        this.saveEvents(finalEvents);
-                        const eventsByActivity = new Map(finalEvents.map(e => [e.activity, e]));
+                        const finalEventTypes = [...currentEventTypes, ...newEventTypes];
+                        this.saveEventTypes(finalEventTypes);
+                        const eventTypesByActivity = new Map(finalEventTypes.map(e => [e.activity, e]));
 
                         // 2. Merge Metrics with reconstructed labels
                         const currentMetrics = this.getMetrics();
@@ -759,7 +769,7 @@ const WellTrackApp = {
 
             // --- Render Event Group Cards ---
             const eventGroupsContainer = document.getElementById('today-event-groups');
-            const allEvents = WellTrackApp.data.getEvents();
+            const allEventTypes = WellTrackApp.data.getEventTypes().filter(e => e.displayType !== 3);
             const todaysEventMetrics = todaysMetrics.filter(e => e.metric.startsWith('event_'));
 
             const displayItems = [];
@@ -767,7 +777,7 @@ const WellTrackApp = {
 
             // Define cumulative groups (displayType 0)
             const cumulativeGroups = {};
-            allEvents
+            allEventTypes
                 .filter(e => e.displayType === 0 && e.groupType && e.unitType && e.unitType.length > 2)
                 .forEach(e => {
                     const key = `${e.groupType}|${e.unitType}`;
@@ -786,13 +796,13 @@ const WellTrackApp = {
             });
 
             // Add highlighted individual events (displayType 1) that have a value today
-            allEvents
+            allEventTypes
                 .filter(e => !processedActivities.has(e.activity) && e.displayType === 1)
-                .forEach(event => {
-                    const itemMetrics = todaysEventMetrics.filter(m => m.labels.activity === event.activity);
+                .forEach(eventType => {
+                    const itemMetrics = todaysEventMetrics.filter(m => m.labels.activity === eventType.activity);
 
                     let totalValue = 0;
-                    if (event.increment === 0) { // Timestamp event
+                    if (eventType.increment === 0) { // Timestamp event
                         totalValue = itemMetrics.length;
                     } else { // Cumulative event
                         const metric = WellTrackApp.utils.summarizeMetrics(itemMetrics)[0];
@@ -801,9 +811,9 @@ const WellTrackApp = {
 
                     if (totalValue > 0) {
                         displayItems.push({
-                            isGroup: false, name: event.name, unit: event.unitType,
-                            groupKey: event.groupType || '*', activities: [event.activity],
-                            increment: event.increment
+                            isGroup: false, name: eventType.name, unit: eventType.unitType,
+                            groupKey: eventType.groupType || '*', activities: [eventType.activity],
+                            increment: eventType.increment
                         });
                     }
                 });
@@ -1001,35 +1011,35 @@ const WellTrackApp = {
 
             const todaysData = WellTrackApp.data.getMetrics();
             const todaysEventsDone = todaysData.filter(e => e.metric.startsWith('event_') && WellTrackApp.utils.isToday(new Date(e.timestamp)));
-            
-            let allEvents = WellTrackApp.data.getEvents();
-            let filteredEvents;
+
+            let allEventTypes = WellTrackApp.data.getEventTypes();
+            let filteredEventTypes;
 
             if (groupType === '*') {
-                filteredEvents = allEvents.filter(event => !event.groupType);
+                filteredEventTypes = allEventTypes.filter(eventType => !eventType.groupType);
             } else {
-                filteredEvents = allEvents.filter(event => event.groupType === groupType);
+                filteredEventTypes = allEventTypes.filter(eventType => eventType.groupType === groupType);
             }
 
-            const eventItems = filteredEvents.map(event => {
-                const todaysEntries = todaysEventsDone.filter(t => t.labels.activity === event.activity);
+            const eventTypeItems = filteredEventTypes.map(eventType => {
+                const todaysEntries = todaysEventsDone.filter(t => t.labels.activity === eventType.activity);
                 let value = 0;
-                if (event.increment === 0) {
+                if (eventType.increment === 0) {
                     value = todaysEntries.length; // For timestamp events, value is the count
                 } else {
                     // After the change, there should be at most one entry for incrementing events
                     value = todaysEntries[0]?.value || 0;
                 }
-                return { data: event, value: value, entries: todaysEntries };
+                return { data: eventType, value: value, entries: todaysEntries };
             });
-            
+
             eventContainer.innerHTML = ''; // Clear previous items
-            if(eventItems.length === 0){
+            if(eventTypeItems.length === 0){
                 eventContainer.innerHTML = `<p class="text-center text-gray-500 py-4">Keine Ereignisse in dieser Gruppe.</p>`;
                 return;
             }
 
-            eventItems.forEach(item => {
+            eventTypeItems.forEach(item => {
                 const div = document.createElement('div');
                 div.id = `event-item-${item.data.activity}`;
                 div.className = `p-4 rounded-xl flex flex-row flex-wrap items-center justify-between gap-y-2 gap-x-4 bg-gray-100`;
@@ -1133,12 +1143,43 @@ const WellTrackApp = {
             const container = document.getElementById('manage-event-list');
             if (!container) return;
             container.innerHTML = '';
-            WellTrackApp.data.getEvents().forEach((event, index) => {
+
+            const isReordering = WellTrackApp.state.isReorderingEventTypes;
+            const reorderBtn = document.getElementById('reorder-event-types-btn');
+            const addBtn = document.getElementById('add-new-event-btn');
+            const formContainer = document.getElementById('edit-event-form-container');
+
+            if (reorderBtn) {
+                reorderBtn.innerHTML = isReordering
+                    ? `<span class="material-symbols-outlined mr-2">check</span>Fertig`
+                    : `<span class="material-symbols-outlined mr-2">reorder</span>Reihenfolge ändern`;
+            }
+            if (addBtn) {
+                addBtn.disabled = isReordering;
+            }
+            if (formContainer && isReordering) {
+                // Hide edit form if it's open when reordering starts
+                WellTrackApp.events.handleHideEventForm();
+            }
+
+            WellTrackApp.data.getEventTypes().forEach((eventType, index) => {
                 const div = document.createElement('div');
-                div.className = 'flex items-center justify-between bg-gray-100 p-3 rounded-lg';
-                div.innerHTML = this.components.manageEventItem(event, index);
+                div.className = 'flex items-center justify-between bg-gray-100 p-3 rounded-lg transition-opacity';
+                div.innerHTML = this.components.manageEventItem(eventType, index);
+
+                if (isReordering) {
+                    div.draggable = true;
+                    div.dataset.index = index; // Store original index
+                    div.classList.add('cursor-move');
+                    div.addEventListener('dragstart', (e) => WellTrackApp.events.handleDragStart(e));
+                    div.addEventListener('dragend', (e) => WellTrackApp.events.handleDragEnd(e));
+                }
                 container.appendChild(div);
             });
+
+            if (isReordering) {
+                container.addEventListener('dragover', (e) => WellTrackApp.events.handleDragOver(e));
+            }
         },
         charts: {
             renderAll() {
@@ -1209,13 +1250,13 @@ const WellTrackApp = {
                 if (!eventChartContainer) return;
                 eventChartContainer.innerHTML = ''; // Clear previous charts
 
-                const allEvents = WellTrackApp.data.getEvents();
+                const allEventTypes = WellTrackApp.data.getEventTypes().filter(e => e.displayType !== 3);
                 const displayGroups = [];
                 const processedActivities = new Set();
 
                 // 1. Identify and create cumulative groups (displayType 0)
                 const cumulativeGroups = {};
-                allEvents
+                allEventTypes
                     .filter(e => e.displayType === 0 && e.groupType && e.unitType && e.unitType.length > 2)
                     .forEach(e => {
                         const key = `${e.groupType}|${e.unitType}`;
@@ -1233,11 +1274,11 @@ const WellTrackApp = {
                 });
 
                 // 2. Add remaining individual events
-                allEvents
+                allEventTypes
                     .filter(e => !processedActivities.has(e.activity))
-                    .forEach(event => {
+                    .forEach(eventType => {
                         displayGroups.push({
-                            isGroup: false, name: event.name, unit: event.unitType, activities: [event.activity]
+                            isGroup: false, name: eventType.name, unit: eventType.unitType, activities: [eventType.activity]
                         });
                     });
 
@@ -1308,7 +1349,7 @@ const WellTrackApp = {
                                             if (isMultiActivityGroup && values) {
                                                 Object.entries(values).forEach(([name, value]) => {
                                                     if(value > 0) {
-                                                        const eventConfig = allEvents.find(e => e.name === name);
+                                                        const eventConfig = allEventTypes.find(e => e.name === name);
                                                         const unit = eventConfig ? eventConfig.unitType : group.unit;
                                                         lines.push(`  - ${name}: ${value} ${unit}`);
                                                     }
@@ -1488,9 +1529,9 @@ const WellTrackApp = {
                 `;
             },
             eventSection: () => {
-                const events = WellTrackApp.data.getEvents();
-                const hasNoGroup = events.some(e => !e.groupType);
-                const groups = [...new Set(events.map(e => e.groupType).filter(g => g))].sort();
+                const eventTypes = WellTrackApp.data.getEventTypes();
+                const hasNoGroup = eventTypes.some(e => !e.groupType);
+                const groups = [...new Set(eventTypes.map(e => e.groupType).filter(g => g))].sort();
                 if (hasNoGroup) { groups.push('*'); }
 
                 // If no group is selected, default to the first one available
@@ -1711,7 +1752,10 @@ const WellTrackApp = {
                     <div id="settings-tab-eventTypes" class="settings-tab-content">
                         <div id="manage-event-list" class="space-y-2 mb-4"></div>
                         <div id="edit-event-form-container"></div>
-                        <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-secondary w-full"><span class="material-symbols-outlined mr-2">add</span>Neue hinzufügen</button></div>
+                        <div class="mt-4 flex gap-2">
+                            <button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-secondary w-full"><span class="material-symbols-outlined mr-2">add</span>Neue hinzufügen</button>
+                            <button id="reorder-event-types-btn" onclick="WellTrackApp.events.handleToggleReorderEventTypes()" class="btn btn-tertiary w-full"></button>
+                        </div>
                     </div>
                     <div id="settings-tab-data" class="settings-tab-content">
                         <p class="text-sm text-gray-600 mb-4">Sie können Ihre Daten als JSON-Datei exportieren oder eine zuvor exportierte Datei wieder importieren.</p>
@@ -1741,18 +1785,18 @@ const WellTrackApp = {
                 </div>
                 `;
             },
-            eventItemIncrement: (event, value) => `
-                <span class="text-base sm:text-lg font-medium text-gray-800 flex-1">${event.name}</span>
+            eventItemIncrement: (eventType, value) => `
+                <span class="text-base sm:text-lg font-medium text-gray-800 flex-1">${eventType.name}</span>
                 <div class="flex items-center gap-2">
-                    <button onclick="WellTrackApp.events.handleEventIncrement('${event.activity}', -${event.increment})" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0">
+                    <button onclick="WellTrackApp.events.handleEventIncrement('${eventType.activity}', -${eventType.increment})" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0">
                         <span class="material-symbols-outlined">remove</span>
                     </button>
-                    <span id="value-${event.activity}" class="tabular-nums text-xl sm:text-2xl font-semibold w-20 sm:w-24 text-center">${value} ${event.unitType}</span>
-                    <button onclick="WellTrackApp.events.handleEventIncrement('${event.activity}', ${event.increment})" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span id="value-${eventType.activity}" class="tabular-nums text-xl sm:text-2xl font-semibold w-20 sm:w-24 text-center">${value} ${eventType.unitType}</span>
+                    <button onclick="WellTrackApp.events.handleEventIncrement('${eventType.activity}', ${eventType.increment})" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold h-10 w-10 rounded-full flex items-center justify-center flex-shrink-0">
                         <span class="material-symbols-outlined">add</span>
                     </button>
                 </div>`,
-            eventItemTimestamp: (event, isDoneToday, entries) => {
+            eventItemTimestamp: (eventType, isDoneToday, entries) => {
                 const count = entries.length;
                 const lastEntry = count > 0 ? entries.sort((a, b) => b.timestamp - a.timestamp)[0] : null;
 
@@ -1767,18 +1811,18 @@ const WellTrackApp = {
                 if (isDoneToday) {
                     // State B: Logged for today. Show Undo and Again buttons.
                     buttonsHtml = `
-                        <button onclick="WellTrackApp.events.handleUndoTimestamp('${event.activity}')" class="btn btn-tertiary btn-sm">
+                        <button onclick="WellTrackApp.events.handleUndoTimestamp('${eventType.activity}')" class="btn btn-tertiary btn-sm">
                             <span class="material-symbols-outlined mr-1 sm:mr-2">undo</span>Rückgängig
                         </button>
-                        <button onclick="WellTrackApp.events.handleTimestampEvent('${event.activity}')" class="btn btn-secondary btn-sm">
-                            <span class="material-symbols-outlined mr-1 sm:mr-2">refresh</span>Erneut/e ${event.unitType || 'Einnahme'}
+                        <button onclick="WellTrackApp.events.handleTimestampEvent('${eventType.activity}')" class="btn btn-secondary btn-sm">
+                            <span class="material-symbols-outlined mr-1 sm:mr-2">refresh</span>Erneut/e ${eventType.unitType || 'Einnahme'}
                         </button>
                     `;
                 } else {
                     // State A: Not logged for today. Show initial button.
-                    const buttonText = event.unitType || 'Einnahme';
+                    const buttonText = eventType.unitType || 'Einnahme';
                     buttonsHtml = `
-                        <button onclick="WellTrackApp.events.handleTimestampEvent('${event.activity}')" class="btn btn-secondary btn-sm sm:btn-md min-w-[120px] sm:min-w-[150px]">
+                        <button onclick="WellTrackApp.events.handleTimestampEvent('${eventType.activity}')" class="btn btn-secondary btn-sm sm:btn-md min-w-[120px] sm:min-w-[150px]">
                             <span class="material-symbols-outlined mr-1 sm:mr-2">add</span>${buttonText}
                         </button>
                     `;
@@ -1786,7 +1830,7 @@ const WellTrackApp = {
 
                 return `
                     <div class="flex items-baseline">
-                         <span class="text-base sm:text-lg font-medium text-gray-800">${event.name}</span>
+                         <span class="text-base sm:text-lg font-medium text-gray-800">${eventType.name}</span>
                          <span class="text-xs sm:text-sm text-gray-500 font-normal ml-2">${lastTimestampInfo}</span>
                     </div>
                     <div class="flex items-center gap-2 ml-auto">
@@ -1819,37 +1863,22 @@ const WellTrackApp = {
                 return `(${time}) Unbekannter Eintrag`;
             },
             logEntry: (formattedDate, metrics) => {
-                let eventsHtml = '';
+                const renderBlocks = [];
+
+                // 1. Process Event Metrics into individual blocks
                 const eventMetrics = metrics.filter(m => m.metric.startsWith('event_'));
-                if (eventMetrics.length > 0) {
-                    const eventsByGroup = eventMetrics.reduce((acc, t) => {
-                        const group = t.labels.groupType || 'Ohne Gruppe';
-                        if (!acc[group]) acc[group] = [];
-                        acc[group].push(t);
-                        return acc;
-                    }, {});
+                eventMetrics.forEach(metric => {
+                    const html = `<div class="text-gray-700 text-base">${WellTrackApp.render.components.todaysLogEntry(metric)}</div>`;
+                    renderBlocks.push({ timestamp: metric.timestamp, html: html });
+                });
 
-                    eventsHtml = Object.entries(eventsByGroup).map(([group, entries]) => {
-                        const entryDetails = entries.map(t => {
-                            const time = new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                            if (t.metric.endsWith('_timestamp')) {
-                                return `<div class="ml-4 text-gray-700 text-base"><span class="font-semibold">Um ${time}</span>: ${t.labels.name}</div>`;
-                            } else {
-                                const valueHtml = `<span class="font-semibold">${t.value} ${t.labels.unitType || ''}</span>`;
-                                return `<div class="ml-4 text-gray-700 text-base">${t.labels.name}: ${valueHtml}</div>`;
-                            }
-                        }).join('');
-                        return `<div class="mt-2"><h5 class="font-semibold text-lg">${group}</h5>${entryDetails}</div>`;
-                    }).join('');
-                }
-
-                let moodHtml = '';
+                // 2. Process Mood Metrics into time-grouped blocks
                 const moodMetrics = metrics.filter(m => m.metric.startsWith('mood_')).sort((a, b) => a.timestamp - b.timestamp);
                 if (moodMetrics.length > 0) {
                     const moodGroups = [];
                     let currentGroup = [];
                     moodMetrics.forEach((metric, index) => {
-                        if (index > 0 && (metric.timestamp - moodMetrics[index-1].timestamp > 600000)) {
+                        if (index > 0 && (metric.timestamp - moodMetrics[index - 1].timestamp > 600000)) {
                             moodGroups.push(currentGroup);
                             currentGroup = [];
                         }
@@ -1857,38 +1886,31 @@ const WellTrackApp = {
                     });
                     moodGroups.push(currentGroup);
 
-                    moodHtml = moodGroups.map(group => {
-                        if (group.length === 0) return '';
+                    moodGroups.forEach(group => {
+                        if (group.length === 0) return;
                         const firstEntryTime = new Date(group[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const latestTimestamp = group[group.length - 1].timestamp;
                         const totalScore = group.reduce((sum, m) => sum + m.value, 0);
                         const totalColorClass = totalScore > 0 ? 'text-green-600' : (totalScore < 0 ? 'text-red-600' : 'text-gray-600');
                         const totalSign = totalScore > 0 ? '+' : '';
 
                         const detailsMatrix = group.map(m => {
                             const valueColorClass = m.value > 0 ? 'text-green-600' : 'text-red-600';
-                            return `
-                                <div class="flex justify-between items-center p-2 rounded-lg bg-gray-50">
-                                    <span class="text-gray-800">${m.labels.name}</span>
-                                    <span class="font-bold text-lg ${valueColorClass}">${m.value > 0 ? '+' : ''}${m.value}</span>
-                                </div>
-                            `;
+                            return `<div class="flex justify-between items-center p-2 rounded-lg bg-gray-50"><span class="text-gray-800">${m.labels.name}</span><span class="font-bold text-lg ${valueColorClass}">${m.value > 0 ? '+' : ''}${m.value}</span></div>`;
                         }).join('');
 
-                        return `
-                            <div class="mt-2">
-                                <h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600"> Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></span></h5>
-                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div>
-                            </div>`;
-                    }).join('');
+                        const html = `<div><h4 class="font-semibold text-lg mb-2 text-gray-800">Stimmung um ${firstEntryTime}</h4><div class="pl-4"><h5 class="text-base">Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div></div>`;
+                        renderBlocks.push({ timestamp: latestTimestamp, html: html });
+                    });
                 }
 
-                let painHtml = '';
+                // 3. Process Pain Metrics into time-grouped blocks
                 const painMetrics = metrics.filter(m => m.metric.startsWith('pain_')).sort((a, b) => a.timestamp - b.timestamp);
                 if (painMetrics.length > 0) {
-                     const painGroups = [];
+                    const painGroups = [];
                     let currentGroup = [];
                     painMetrics.forEach((metric, index) => {
-                        if (index > 0 && (metric.timestamp - painMetrics[index-1].timestamp > 600000)) {
+                        if (index > 0 && (metric.timestamp - painMetrics[index - 1].timestamp > 600000)) {
                             painGroups.push(currentGroup);
                             currentGroup = [];
                         }
@@ -1896,9 +1918,10 @@ const WellTrackApp = {
                     });
                     painGroups.push(currentGroup);
 
-                    painHtml = painGroups.map(group => {
-                        if (group.length === 0) return '';
+                    painGroups.forEach(group => {
+                        if (group.length === 0) return;
                         const firstEntryTime = new Date(group[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const latestTimestamp = group[group.length - 1].timestamp;
                         const totalScore = group.reduce((sum, m) => sum + m.value, 0);
                         const totalColor = totalScore > 0 ? 'text-red-600' : 'text-gray-600';
 
@@ -1908,94 +1931,52 @@ const WellTrackApp = {
                             }
                             const props = WellTrackApp.config.PAIN_LEVELS[p.value] || {};
                             const textColor = (p.value > 2 && p.value < 6) ? 'text-white' : 'text-black';
-                            return `
-                                <div class="p-2 rounded-lg flex justify-between items-center" style="background-color: ${props.color || '#ccc'}">
-                                    <span class="${textColor}">${p.labels.name}</span>
-                                    <span class="font-bold text-lg ${textColor}">${p.value}</span>
-                                </div>
-                            `;
+                            return `<div class="p-2 rounded-lg flex justify-between items-center" style="background-color: ${props.color || '#ccc'}"><span class="${textColor}">${p.labels.name}</span><span class="font-bold text-lg ${textColor}">${p.value}</span></div>`;
                         }).join('');
 
-                        return `
-                             <div class="mt-2">
-                                <h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600">Gesamt: <span class="font-bold ${totalColor}">${totalScore}</span></span></h5>
-                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div>
-                            </div>
-                        `;
-                    }).join('');
+                        const html = `<div><h4 class="font-semibold text-lg mb-2 text-gray-800">Schmerz um ${firstEntryTime}</h4><div class="pl-4"><h5 class="text-base">Gesamt: <span class="font-bold ${totalColor}">${totalScore}</span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div></div>`;
+                        renderBlocks.push({ timestamp: latestTimestamp, html: html });
+                    });
                 }
 
-                let html = '';
+                // 4. Sort all blocks by timestamp (newest first) and render
+                const sortedBlocksHtml = renderBlocks
+                    .sort((a, b) => b.timestamp - a.timestamp)
+                    .map(block => block.html)
+                    .join('<div class="my-4 border-t border-gray-200"></div>');
 
-                if (eventsHtml) {
-                    html += `
-                        <div>
-                            <div class="flex justify-between items-baseline">
-                               <h4 class="font-semibold text-lg mb-2 text-gray-800">Ereignisse</h4>
-                               <h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3>
-                            </div>
-                            <div class="pl-4">${eventsHtml}</div>
-                        </div>
-                    `;
-                    if (moodHtml) {
-                        html += `
-                            <div class="mt-4 pt-4 border-t border-gray-200">
-                                <h4 class="font-semibold text-lg mb-2 text-gray-800">Stimmung</h4>
-                                <div class="pl-4">${moodHtml}</div>
-                            </div>
-                        `;
-                    }
-                    if (painHtml) {
-                         html += `
-                            <div class="mt-4 pt-4 border-t border-gray-200">
-                                <h4 class="font-semibold text-lg mb-2 text-gray-800">Schmerz</h4>
-                                <div class="pl-4">${painHtml}</div>
-                            </div>
-                        `;
-                    }
-                } else {
-                    html += `<div class="flex justify-end mb-2"><h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3></div>`;
-                    let isFirstSection = true;
-                    if (moodHtml) {
-                         html += `
-                            <div>
-                                <h4 class="font-semibold text-lg mb-2 text-gray-800">Stimmung</h4>
-                                <div class="pl-4">${moodHtml}</div>
-                            </div>
-                        `;
-                        isFirstSection = false;
-                    }
-                    if (painHtml) {
-                        const dividerClass = isFirstSection ? '' : 'mt-4 pt-4 border-t border-gray-200';
-                        html += `
-                            <div class="${dividerClass}">
-                                <h4 class="font-semibold text-lg mb-2 text-gray-800">Schmerz</h4>
-                                <div class="pl-4">${painHtml}</div>
-                            </div>
-                        `;
-                    }
-                }
-
-                return html;
+                return `
+                    <div class="flex justify-end mb-2"><h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3></div>
+                    <div>${sortedBlocksHtml}</div>
+                `;
             },
             paginationControls: (currentPage, totalPages) => `<button onclick="WellTrackApp.events.handleChangePage(-1)" class="btn btn-secondary" ${currentPage === 1 ? 'disabled' : ''}>Zurück</button><span class="text-sm text-gray-700">Seite ${currentPage} von ${totalPages}</span><button onclick="WellTrackApp.events.handleChangePage(1)" class="btn btn-secondary" ${currentPage === totalPages ? 'disabled' : ''}>Weiter</button>`,
-            manageEventItem: (event, index) => {
-                const incrementText = event.increment === 0 ? 'Zeitstempel' : `+${event.increment}`;
-                const detailsText = `${incrementText} ${event.unitType || ''}`;
+            manageEventItem: (eventType, index) => {
+                const incrementText = eventType.increment === 0 ? 'Zeitstempel' : `+${eventType.increment}`;
+                const detailsText = `${incrementText} ${eventType.unitType || ''}`;
+                const isReordering = WellTrackApp.state.isReorderingEventTypes;
+
+                const buttons = `
+                    <button onclick="WellTrackApp.events.handleShowEventForm(${index})" class="text-blue-500 hover:text-blue-700" ${isReordering ? 'disabled' : ''}>
+                        <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button onclick="WellTrackApp.events.handleRemoveEvent(${index})" class="text-red-400 hover:text-red-600" ${isReordering ? 'disabled' : ''}>
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
+                `;
+
+                const dragHandle = `<span class="material-symbols-outlined cursor-move text-gray-500">drag_indicator</span>`;
+
                 return `
                     <div class="flex items-center gap-3 flex-grow">
-                        <button onclick="WellTrackApp.events.handleShowEventForm(${index})" class="text-blue-500 hover:text-blue-700">
-                            <span class="material-symbols-outlined">edit</span>
-                        </button>
+                        ${isReordering ? dragHandle : buttons}
                         <div>
-                            <span>${event.name} <span class="text-xs text-gray-400">(${detailsText})</span></span>
-                            <span class="text-xs text-gray-500 block">Gruppe: ${event.groupType || 'Keine'}</span>
+                            <span>${eventType.name} <span class="text-xs text-gray-400">(${detailsText})</span></span>
+                            <span class="text-xs text-gray-500 block">Gruppe: ${eventType.groupType || 'Keine'}</span>
                         </div>
                     </div>
                     <div class="flex items-center">
-                        <button onclick="WellTrackApp.events.handleRemoveEvent(${index})" class="text-red-400 hover:text-red-600">
-                            <span class="material-symbols-outlined">delete</span>
-                        </button>
+                        ${isReordering ? '' : ''}
                     </div>`;
             },
             painModalContent: (partName, viewName) => {
@@ -2012,14 +1993,14 @@ const WellTrackApp = {
                 const title = `Schmerz (${viewName}): <br class="sm:hidden"/> <span class="font-bold">${partName}</span>`;
                 return `<h3 class="text-xl font-semibold mb-6 text-center">${title}</h3><div class="grid grid-cols-1 gap-4">${buttons}</div><button onclick="WellTrackApp.render.modal.hide()" class="btn btn-tertiary w-full mt-8">Abbrechen</button>`;
             },
-            eventForm: (event = null) => {
-                const isEditing = event !== null;
-                const name = isEditing ? event.name : '';
-                const activity = isEditing ? event.activity : '';
-                const increment = isEditing ? event.increment : 1;
-                const unitType = isEditing ? event.unitType : '';
-                const groupType = isEditing ? event.groupType : '';
-                const displayType = isEditing ? event.displayType : 0;
+            eventForm: (eventType = null) => {
+                const isEditing = eventType !== null;
+                const name = isEditing ? eventType.name : '';
+                const activity = isEditing ? eventType.activity : '';
+                const increment = isEditing ? eventType.increment : 1;
+                const unitType = isEditing ? eventType.unitType : '';
+                const groupType = isEditing ? eventType.groupType : '';
+                const displayType = isEditing ? eventType.displayType : 0;
 
                 return `
                 <div class="p-4 border rounded-lg bg-white mt-4">
@@ -2042,6 +2023,7 @@ const WellTrackApp = {
                                     <option value="0" ${displayType === 0 ? 'selected' : ''}>Zusammenzählen</option>
                                     <option value="1" ${displayType === 1 ? 'selected' : ''}>Einzeln, hervorheben</option>
                                     <option value="2" ${displayType === 2 ? 'selected' : ''}>Einzeln</option>
+                                    <option value="3" ${displayType === 3 ? 'selected' : ''}>Nur Aufzeichnen</option>
                                 </select>
                             </div>
                         </div>
@@ -2196,8 +2178,8 @@ const WellTrackApp = {
             WellTrackApp.render.modal.hide();
         },
         handleEventIncrement(activity, increment) {
-            const event = WellTrackApp.data.getEvents().find(t => t.activity === activity);
-            if (!event) return;
+            const eventType = WellTrackApp.data.getEventTypes().find(t => t.activity === activity);
+            if (!eventType) return;
 
             let allMetrics = WellTrackApp.data.getMetrics();
 
@@ -2215,7 +2197,7 @@ const WellTrackApp = {
             const newEntry = {
                 metric: `event_${activity}_value`,
                 timestamp: Date.now(),
-                labels: { activity: event.activity, name: event.name, unitType: event.unitType, groupType: event.groupType || '' },
+                labels: { activity: eventType.activity, name: eventType.name, unitType: eventType.unitType, groupType: eventType.groupType || '' },
                 value: newValue
             };
 
@@ -2225,13 +2207,13 @@ const WellTrackApp = {
             WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
         },
         handleTimestampEvent(activity) {
-            const event = WellTrackApp.data.getEvents().find(e => e.activity === activity);
-            if (!event) return;
+            const eventType = WellTrackApp.data.getEventTypes().find(e => e.activity === activity);
+            if (!eventType) return;
 
             const newEntry = {
                 metric: `event_${activity}_timestamp`,
                 timestamp: Date.now(),
-                labels: { activity: event.activity, name: event.name, unitType: event.unitType, groupType: event.groupType || '' },
+                labels: { activity: eventType.activity, name: eventType.name, unitType: eventType.unitType, groupType: eventType.groupType || '' },
                 value: 1 // Value is 1 to be countable
             };
             WellTrackApp.data.addMetric(newEntry);
@@ -2286,7 +2268,10 @@ const WellTrackApp = {
         },
         handleViewToggle(view) {
             WellTrackApp.state.currentPainView = view;
-            localStorage.setItem('wellTrackPainView', view);
+            const settings = WellTrackApp.data.getSettings();
+            settings.painView = view;
+            WellTrackApp.data.saveSettings(settings);
+
             document.getElementById('body-front').classList.toggle('hidden', view !== 'front');
             document.getElementById('body-back').classList.toggle('hidden', view === 'front');
             document.getElementById('btn-view-front').classList.toggle('active', view === 'front');
@@ -2297,25 +2282,25 @@ const WellTrackApp = {
             WellTrackApp.render.historyPage();
         },
         handleRemoveEvent(index) {
-            const events = WellTrackApp.data.getEvents();
-            const eventToDelete = events[index];
+            const eventTypes = WellTrackApp.data.getEventTypes();
+            const eventTypeToDelete = eventTypes[index];
             let allMetrics = WellTrackApp.data.getMetrics();
 
             const usedMetricsCount = allMetrics.filter(metric =>
-                metric.labels && metric.labels.activity === eventToDelete.activity
+                metric.labels && metric.labels.activity === eventTypeToDelete.activity
             ).length;
 
-            const message = `<span class="text-lg">Möchten Sie das Ereignis "${eventToDelete.name}" wirklich entfernen? Es sind ${usedMetricsCount} Einträge dieser Art vorhanden, die ebenfalls gelöscht werden.</span>`;
+            const message = `<span class="text-lg">Möchten Sie die Ereignisart "${eventTypeToDelete.name}" wirklich entfernen? Es sind ${usedMetricsCount} Einträge dieser Art vorhanden, die ebenfalls gelöscht werden.</span>`;
 
-            WellTrackApp.render.modal.showConfirmation('Ereignis löschen', message, () => {
+            WellTrackApp.render.modal.showConfirmation('Ereignisart löschen', message, () => {
                 // Remove the event type
-                events.splice(index, 1);
-                WellTrackApp.data.saveEvents(events);
+                eventTypes.splice(index, 1);
+                WellTrackApp.data.saveEventTypes(eventTypes);
 
                 // Remove the associated metrics if any
                 if (usedMetricsCount > 0) {
                     const newMetrics = allMetrics.filter(metric =>
-                        !metric.labels || metric.labels.activity !== eventToDelete.activity
+                        !metric.labels || metric.labels.activity !== eventTypeToDelete.activity
                     );
                     WellTrackApp.data.saveMetrics(newMetrics);
                 }
@@ -2335,13 +2320,11 @@ const WellTrackApp = {
         },
         handleSaveEvent() {
             const name = document.getElementById('event-name').value.trim();
-            const events = WellTrackApp.data.getEvents();
-            const isEditing = !!WellTrackApp.state.currentEditingEvent;
+            const eventTypes = WellTrackApp.data.getEventTypes();
+            const isEditing = !!WellTrackApp.state.currentEditingEventType;
 
-            // Get activity from state if editing, otherwise from form for a new event.
-            // This is more robust than reading from a disabled form field.
             const activity = isEditing
-                ? WellTrackApp.state.currentEditingEvent.activity
+                ? WellTrackApp.state.currentEditingEventType.activity
                 : WellTrackApp.utils.slugify(document.getElementById('event-activity').value.trim());
 
             const increment = parseInt(document.getElementById('event-increment').value, 10);
@@ -2354,32 +2337,32 @@ const WellTrackApp = {
                 return;
             }
 
-            if (!isEditing && events.some(t => t.activity === activity)) {
+            if (!isEditing && eventTypes.some(t => t.activity === activity)) {
                 WellTrackApp.render.modal.showAlert('Fehler', 'Diese Aktivität-ID wird bereits verwendet.');
                 return;
             }
 
-            const newEventData = { name, activity, increment, unitType, groupType, displayType };
+            const newEventTypeData = { name, activity, increment, unitType, groupType, displayType };
 
             if (isEditing) {
-                const index = events.findIndex(t => t.activity === activity);
+                const index = eventTypes.findIndex(t => t.activity === activity);
                 if (index > -1) {
-                    events[index] = newEventData;
+                    eventTypes[index] = newEventTypeData;
                 }
             } else {
-                events.push(newEventData);
+                eventTypes.push(newEventTypeData);
             }
 
-            WellTrackApp.data.saveEvents(events);
+            WellTrackApp.data.saveEventTypes(eventTypes);
             this.handleHideEventForm();
             WellTrackApp.render.manageEventList();
             if(WellTrackApp.state.activePage === 'event') WellTrackApp.render.eventPage();
         },
         handleShowEventForm(index = null) {
-            const event = index !== null ? WellTrackApp.data.getEvents()[index] : null;
-            WellTrackApp.state.currentEditingEvent = event;
+            const eventType = index !== null ? WellTrackApp.data.getEventTypes()[index] : null;
+            WellTrackApp.state.currentEditingEventType = eventType;
             const formContainer = document.getElementById('edit-event-form-container');
-            formContainer.innerHTML = WellTrackApp.render.components.eventForm(event);
+            formContainer.innerHTML = WellTrackApp.render.components.eventForm(eventType);
             document.getElementById('add-new-event-btn').classList.add('hidden');
 
             // Scroll the form into view
@@ -2391,9 +2374,70 @@ const WellTrackApp = {
             }, 100);
         },
         handleHideEventForm() {
-            WellTrackApp.state.currentEditingEvent = null;
-            document.getElementById('edit-event-form-container').innerHTML = '';
-            document.getElementById('add-new-event-btn').classList.remove('hidden');
+            WellTrackApp.state.currentEditingEventType = null; // Ensure state is reset
+            const formContainer = document.getElementById('edit-event-form-container');
+            if (formContainer) {
+                formContainer.innerHTML = '';
+            }
+            const addBtn = document.getElementById('add-new-event-btn');
+            if (addBtn) {
+                addBtn.classList.remove('hidden');
+            }
+        },
+        handleToggleReorderEventTypes() {
+            const isReordering = WellTrackApp.state.isReorderingEventTypes;
+
+            if (isReordering) {
+                // --- Save the new order ---
+                const container = document.getElementById('manage-event-list');
+                const newOrderIndices = [...container.children].map(child => parseInt(child.dataset.index, 10));
+
+                const eventTypes = WellTrackApp.data.getEventTypes();
+                const newEventTypes = newOrderIndices.map(index => eventTypes[index]);
+
+                WellTrackApp.data.saveEventTypes(newEventTypes);
+            }
+
+            WellTrackApp.state.isReorderingEventTypes = !isReordering;
+            WellTrackApp.render.manageEventList(); // Re-render the list to apply/remove draggable attributes and button states
+        },
+        handleDragStart(e) {
+            e.target.style.opacity = '0.4';
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', e.target.dataset.index);
+        },
+        handleDragEnd(e) {
+            e.target.style.opacity = '1';
+            // Clean up any drag-over styling if needed
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        },
+        handleDragOver(e) {
+            e.preventDefault(); // Necessary to allow drop
+            e.dataTransfer.dropEffect = 'move';
+
+            const container = e.currentTarget;
+            const draggingEl = container.querySelector('[style*="opacity: 0.4"]');
+            if (!draggingEl) return;
+
+            const afterElement = this.getDragAfterElement(container, e.clientY);
+            if (afterElement == null) {
+                container.appendChild(draggingEl);
+            } else {
+                container.insertBefore(draggingEl, afterElement);
+            }
+        },
+        getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('[draggable="true"]:not([style*="opacity: 0.4"])')];
+
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
         },
         handleMoodRulerMouseDown(event) {
             WellTrackApp.state.sliderClickStartPosition = {
@@ -2518,12 +2562,16 @@ const WellTrackApp = {
         },
         handleSettingsTabClick(tabName) {
             WellTrackApp.state.activeSettingsTab = tabName;
-            localStorage.setItem('wellTrackActiveSettingsTab', tabName);
+            const settings = WellTrackApp.data.getSettings();
+            settings.activeSettingsTab = tabName;
+            WellTrackApp.data.saveSettings(settings);
             WellTrackApp.render.settingsPage();
         },
         toggleTodaysLog() {
             WellTrackApp.state.isTodaysLogVisible = !WellTrackApp.state.isTodaysLogVisible;
-            localStorage.setItem('wellTrackLogVisibility', JSON.stringify(WellTrackApp.state.isTodaysLogVisible));
+            const settings = WellTrackApp.data.getSettings();
+            settings.logVisibility = WellTrackApp.state.isTodaysLogVisible;
+            WellTrackApp.data.saveSettings(settings);
             WellTrackApp.render.todayPage();
         },
         async requestNotificationPermission() {
