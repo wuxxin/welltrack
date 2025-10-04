@@ -415,21 +415,9 @@ const WellTrackApp = {
         getSettings() {
             let settings = JSON.parse(localStorage.getItem('wellTrackSettings')) || {};
             const defaults = { reminderTimes: '', reminders_active: false };
-
-            // Migration for old users from `reminderTime` to `reminderTimes` and `reminders_active`
-            if (settings.reminderTime !== undefined) {
-                settings.reminderTimes = settings.reminderTime || '';
-                delete settings.reminderTime;
-                // If they had a time set, we can assume they wanted reminders active.
-                settings.reminders_active = !!settings.reminderTimes;
-                this.saveSettings(settings); // Save the migrated settings
-            }
-
             return { ...defaults, ...settings };
         },
         saveSettings(settings) {
-            // committedIndex is obsolete, ensure it's not saved.
-            const { committedIndex, ...rest } = settings;
             localStorage.setItem('wellTrackSettings', JSON.stringify(rest));
         },
         getExportableData() {
@@ -883,7 +871,7 @@ const WellTrackApp = {
                 }
 
                 logHtml = `
-                    <div class="card pt-1">
+                    <div class="card">
                         <button onclick="WellTrackApp.events.toggleTodaysLog()" class="w-full flex justify-center items-center font-semibold text-gray-800 p-2 rounded-lg hover:bg-gray-200/50">
                             <span>${buttonText}</span>
                             <span class="material-symbols-outlined">${icon}</span>
@@ -1484,7 +1472,7 @@ const WellTrackApp = {
                 const dayName = weekdays[today.getDay()];
                 const dateString = `${dayName} ${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
                 return `
-                <div class="flex justify-between items-center px-2 mb-4">
+                <div class="flex justify-between items-center pt-2 px-2 mb-4">
                     <h2 class="h2-style">Heute</h2>
                     <span class="text-lg text-gray-800">${dateString}</span>
                 </div>
@@ -1517,7 +1505,7 @@ const WellTrackApp = {
                 }).join('');
 
                 return `
-                <div class="card pt-1">
+                <div class="card pt-2">
                     <div class="flex md:flex-row md:justify-between md:items-center gap-3 mb-6">
                         <h2 class="h2-style flex-shrink-0">Ereignisse</h2>
                         <div class="flex flex-wrap items-center justify-start gap-1" role="group">
@@ -1536,7 +1524,7 @@ const WellTrackApp = {
                 ).join('');
 
                 return `
-                <div class="card pt-1">
+                <div class="card pt-2">
                      <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-6">
                         <h2 id="mood-section-title" class="h2-style flex-shrink-0">Stimmung</h2>
                         <div class="flex flex-wrap items-center justify-start gap-1" role="group">
@@ -1549,7 +1537,7 @@ const WellTrackApp = {
             painSection: () => {
                 const currentView = WellTrackApp.state.currentPainView;
                 return `
-                <div class="card pt-1">
+                <div class="card pt-2">
                     <div class="flex md:flex-row md:justify-between md:items-center gap-3">
                         <h2 id="pain-section-title" class="h2-style flex-shrink-0">Schmerzen</h2>
                         <div class="flex flex-wrap items-center justify-start gap-1" role="group">
@@ -1632,7 +1620,7 @@ const WellTrackApp = {
                 const activeTab = WellTrackApp.state.activeHistoryTab;
                 return `
                 <div class="container mx-auto max-w-4xl">
-                    <div class="card pt-1 mb-6">
+                    <div class="card pt-2 mb-6">
                         <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
                             <div class="flex items-center gap-4">
                                 <h2 id="log-title" class="h2-style flex-shrink-0">Verlauf</h2>
@@ -1657,7 +1645,7 @@ const WellTrackApp = {
                 </div>`;
             },
             fullLogSection: () => `
-                <div class="flex flex-nowrap justify-between items-center gap-4 mb-4">
+                <div class="flex flex-nowrap justify-between items-center gap-4 mb-2">
                     <h2 class="h2-style">Protokoll</h2>
                     <div id="log-pagination" class="flex items-center justify-end gap-1 bg-gray-100 p-1 rounded-full">
                         <button id="log-week-first" onclick="WellTrackApp.events.handleWeekChange('first')" class="btn btn-secondary !rounded-full !p-2" title="Erste Woche">
@@ -1709,7 +1697,7 @@ const WellTrackApp = {
                 }
 
                 return `
-                <div class="card pt-1">
+                <div class="card pt-2">
                      <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                         <h2 class="h2-style flex-shrink-0">Einstellungen</h2>
                         <div class="flex flex-wrap items-center justify-start gap-1" role="group">
