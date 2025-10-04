@@ -70,8 +70,8 @@
         .card {
             background-color: var(--md-sys-color-surface-container-low);
             border: 1px solid var(--md-sys-color-surface-variant);
-            border-radius: 1.5rem;
-            padding: 1.5rem;
+            border-radius: 1rem;
+            padding: 1rem;
         }
         .pill-card {
             background-color: var(--md-sys-color-surface-container-low);
@@ -303,7 +303,7 @@
     </header>
 
     <!-- Main Content -->
-    <main id="app-container" class="container mx-auto max-w-4xl py-4 md:py-6">
+    <main id="app-container" class="container mx-auto max-w-4xl px-4 pb-4 md:pb-6">
         <!-- Page content will be dynamically inserted here -->
     </main>
     
@@ -1481,7 +1481,7 @@ const WellTrackApp = {
                 const dayName = weekdays[today.getDay()];
                 const dateString = `${dayName} ${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
                 return `
-                <div class="flex justify-between items-center mb-4 px-2">
+                <div class="flex justify-between items-center mb-4">
                     <h2 class="h2-style">Heute</h2>
                     <span class="text-lg text-gray-800">${dateString}</span>
                 </div>
@@ -1517,7 +1517,7 @@ const WellTrackApp = {
                 <div class="card">
                     <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                         <h2 class="h2-style flex-shrink-0">Ereignisse</h2>
-                        <div class="flex flex-wrap items-center justify-start gap-2" role="group">
+                        <div class="flex flex-wrap items-center justify-start gap-1" role="group">
                             ${groupButtons}
                         </div>
                     </div>
@@ -1536,7 +1536,7 @@ const WellTrackApp = {
                 <div class="card">
                      <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                         <h2 id="mood-section-title" class="h2-style flex-shrink-0">Stimmung</h2>
-                        <div class="flex flex-wrap items-center justify-start gap-2" role="group">
+                        <div class="flex flex-wrap items-center justify-start gap-1" role="group">
                             ${groupButtons}
                         </div>
                     </div>
@@ -1549,7 +1549,7 @@ const WellTrackApp = {
                 <div class="card">
                     <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                         <h2 id="pain-section-title" class="h2-style flex-shrink-0">Schmerzen</h2>
-                        <div class="flex flex-wrap items-center justify-start gap-2" role="group">
+                        <div class="flex flex-wrap items-center justify-start gap-1" role="group">
                             <button type="button" onclick="WellTrackApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100 ${currentView === 'front' ? 'active' : ''}">Vorderseite</button>
                             <button type="button" onclick="WellTrackApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100 ${currentView === 'back' ? 'active' : ''}">Rückseite</button>
                         </div>
@@ -1639,7 +1639,7 @@ const WellTrackApp = {
                                     <option value="90" ${WellTrackApp.state.timeRange === 90 ? 'selected' : ''}>Letzte 3 Monate</option>
                                 </select>
                             </div>
-                            <div id="history-tabs" class="flex flex-wrap items-center justify-start gap-2" role="group">
+                        <div id="history-tabs" class="flex flex-wrap items-center justify-start gap-1" role="group">
                                 <button onclick="WellTrackApp.events.handleHistoryTabClick('event')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="event">Ereignisse</button>
                                 <button onclick="WellTrackApp.events.handleHistoryTabClick('mood')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="mood">Stimmung</button>
                                 <button onclick="WellTrackApp.events.handleHistoryTabClick('pain')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="pain">Schmerz</button>
@@ -1647,14 +1647,14 @@ const WellTrackApp = {
                         </div>
                     </div>
                 </div>
-                <div class="card w-full">
+                <div class="w-full">
                     <div id="chart-container-event" class="chart-container space-y-4"></div>
                     <div id="chart-container-mood" class="chart-container hidden" style="position: relative; height: 700px;"><canvas id="moodChart"></canvas></div>
                     <div id="chart-container-pain" class="chart-container hidden" style="position: relative; height: 700px;"><canvas id="painChart"></canvas></div>
                 </div>`;
             },
             fullLogSection: () => `
-                <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
+                <div class="flex flex-nowrap justify-between items-center gap-4 mb-4">
                     <h2 class="h2-style">Protokoll</h2>
                     <div id="log-pagination" class="flex items-center justify-end gap-1 bg-gray-100 p-1 rounded-full">
                         <button id="log-week-first" onclick="WellTrackApp.events.handleWeekChange('first')" class="btn btn-secondary !rounded-full !p-2" title="Erste Woche">
@@ -1706,10 +1706,10 @@ const WellTrackApp = {
                 }
 
                 return `
-                <div>
+                <div class="card">
                      <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                         <h2 class="h2-style flex-shrink-0">Einstellungen</h2>
-                        <div class="flex flex-wrap items-center justify-start gap-2" role="group">
+                        <div class="flex flex-wrap items-center justify-start gap-1" role="group">
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('eventTypes')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="eventTypes">Ereignisarten</button>
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('data')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="data">Datenverwaltung</button>
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('reminders')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="reminders">Erinnerungen</button>
@@ -1717,14 +1717,12 @@ const WellTrackApp = {
                         </div>
                     </div>
 
-                    <div id="settings-tab-eventTypes" class="settings-tab-content card">
-                        <h2 class="h2-style mb-4">Ereignisarten</h2>
+                    <div id="settings-tab-eventTypes" class="settings-tab-content">
                         <div id="manage-event-list" class="space-y-2 mb-4"></div>
                         <div id="edit-event-form-container"></div>
                         <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-secondary w-full"><span class="material-symbols-outlined mr-2">add</span>Neue hinzufügen</button></div>
                     </div>
-                    <div id="settings-tab-data" class="settings-tab-content card">
-                        <h2 class="h2-style mb-4">Datenverwaltung</h2>
+                    <div id="settings-tab-data" class="settings-tab-content">
                         <p class="text-sm text-gray-600 mb-4">Sie können Ihre Daten als JSON-Datei exportieren oder eine zuvor exportierte Datei wieder importieren.</p>
                         <div class="flex flex-col md:flex-row gap-4">
                             <button onclick="WellTrackApp.data.exportData()" class="btn btn-secondary flex-1"><span class="material-symbols-outlined mr-2">download</span> Daten exportieren</button>
@@ -1732,14 +1730,12 @@ const WellTrackApp = {
                             <button onclick="WellTrackApp.events.handleDeleteAllData()" class="btn btn-error flex-1"><span class="material-symbols-outlined mr-2">delete_forever</span> Alle Daten löschen</button>
                         </div>
                     </div>
-                    <div id="settings-tab-reminders" class="settings-tab-content card">
-                        <h2 class="h2-style mb-4">Erinnerungen</h2>
+                    <div id="settings-tab-reminders" class="settings-tab-content">
                         <div id="reminder-section" class="space-y-4">
                             ${reminderContentHtml}
                         </div>
                     </div>
-                    <div id="settings-tab-about" class="settings-tab-content card">
-                        <h2 class="h2-style mb-4">Über diese WebApp</h2>
+                    <div id="settings-tab-about" class="settings-tab-content">
                         <div class="text-sm text-gray-700 space-y-4">
                             <p>WellTrack ist ein persönliches und 100% privates Gesundheitstagebuch. Alle Daten bleiben ausschließlich auf dem eigenen Gerät.</p>
                             <div>
