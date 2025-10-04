@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lokale Audio-Transkription</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .recording-pulse {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            }
+            50% {
+                transform: scale(1.02);
+                box-shadow: 0 0 0 14px rgba(239, 68, 68, 0);
+            }
+        }
+        .engine-btn.active {
+            background-color: #4A5568; /* bg-gray-700 */
+            color: #E2E8F0; /* text-gray-200 */
+            cursor: default;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen antialiased">
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-3xl text-center">
+        <!-- Header -->
+        <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Browser-basierte Transkription</h1>
+        <p class="text-gray-400 mb-6 max-w-xl mx-auto">Halten Sie die Aufnahmetaste gedrückt und sprechen Sie. Ihr Audio wird lokal transkribiert.</p>
+
+        <!-- Engine Selector -->
+        <div class="mb-6">
+            <label class="text-sm text-gray-400 mb-2 block">Transkriptions-Engine auswählen:</label>
+            <div class="flex justify-center items-center gap-3">
+                <div id="engineSelector" class="inline-flex rounded-md shadow-sm" role="group">
+                    <button type="button" data-engine="auto" class="engine-btn active rounded-l-lg border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-700 focus:z-10 focus:ring-2 focus:ring-blue-500">
+                        Automatisch
+                    </button>
+                    <button type="button" data-engine="native" class="engine-btn border-t border-b border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-700 focus:z-10 focus:ring-2 focus:ring-blue-500">
+                        Native API
+                    </button>
+                    <button type="button" data-engine="whisper" class="engine-btn rounded-r-md border border-gray-600 bg-gray-800 px-4 py-2 text-sm font-medium text-gray-400 hover:bg-gray-700 focus:z-10 focus:ring-2 focus:ring-blue-500">
+                        Whisper
+                    </button>
+                </div>
+                <span id="autoEngineStatus" class="text-sm text-gray-400"></span>
+            </div>
+        </div>
+
+        <!-- Utility Buttons -->
+        <div class="mb-6 flex justify-center">
+            <button id="locationButton" class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2 px-5 rounded-lg transition-all duration-300 ease-in-out shadow-md flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-gray-500/50 text-sm">
+                <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5Z"/></svg>
+                <span>Standort einfügen</span>
+            </button>
+        </div>
+
+        <!-- Main Action Button -->
+        <div class="mb-8">
+            <button id="recordButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 ease-in-out shadow-lg flex items-center justify-center mx-auto focus:outline-none focus:ring-4 focus:ring-blue-500/50 w-full max-w-xs text-lg select-none">
+                <svg id="micIcon" class="w-6 h-6 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0-10a4 4 0 0 1 4 4v4a4 4 0 0 1-8 0V8a4 4 0 0 1 4-4Zm-6 8a6 6 0 0 0 6 6 6 6 0 0 0 6-6V8a6 6 0 0 0-12 0v4ZM19 12a1 1 0 1 0 2 0v-1a1 1 0 1 0-2 0v1Z"/>
+                </svg>
+                <span id="buttonText">Aufnahme halten</span>
+            </button>
+        </div>
+
+        <!-- Status & Transcription Box -->
+        <div class="bg-gray-800 rounded-lg p-4 sm:p-6 text-left shadow-inner space-y-4">
+            <div class="flex items-center">
+                <div id="statusIndicator" class="w-3 h-3 bg-gray-500 rounded-full mr-3 transition-colors duration-300"></div>
+                <p id="status" class="text-gray-400 font-medium">Aufnahmetaste zum Starten halten.</p>
+            </div>
+            <div id="transcription" class="w-full min-h-[150px] text-lg sm:text-xl leading-relaxed text-gray-300 break-words">
+                <p class="text-gray-500">Ihr transkribierter Text wird hier erscheinen...</p>
+            </div>
+        </div>
+
+        <div id="compatibilityNotice" class="hidden mt-6 text-sm text-yellow-400 bg-yellow-900/50 p-3 rounded-lg"></div>
+    </div>
+
+    <script type="module">
+        // --- DOM ELEMENTS & STATE ---
+        let recordButton = document.getElementById('recordButton');
+        const locationButton = document.getElementById('locationButton');
+        let buttonText = document.getElementById('buttonText');
+        const statusEl = document.getElementById('status');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const transcriptionEl = document.getElementById('transcription');
+        const compatibilityNotice = document.getElementById('compatibilityNotice');
+        const engineSelector = document.getElementById('engineSelector');
+        const autoEngineStatus = document.getElementById('autoEngineStatus');
+        
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let currentEngine = 'auto';
+        let activeRecognitionTeardown = () => {};
+
+        // --- ENGINE INITIALIZATION LOGIC ---
+        function initializeEngine() {
+            // Teardown any previous engine
+            activeRecognitionTeardown();
+            resetUI();
+            autoEngineStatus.textContent = ''; // Clear status text on any change
+
+            switch (currentEngine) {
+                case 'auto':
+                    if (SpeechRecognition) {
+                        autoEngineStatus.textContent = '(Native API)';
+                        setupNativeRecognition();
+                    } else {
+                        autoEngineStatus.textContent = '(Whisper)';
+                        initializeFallback();
+                    }
+                    break;
+                case 'native':
+                    if (SpeechRecognition) {
+                        setupNativeRecognition();
+                    } else {
+                        showError("Native Speech API in diesem Browser nicht verfügbar.");
+                    }
+                    break;
+                case 'whisper':
+                    initializeFallback();
+                    break;
+            }
+        }
+
+        function showError(message) {
+            statusEl.textContent = message;
+            compatibilityNotice.textContent = message;
+            compatibilityNotice.classList.remove('hidden');
+            recordButton.disabled = true;
+        }
+
+        function resetUI() {
+            recordButton.disabled = false;
+            compatibilityNotice.classList.add('hidden');
+            statusEl.textContent = 'Aufnahmetaste zum Starten halten.';
+            transcriptionEl.innerHTML = '<p class="text-gray-500">Ihr transkribierter Text wird hier erscheinen...</p>';
+        }
+        
+        // --- NATIVE SPEECH RECOGNITION SETUP ---
+        function setupNativeRecognition() {
+            let recognition = new SpeechRecognition();
+            let isRecording = false;
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'de-DE';
+
+            let finalTranscript = '';
+            let errorOccurred = false;
+            let stopTimeout = null;
+
+            recognition.onstart = () => {
+                isRecording = true;
+                clearTimeout(stopTimeout);
+                errorOccurred = false;
+                statusEl.textContent = 'Höre zu... (Native API)';
+                statusIndicator.classList.remove('bg-gray-500');
+                statusIndicator.classList.add('bg-red-500');
+                recordButton.classList.add('recording-pulse', 'bg-red-600', 'hover:bg-red-700');
+                recordButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                buttonText.textContent = 'Aufnahme läuft...';
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                if (!errorOccurred) {
+                    statusEl.textContent = 'Aufnahmetaste zum Starten halten.';
+                }
+                statusIndicator.classList.add('bg-gray-500');
+                statusIndicator.classList.remove('bg-red-500');
+                recordButton.classList.remove('recording-pulse', 'bg-red-600', 'hover:bg-red-700');
+                recordButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                buttonText.textContent = 'Aufnahme halten';
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                errorOccurred = true;
+                if (event.error === 'no-speech') {
+                    statusEl.textContent = "Konnte Sie nicht hören. Bitte versuchen Sie es erneut.";
+                } else {
+                    statusEl.textContent = `Fehler: ${event.error}. Bitte versuchen Sie es erneut.`;
+                }
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + ' ';
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                if (transcriptionEl.querySelector('p')) {
+                   transcriptionEl.innerHTML = ''; 
+                }
+                transcriptionEl.innerHTML = `<span class="text-white">${finalTranscript}</span><span class="text-gray-400">${interimTranscript}</span>`;
+            };
+            
+            const handleStart = (e) => {
+                e.preventDefault();
+                if (isRecording) return;
+                clearTimeout(stopTimeout);
+                finalTranscript = '';
+                transcriptionEl.innerHTML = '<p class="text-gray-500">Ihr transkribierter Text wird hier erscheinen...</p>';
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error("Could not start recognition:", error);
+                    statusEl.textContent = "Fehler beim Starten der Erkennung.";
+                }
+            };
+            const handleStop = (e) => {
+                e.preventDefault();
+                if (!isRecording) return;
+                stopTimeout = setTimeout(() => {
+                    recognition.stop();
+                }, 500);
+            };
+
+            let newRecordButton = recordButton.cloneNode(true);
+            recordButton.parentNode.replaceChild(newRecordButton, recordButton);
+            recordButton = newRecordButton;
+            buttonText = document.getElementById('buttonText');
+            
+            recordButton.addEventListener('mousedown', handleStart);
+            recordButton.addEventListener('mouseup', handleStop);
+            recordButton.addEventListener('mouseleave', handleStop);
+            recordButton.addEventListener('touchstart', handleStart, { passive: false });
+            recordButton.addEventListener('touchend', handleStop);
+
+            activeRecognitionTeardown = () => {
+                if (isRecording) recognition.abort();
+            };
+        }
+
+        // --- FALLBACK LOGIC (WHISPER) ---
+        async function initializeFallback() {
+            recordButton.disabled = true;
+            statusEl.textContent = 'Lade Whisper-Modell...';
+            compatibilityNotice.textContent = 'Ein lokales Transkriptionsmodell (Whisper) wird geladen. Dies kann beim ersten Mal einen Moment dauern.';
+            compatibilityNotice.classList.remove('hidden');
+
+            try {
+                // Dynamically import the transformers library as an ES module.
+                const transformers = await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1");
+                const { pipeline, env } = transformers;
+                
+                env.allowLocalModels = false;
+                
+                statusEl.textContent = 'Initialisiere Whisper-Pipeline...';
+                const transcriber = await pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny');
+                
+                statusEl.textContent = 'Modell geladen. Bereit zur Aufnahme.';
+                recordButton.disabled = false;
+                compatibilityNotice.classList.add('hidden');
+                setupMediaRecorder(transcriber);
+
+            } catch (error) {
+                console.error("Fallback-Initialisierungsfehler:", error);
+                showError('Whisper-Modell konnte nicht geladen werden.');
+            }
+        }
+        
+        function setupMediaRecorder(transcriber) {
+            let mediaRecorder;
+            let audioChunks = [];
+            let isRecording = false;
+            let stopTimeout = null;
+            let streamInstance = null;
+
+            const handleStart = async (e) => {
+                e.preventDefault();
+                if (isRecording) return;
+                
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    streamInstance = stream;
+                    isRecording = true;
+                    mediaRecorder = new MediaRecorder(stream);
+                    
+                    mediaRecorder.addEventListener("dataavailable", event => { audioChunks.push(event.data); });
+
+                    mediaRecorder.addEventListener("stop", async () => {
+                        statusEl.textContent = 'Transkribiere... (Whisper)';
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        
+                        const arrayBuffer = await audioBlob.arrayBuffer();
+                        const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+                        try {
+                            const output = await transcriber(audioBuffer.getChannelData(0), { language: 'german', task: 'transcribe' });
+                            
+                            if (transcriptionEl.querySelector('p')) transcriptionEl.innerHTML = '';
+                            transcriptionEl.innerHTML += `<span class="text-white">${output.text} </span>`;
+
+                        } catch (error) {
+                            console.error("Transkriptionsfehler:", error);
+                            statusEl.textContent = "Fehler bei der Transkription.";
+                        } finally {
+                            audioChunks = [];
+                            stream.getTracks().forEach(track => track.stop());
+                            statusEl.textContent = 'Aufnahmetaste zum Starten halten.';
+                            recordButton.classList.remove('recording-pulse', 'bg-red-600', 'hover:bg-red-700');
+                            recordButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                            buttonText.textContent = 'Aufnahme halten';
+                        }
+                    });
+
+                    audioChunks = [];
+                    transcriptionEl.innerHTML = '<p class="text-gray-500">Ihr transkribierter Text wird hier erscheinen...</p>';
+                    mediaRecorder.start();
+                    statusEl.textContent = 'Höre zu... (Whisper)';
+                    recordButton.classList.add('recording-pulse', 'bg-red-600', 'hover:bg-red-700');
+                    recordButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    buttonText.textContent = 'Aufnahme läuft...';
+
+                } catch (err) {
+                    console.error("Fehler beim Zugriff auf das Mikrofon:", err);
+                    showError("Mikrofonzugriff verweigert.");
+                }
+            };
+
+            const handleStop = (e) => {
+                e.preventDefault();
+                if (!isRecording || !mediaRecorder || mediaRecorder.state !== "recording") return;
+                stopTimeout = setTimeout(() => { mediaRecorder.stop(); isRecording = false; }, 500);
+            };
+            
+            let newRecordButton = recordButton.cloneNode(true);
+            recordButton.parentNode.replaceChild(newRecordButton, recordButton);
+            recordButton = newRecordButton;
+            buttonText = document.getElementById('buttonText');
+
+            recordButton.addEventListener('mousedown', handleStart);
+            recordButton.addEventListener('mouseup', handleStop);
+            recordButton.addEventListener('mouseleave', handleStop);
+            recordButton.addEventListener('touchstart', handleStart, { passive: false });
+            recordButton.addEventListener('touchend', handleStop);
+
+            activeRecognitionTeardown = () => {
+                if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
+                if (streamInstance) streamInstance.getTracks().forEach(track => track.stop());
+            };
+        }
+
+        // --- EVENT LISTENER FOR ENGINE SELECTOR ---
+        engineSelector.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (!button) return;
+
+            const selectedEngine = button.dataset.engine;
+            if (selectedEngine === currentEngine) return;
+
+            currentEngine = selectedEngine;
+            
+            engineSelector.querySelectorAll('.engine-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            initializeEngine();
+        });
+
+        // --- EVENT LISTENER FOR LOCATION BUTTON ---
+        locationButton.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                statusEl.textContent = 'Geolocation wird von diesem Browser nicht unterstützt.';
+                return;
+            }
+
+            statusEl.textContent = 'Standort wird abgerufen...';
+
+            const success = (position) => {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                const locationString = `geo:${latitude},${longitude}`;
+
+                if (transcriptionEl.querySelector('p.text-gray-500')) {
+                   transcriptionEl.innerHTML = ''; 
+                }
+                transcriptionEl.innerHTML += `<div>${locationString}</div>`;
+                statusEl.textContent = 'Standort eingefügt.';
+            };
+
+            const error = (err) => {
+                console.error(`Geolocation error (${err.code}): ${err.message}`);
+                 if (err.code === 1) { // PERMISSION_DENIED
+                     statusEl.textContent = 'Standortzugriff blockiert. Die Ausführungsumgebung verhindert diese Funktion.';
+                } else {
+                     statusEl.textContent = 'Standort konnte nicht abgerufen werden.';
+                }
+            };
+
+            navigator.geolocation.getCurrentPosition(success, error);
+        });
+
+        // --- PERMISSION CHECKS ON LOAD ---
+        async function checkGeolocationPermission() {
+            if (!navigator.permissions || !navigator.geolocation) {
+                locationButton.disabled = true;
+                locationButton.classList.add('opacity-50', 'cursor-not-allowed');
+                locationButton.title = 'Geolocation wird von diesem Browser nicht unterstützt.';
+                return;
+            }
+
+            try {
+                const permissionStatus = await navigator.permissions.query({ name: 'geolocation' });
+                
+                const updateButtonState = (state) => {
+                    if (state === 'denied') {
+                        locationButton.disabled = true;
+                        locationButton.classList.add('opacity-50', 'cursor-not-allowed');
+                        locationButton.title = 'Standortfunktion ist aufgrund von Sicherheitsrichtlinien deaktiviert.';
+                    } else {
+                        locationButton.disabled = false;
+                        locationButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                        locationButton.title = '';
+                    }
+                };
+                
+                updateButtonState(permissionStatus.state);
+                permissionStatus.onchange = () => updateButtonState(permissionStatus.state);
+
+            } catch (error) {
+                console.warn("Could not query geolocation permission state.", error);
+            }
+        }
+
+        // --- INITIAL LOAD ---
+        initializeEngine();
+        checkGeolocationPermission();
+    </script>
+</body>
+</html>
+

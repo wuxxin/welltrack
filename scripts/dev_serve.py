@@ -103,7 +103,7 @@ class CustomHTTPRequestHandler(server.SimpleHTTPRequestHandler):
     def end_headers(self) -> None:
         """Send additional headers for WASM compatibility and security."""
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
-        self.send_header("Cross-Origin-Embedder-Policy", "require-corp")
+        self.send_header("Cross-Origin-Embedder-Policy", "credentialless")
         super().end_headers()
 
     def send_head(self) -> Optional[BinaryIO]:

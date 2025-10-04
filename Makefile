@@ -46,6 +46,13 @@ build/site/welltrack/welltrack.html: docs-mkdocs
 docs-welltrack-app: build/site/welltrack/welltrack.html
 	@echo "+++ $@"
 
+build/site/prototypes/audio-gps-logging.html: docs-mkdocs
+	mkdir -p build/site/prototypes
+	cp dev/prototypes/* build/site/prototypes
+
+docs-prototypes: build/site/prototypes/audio-gps-logging.html
+	@echo "+++ $@"
+
 build/wheel/welltrack_lab-0.1.0-py3-none-any.whl:
 	mkdir -p build/wheel
 	. .venv/bin/activate && python -m build --wheel --installer uv -o build/wheel
@@ -63,7 +70,7 @@ build/site/marimo/index.html: docs-wheel
 docs-marimo: build/site/marimo/index.html
 	@echo "+++ $@"
 
-docs: buildenv docs-mkdocs docs-welltrack-app docs-wheel docs-marimo ## Make Onlinepage and WebApp
+docs: buildenv docs-mkdocs docs-welltrack-app docs-prototypes docs-wheel docs-marimo ## Make Onlinepage and WebApp
 	@echo "+++ $@"
 
 docs-serve: docs ## Serve Documentation locally
