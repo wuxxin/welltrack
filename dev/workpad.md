@@ -10,24 +10,42 @@ Request a user review once finished.
 
 required changes:
 
-refactor: getEvents() , const events, 'wellTrackEvents' including settings, and all mentions are all targeting the array of event types. Rename it everywhere to relect that this array purpose and the corresponding names and functionnames to reflect this naming. The Array is a wellTackEventTypes EventTypes , so its getEventTypes, wellTrackEventTypes, and so on.
+- Add Migration Code for old naming of LocalStorage "wellTrackEvents" to "wellTrackEventTypes". if old LocalStorage exists on init read, and write as wellTrackEventTypes, delete old wellTrackEvents.
+- Add Migration Code for import of old naming for json import/export format naming: "events": if exists, rename imported.events to imported.eventTypes. also, on the step before, on the valid check: check for metrics, events or eventTypes, and settings (but settings can be empty)
+- settings/import/merge: after import show notification if any and how many events are imported.
+- settings/import/overwrite: after import show notification how many events where imported.
+- settings/export data: make a notification "Daten exportiert" after export.
+- settings/delete-all data: make a notification "Alle Daten gelöscht" after deletion.
+- settings/edit-event-types: dont display "Es sind ${usedMetricsCount} Einträge dieser Art vorhanden, die
+ebenfalls gelöscht werden." if usedMetricsCount == 0, but display "Es gibt keine Einträge dieser Art."
+- settings/about: make all content text bigger 2 css Levels, make the content layout more appealing.
 
-refactor code: localStorage: Only Write three items: wellTrackSettings, wellTrackEventTypes, wellTrackMetrics, migrate other into Settings.
-load and write all states into settings that have an corresponding value there of have been saved to localstorage otherwise. reinitialize on page reload, refresh from settings item to state.
-settings: edit event type: Anzeige-Art: Add posibility: "Nur Aufzeichnen" as last of the possibilities, so:
-"Zusammenzählen, Einzeln Hervorheben, Einzeln, Nur Aufzeichnen", and settings that are "nur aufzeichen" have no distinct today and no verlauf diagram entry.
 
-protokoll: sort the entries of one day on newest first (pushbuttons, other timestamped, mood, pain), also remove any usage of ENTRIES_PER_PAGE , because we select the entries per week now.
+- refactor submenus in eventEntry, MoodEntry, PainEntry, Verlauf, Settings:
 
-on reload and refresh, check the modified datetime of the welltrack.html as we refresh, if settings:welltrack_latest is older display short overlay "aktualisiert auf die Version 23.4.2025 23:25" and writes the version to settings:welltrack_latest. in settings:about it also shows the welltrack_latest version.
+Usually there is always a Title on the left, and ideally on the same line the submenu on the right.
+we want a new layout strategy:
 
-settings: event type edit: make it a modal overlay that fits the viewport horizontally. the modal content is equal to the current edit content, a click out of the modal aborts, "abbrechen" aborts too.
+"from left to Right Titel"  "space expands and shrinks"  "from-right-to-left-overflow downwards submenus"
 
-settings: edit event type: add Button (after subtab selector, right aligned just before event type list starts) with Icon Representing "Loosing Chains" for reorder, end "closed Chains" as the other icon once in reorder mode to freeze changes. clicking on it blurs everything except the event type list, that gets grab icons on the left, and disables,  greysout (modal type) all other user interface, so only the list and the icon "Closed Chains" are clickable,
+To make it clear what kind of behavior i seek, Below as text are a few examples with "^" as begin of line, and "$" as end of line and
+"s" as variable space, and "xxxx" as Titel, and "1","2","3","4","5" as submenu entries.
 
+```text
+^xxxx s 1$
+
+^xxxx s 2 1$
+
+^xxxx s 3 2 1$
+
+^xxxx s 3 2 1$^s 4$
+
+^xxxx s 3 2 1$^s 5 4$
+```
 
 ## nice to have
 
+- settings: edit event type: add Button (after subtab selector, right aligned just before event type list starts) with only an Icon (no text, but hovering reveals "Sortierung verändern", Representing "Loosing Chains" for reorder, and "closed Chains" as the other icon once in reorder mode to freeze changes. clicking "Reorder" Icon blurs everything except the event type list, that gets grab icons on the left, and disables/greysout (modal type) all other user interface, so only the list and the icon "Closed Chains" are clickable, the user can reorder the event types, and either abort (clicked outside) aborts the reordering, or the click on "closed Chain" freezes the new reordering, after the metrictype array gets resorted from the dom order.
 
 
 button next too mood: Record Note: TinyWhisper modul pushbutton while speaking , transcribe to text as note with mood entry

@@ -6,6 +6,25 @@ This document lists the curren implementation status of features and refactoring
 
 ## Completed Tasks
 
+- **[x] Data Migration**:
+  - Add migration code to automatically rename the old `wellTrackEvents` LocalStorage key to `wellTrackEventTypes`.
+  - Update the JSON import logic to recognize and rename the legacy `events` key to `eventTypes`.
+  - Enhance the import validation to check for `metrics`, `events` or `eventTypes`, and `settings`.
+
+- **[x] Notifications**:
+  - Implement notifications to confirm the number of items imported after merging or overwriting data.
+  - Add a "Daten exportiert" (Data exported) notification after a successful export.
+  - Add an "Alle Daten gelöscht" (All data deleted) notification after deleting all data.
+
+- **[x] UI & UX Improvements**:
+  - In the "Edit Event Types" section, display a more user-friendly message ("Es gibt keine Einträge dieser Art.") when an event type with no associated entries is deleted.
+  - On the "About" page, increase the text size and improve the overall layout to be more appealing.
+
+- **[x] Submenu Layout Refactoring**:
+  - Refactor the submenus on the `eventEntry`, `MoodEntry`, `PainEntry`, `Verlauf` (History), and `Settings` pages to use a new CSS-based layout strategy. The new layout should feature a left-aligned title and a right-aligned, overflowing submenu.
+  - Create six distinct groups within the `eventEntry` page.
+  - Capture screenshots of each refactored subpage for verification.
+
 - **Settings: Edit Event Type - "Nur Aufzeichnen"**: In the event type settings, add a new option to the "Anzeige-Art" (Display Type) dropdown called "Nur Aufzeichnen" (Record Only). This option will be the last in the list: "Zusammenzählen, Einzeln Hervorheben, Einzeln, Nur Aufzeichnen". Events set to "Nur Aufzeichnen" will not be included in the daily summary on the "Today" page and will not appear in the history diagrams (`Verlauf`).
 
 - **Protokoll (Log) Enhancements**:
