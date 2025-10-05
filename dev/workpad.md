@@ -28,6 +28,8 @@ we want a new layout strategy:
 
 "from left to Right Titel"  "space expands and shrinks"  "from-right-to-left-overflow downwards submenus"
 
+i think this is possible with css, without using javascript, its left to right and right to left behavior.
+
 To make it clear what kind of behavior i seek, Below as text are a few examples with "^" as begin of line, and "$" as end of line and
 "s" as variable space, and "xxxx" as Titel, and "1","2","3","4","5" as submenu entries.
 
@@ -42,6 +44,25 @@ To make it clear what kind of behavior i seek, Below as text are a few examples 
 
 ^xxxx s 3 2 1$^s 5 4$
 ```
+
+---
+
+settings: naming of submenu "Datenverwaltung": Change to "Import/Export"
+
+verification/settings.png:
+SubMenus: Should be: xxx = titel, "^" line start, "$" line end, "s" variable space, ">" right aligned, "<" left aligned:
+
+is: ^xxx s$^s>3 4$s>1 2$
+
+should: ^xxx s>2 1$^s>4 3$
+
+
+verification/history.png: should still be right aligned even if they col overflow
+
+verification/mood_entry.png: should still be right aligned even if they col overflow
+
+verification/event_entry.png: same as settings.png
+
 
 ## nice to have
 
