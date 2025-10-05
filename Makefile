@@ -73,10 +73,13 @@ docs-marimo: build/site/marimo/index.html
 docs: buildenv docs-mkdocs docs-welltrack-app docs-prototypes docs-wheel docs-marimo ## Make Onlinepage and WebApp
 	@echo "+++ $@"
 
-docs-serve: docs ## Serve Documentation locally
+docs-serve-ssl: docs ## HTTPS Serve Documentation on port 8443
 	@echo "+++ $@"
-	. .venv/bin/activate && scripts/dev_serve.py -d build/site
+	. .venv/bin/activate && scripts/dev_serve.py -d build/site 8443
 
+docs-serve: docs ## HTTP Serve Documentation on port 8000
+	@echo "+++ $@"
+	. .venv/bin/activate && python -m http.server -d build/site 8000
 
 lint: buildenv ## Run Linting
 	@echo "+++ $@"

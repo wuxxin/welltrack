@@ -39,8 +39,10 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-    "pytest",
     "flake8",
+    "pytest",
+    "playwright",
+    "pytest-playwright",
 ]
 docs = [
     # cryptography - for scripts/dev_serve.py for make serve-docs local
