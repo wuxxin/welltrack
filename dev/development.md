@@ -1,27 +1,22 @@
-# Project Layout & Architecture for WellTrack
+# Project Development Documentation
 
-## Development Documents
+## Files and Directories Layout
 
-Files:
+### Development Documents
 
 - dev/system-workflow.md: Development process and coding conventions.
 - dev/product-requirements.md: High-level functional and non-functional requirements.
-- dev/project-structure.md: (This file) The file and architectural overview.
+- dev/development.md: (This file) The project file layout, architectural overview and developer guidlines for working with project.
+- dev/product-specifications.md: Low-Level functional and non-functional specifications.
 - dev/tasks.md: A living document tracking already completed and new to be done tasks.
 
-## User Documentation
-
-Files:
+### User Documentation
 
 - README.md: A user centric view on howto use the app. It is the primary source of user documentation and should be kept in sync with new features, including adding new sections and placeholders for screenshots.
 - assets/*.png: The screenshots mainly used for README.md
 - docs: a mostly symlinked directory (including ../README.md and ../assests, and ../src/welltrack/icon*) for mkdocs
 
-## Software
-
 ### Main Welltrack Webapp Software and Assets
-
-Files:
 
 - src/welltrack:
     - welltrack.html: The main application file containing all HTML, CSS, and JavaScript
@@ -30,11 +25,32 @@ Files:
     - icon-192.png: Application icons
     - icon-512.png: Application icons
 
-The application is a single-page application (SPA) contained entirely within src/welltrack/welltrack.html.
+### Welltrack-Lab - Interactive Marimo Python Webapp
 
-The application uses localStorage for all data storage, making it a client-side-only application with no backend.
+- src/welltrack_lab/: Welltrack Lab - Python Library and Tools for Welltrack Lab
+    - this library will be available for the interactive marimo lab to import, see Makefile
+- scripts/welltrack-lab.py: Welltrack Lab - Interactive Marimo main file
 
-Dependencies like Tailwind CSS, Chart.js, and date-fns are loaded via CDNs.
+### Tools
+
+- scripts/create-sample-data.py: python script to create example data for welltrack.html to import
+- scripts/dev_serve.py: python script for https serving a directory (will generate a selfsigned ssl certificate on the fly)
+
+### Build and Config files
+
+- Makefile: central make file for building and developing
+    - `make` or `make help` for usage
+    - `buildenv`             Create build environment
+    - `clean`                Remove test and build artifacts
+    - `clean-all`            Remove environment and all artifacts
+    - `docs`                 Make Onlinepage and WebApp
+    - `docs-serve `          HTTP Serve Documentation on port 8000
+    - `docs-serve-ssl`       HTTPS Serve Documentation on port 8443
+    - `lab`                  Edit welltrack-lab.py in marimo
+    - `lint`                 Run Linting
+    - `test`                 Run Tests
+- mkdocs.yml: mkdocs configuration
+- pyproject.toml: python dependencies for interactive marimo, testing and mkdocs build
 
 ### Documentation, Language and User Interface
 
@@ -42,30 +58,20 @@ The application's UI is in German. The README.md is in German.
 
 User prefers long dates to be formatted as 'Weekday Day.Month.Year' in German (e.g., 'Montag 29.9.2025').
 
-- avoid using formal personal pronouns like 'Sie' or 'Du' in the documentation, preferring a neutral tone.
+Avoid using formal personal pronouns like 'Sie' or 'Du' in the documentation, preferring a neutral tone.
 
-### Architecture
+### Main Welltrack Webapp
+
+The application is a single-page application (SPA) contained entirely within src/welltrack/welltrack.html.
+
+The application uses localStorage for all data storage, making it a client-side-only application with no backend.
+
+Dependencies like Tailwind CSS, Chart.js, and date-fns are loaded via CDNs.
+
+#### Architecture
 
 A data 'slot' for mood or pain is defined as all entries of that type within a 10-minute window, calculated backwards from the most recent entry in a given set.
 
-### Welltrack-Lab - Interactive Marimo Python Webapp
-
-Files:
-
-- src/welltrack_lab/: Welltrack Lab - Python Library and Tools
-- scripts/welltrack-lab.py: Welltrack Lab - Interactive Marimo main file
-
-### Example Data Creation for import in Welltrack - Python script
-
-Files:
-
-- scripts/create-sample-data.py: python script to create example data for welltrack.html to import
-
-### build and config files
-
-- Makefile:
-- mkdocs.yml: mkdocs configuration
-- pyproject.toml: dependencies for interactive marimo, testing and mkdocs build
 
 ## Python Style & Conventions
 

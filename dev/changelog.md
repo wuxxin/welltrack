@@ -21,6 +21,7 @@ This document lists the implementation status of features and refactorings for t
 - Repair `create_sampledata.py` to ensure all body parts, moods, and standard event types are sourced directly from `welltrack.html`.
 - Update `create_sampledata.py` to generate timestamps in milliseconds.
 
+
 **2025-09-24: UI/UX Improvements and Refactoring**
 - **Mood Entry:** Prevented mood ruler clicks during page scroll by distinguishing between click and drag events.
 - **Today Page:**
@@ -37,6 +38,7 @@ This document lists the implementation status of features and refactorings for t
     - Applied consistent color-coding to all relevant values.
     - Hid timestamps for incrementing (non-timestamp) events.
     - Re-formatted timestamp events to "Um hh:mm: [Event Name]".
+
 
 **2025-09-25: Comprehensive Refactoring and UI/UX Enhancements**
 - **Refactored Data Entry Logic:**
@@ -57,6 +59,7 @@ This document lists the implementation status of features and refactorings for t
 - **Security Hardening:**
   - Implemented a strict Content Security Policy (CSP) via a `<meta>` tag to restrict resource loading to trusted CDNs and prevent potential cross-site scripting (XSS) attacks.
 
+
 **2025-09-28: Settings, Grouping Logic, and UI Refactoring**
 - **Settings Refactor:**
   - Removed the "days" selection for event types entirely from the UI and data model.
@@ -72,13 +75,16 @@ This document lists the implementation status of features and refactorings for t
   - The event cards on the "Today" page are now arranged in a responsive "automatrix" grid that automatically adjusts between 2 and 3 columns based on screen width, falling back to a single column on very small screens.
   - The "Protokoll" (Log) page's mood and pain detail views were updated to use a more compact and consistent grid, displaying between 2 and 4 columns for better readability.
 
+
 **2025-09-28: Bug Fixes and Configuration Update**
 - **Bug Fix:** The "edit" button in the event type settings was non-functional. This was resolved by correcting the `onclick` handler to pass the event's index instead of the entire object, allowing the edit form to populate correctly.
 - **Config Update:** The default event "Kaffee Tassen" is now set to be non-cumulative (`is_cumulative: false`) for new users.
 
+
 **2025-09-29: Final Bug Fixes and Configuration**
 - **Bug Fix:** The "edit event" functionality was definitively repaired by refactoring the `handleSaveEvent` function. The logic now correctly uses the `activity` ID from the application's state when editing, ensuring the correct event is always updated.
 - **Config Update:** The default `unitType` for the "Ibuprofen 400mg" event was changed from "Einnahme" to an empty string (`""`) for better clarity in the UI.
+
 
 **2025-09-29: Final Polish and CSP Fix**
 - **Bug Fix:** A JavaScript `TypeError` that occurred when opening the event editor was resolved by removing obsolete code related to the old "days" selection feature.
@@ -115,6 +121,7 @@ This document lists the implementation status of features and refactorings for t
   - Provide three options: "Abbrechen" (Cancel), "An bestehende Daten anhängen" (Append), and "Alles überschreiben" (Overwrite).
   - Implement the "Append" logic to merge new event types and chronologically insert new metrics without creating duplicates.
 
+
 **2025-10-01: UI/UX Enhancements, Logic Refinements, and Documentation**
 - **Settings UI:**
   - **Import Logic:** Ensure that merging data via import does not duplicate identical metrics.
@@ -137,6 +144,7 @@ This document lists the implementation status of features and refactorings for t
     - Include a placeholder for a new screenshot demonstrating the pushbutton event flow.
   - **`tasks.md`:**
     - Update the "Planned Tasks" section with a detailed breakdown of the current work.
+
 
 **2025-10-03: comprehensive set of UI enhancements, feature additions, and behavioral refinements**
 - **Today Page Enhancements:**
@@ -183,3 +191,18 @@ This document lists the implementation status of features and refactorings for t
 - **Tab/Sub-Tab Layout:** Refactored all sub-tab selectors for consistent, mobile-first, and appealing overflow behavior.
 - **History Page:** Moved charts to a full-width container for better visibility.
 - **Log Page:** Implemented a new week-based, sticky pagination system and updated the log display accordingly.
+
+
+**2025-10-03 (Follow-up)**: UI Refinements and Layout Adjustments
+- **Spacing & Alignment:** Reduced top-level spacing and ensured consistent title alignment across all pages.
+- **Log Page Header:** Placed title and week selector on a single responsive line.
+- **Sub-Tabs:** Decreased spacing between sub-tab buttons for a more cohesive look.
+- **History Page Charts:** Removed card container to make charts span the full viewport width.
+
+**2025-10-03**: Full-stack UI Refactoring and Feature Implementation
+- **Modals & Settings UI:** Improved modal dialogs (delete event, data import) for better viewport fit and readability. Auto-scrolled to the edit form.
+- **Today Page:** Redesigned Mood/Pain pills for better visual prominence of data.
+- **Tab/Sub-Tab Layout:** Refactored all sub-tab selectors for consistent, mobile-first, and appealing overflow behavior.
+- **History Page:** Moved charts to a full-width container for better visibility.
+- **Log Page:** Implemented a new week-based, sticky pagination system and updated the log display accordingly.
+

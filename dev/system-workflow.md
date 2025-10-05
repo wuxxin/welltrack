@@ -2,9 +2,9 @@
 
 ## Project Awareness & Context
 
-- **Always read `dev/product-requirements.md` and `dev/project-structure.md`** at the start of a new conversation to understand the project's architecture, goals, style, and constraints.
+- **Always read `dev/product-requirements.md` and `dev/development.md`** at the start of a new conversation to understand the project's architecture, goals, style, and constraints.
 - **Check `dev/tasks.md`** before starting a new task. If the task isn’t listed, add it with a brief description and today's date.
-- **Use consistent naming conventions, file structure, and architecture patterns** as described in `dev/project-structure.md`.
+- **Use consistent naming conventions, file structure, and architecture patterns** as described in `dev/development.md`.
 
 ## Task Completion
 
@@ -16,7 +16,7 @@
 - **Update `README.md`** when new features are added, dependencies change, or setup steps are modified.
 - **Comment non-obvious code** and ensure everything is understandable to a mid-level developer.
 - When writing complex logic, **add an inline `# Reason:` comment** explaining the why, not just the what.
-- **Update `dev/product-requirements.md` and `/dev/project-structure.md`** if tasks done expand or modify any of them.
+- **Update `dev/product-requirements.md` and `/dev/development.md`** if tasks done, expand or modify any of them.
 
 ## AI Behavior Rules
 

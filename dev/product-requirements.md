@@ -1,4 +1,4 @@
-# Project Requirements for WellTrack Health Diary
+# Product Requirements for WellTrack Health Diary
 
 ## Introduction & Objective
 
