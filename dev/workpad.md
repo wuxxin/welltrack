@@ -10,64 +10,9 @@ Request a user review once finished.
 
 required changes:
 
-- Add Migration Code for old naming of LocalStorage "wellTrackEvents" to "wellTrackEventTypes". if old LocalStorage exists on init read, and write as wellTrackEventTypes, delete old wellTrackEvents.
-- Add Migration Code for import of old naming for json import/export format naming: "events": if exists, rename imported.events to imported.eventTypes. also, on the step before, on the valid check: check for metrics, events or eventTypes, and settings (but settings can be empty)
-- settings/import/merge: after import show notification if any and how many events are imported.
-- settings/import/overwrite: after import show notification how many events where imported.
-- settings/export data: make a notification "Daten exportiert" after export.
-- settings/delete-all data: make a notification "Alle Daten gelöscht" after deletion.
-- settings/edit-event-types: dont display "Es sind ${usedMetricsCount} Einträge dieser Art vorhanden, die
-ebenfalls gelöscht werden." if usedMetricsCount == 0, but display "Es gibt keine Einträge dieser Art."
-- settings/about: make all content text bigger 2 css Levels, make the content layout more appealing.
-
-
-- refactor submenus in eventEntry, MoodEntry, PainEntry, Verlauf, Settings:
-
-Usually there is always a Title on the left, and ideally on the same line the submenu on the right.
-we want a new layout strategy:
-
-"from left to Right Titel"  "space expands and shrinks"  "from-right-to-left-overflow downwards submenus"
-
-i think this is possible with css, without using javascript, its left to right and right to left behavior.
-
-To make it clear what kind of behavior i seek, Below as text are a few examples with "^" as begin of line, and "$" as end of line and
-"s" as variable space, and "xxxx" as Titel, and "1","2","3","4","5" as submenu entries.
-
-```text
-^xxxx s 1$
-
-^xxxx s 2 1$
-
-^xxxx s 3 2 1$
-
-^xxxx s 3 2 1$^s 4$
-
-^xxxx s 3 2 1$^s 5 4$
-```
-
----
-
-settings: naming of submenu "Datenverwaltung": Change to "Import/Export"
-
-verification/settings.png:
-SubMenus: Should be: xxx = titel, "^" line start, "$" line end, "s" variable space, ">" right aligned, "<" left aligned:
-
-is: ^xxx s$^s>3 4$s>1 2$
-
-should: ^xxx s>2 1$^s>4 3$
-
-
-verification/history.png: should still be right aligned even if they col overflow
-
-verification/mood_entry.png: should still be right aligned even if they col overflow
-
-verification/event_entry.png: same as settings.png
-
-
 ## nice to have
 
 - settings: edit event type: add Button (after subtab selector, right aligned just before event type list starts) with only an Icon (no text, but hovering reveals "Sortierung verändern", Representing "Loosing Chains" for reorder, and "closed Chains" as the other icon once in reorder mode to freeze changes. clicking "Reorder" Icon blurs everything except the event type list, that gets grab icons on the left, and disables/greysout (modal type) all other user interface, so only the list and the icon "Closed Chains" are clickable, the user can reorder the event types, and either abort (clicked outside) aborts the reordering, or the click on "closed Chain" freezes the new reordering, after the metrictype array gets resorted from the dom order.
-
 
 button next too mood: Record Note: TinyWhisper modul pushbutton while speaking , transcribe to text as note with mood entry
 push button

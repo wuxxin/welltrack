@@ -40,11 +40,11 @@
 
 - Makefile: central make file for building and developing
     - `make` or `make help` for usage
-    - `buildenv`             Create build environment
+    - `buildenv`             Create build environment in $PWD/.venv
     - `clean`                Remove test and build artifacts
     - `clean-all`            Remove environment and all artifacts
     - `docs`                 Make Onlinepage and WebApp
-    - `docs-serve `          HTTP Serve Documentation on port 8000
+    - `docs-serve`           HTTP Serve Documentation on port 8000
     - `docs-serve-ssl`       HTTPS Serve Documentation on port 8443
     - `lab`                  Edit welltrack-lab.py in marimo
     - `lint`                 Run Linting
@@ -64,7 +64,7 @@
 - User prefers long dates to be formatted as 'Weekday Day.Month.Year' in German (e.g., 'Montag 29.9.2025').
 - The application uses localStorage for all data storage, making it a client-side-only application with no backend.
 - Dependencies like Tailwind CSS, Chart.js, and date-fns are loaded via CDNs.
-- Use python playwright for GUI Testing.  test all changes on a virtual screen size in portrait mode (mobile) 1080 x 1920, make screenshots before and after.
+- Use python playwright for GUI Testing.
 - Python scripts related to welltrack data creation/parsing, should read configuration of mood types and body parts directly from src/welltrack/welltrack.html using regex to ensure they are in sync with the main application's settings.
 
 #### Implementation Specifics
@@ -75,8 +75,11 @@
 - When deleting an event type, the system should first count existing entries, display a confirmation message with the count, and then delete both the event type and all associated metric entries upon confirmation.
 - To prevent accidental selections on the mood slider, the onpointerdown event is used to record the initial scroll position, which is then checked against the position in the handleMoodChange function to abort if scrolling occurred.
 
-#### Playwright GUI Testing of Welltrack
+#### Playwright GUI Testing and Verification of Welltrack
 
+- run scripts/dev_serve.py for testing with `source .venv/bin/activate && python scripts/dev_serve.py -d build/site 8443 > dev_server.log 2>&1 &`
+- run playwright jules verification with: `source .venv/bin/activate && python jules-scratch/verification/verify_changes.py`.
+- test all changes on a virtual screen size in portrait mode (mobile) of 1080 x 1920.
 - Verification scripts in the jules-scratch directory should not be deleted until after a final submission is successful, to avoid having to recreate them if further changes are needed.
 - The user wants verification screenshots to be left in the jules-scratch/verification directory for review and not deleted after the verification process.
 - In Playwright, to check if a modal has been hidden (i.e., has the 'hidden' class), use expect(locator).to_be_hidden() instead of wait_for_selector('.hidden'), as the latter will time out waiting for a hidden element to become visible.
@@ -88,9 +91,6 @@
 ## Python Style & Conventions
 
 - **Use uv** (the virtual environment and package manager) whenever executing Python commands, including for unit tests.
-- At the start of a new session
-    - recreate python environment with "uv venv"
-    - install packages with "uv pip install . -e"
 - **Use `pyproject.toml`** to add or modify dependencies installed during a task execution.
 - **Use python_dotenv and load_env()** for environment variables.
 - **Follow PEP8**, use type hints, and format with `black`.
