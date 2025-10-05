@@ -310,6 +310,11 @@
         <!-- Page content will be dynamically inserted here -->
     </main>
     
+    <!-- Version Update Overlay -->
+    <div id="version-overlay" class="hidden fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-lg shadow-lg z-50 flex items-center gap-3 transition-opacity duration-300 opacity-100">
+        <span class="material-symbols-outlined">celebration</span>
+        <span id="version-overlay-text"></span>
+    </div>
 
     <!-- Modal Structure -->
     <div id="modal-container" onclick="if (event.target === this) { WellTrackApp.render.modal.hide() }" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
@@ -344,7 +349,6 @@ const WellTrackApp = {
     // --- CONFIGURATION ---
     // Static configuration and UI strings
     config: {
-        ENTRIES_PER_PAGE: 10,
         DEFAULT_BODY_COLOR: '#E6E0E9',
         PAIN_LEVELS: {
             0: { label: "Kein Schmerz", short: "-", color: "#86efac" },
@@ -391,22 +395,43 @@ const WellTrackApp = {
 
     // --- INITIALIZATION ---
     init() {
-        const savedPainView = localStorage.getItem('wellTrackPainView');
-        if (savedPainView) {
-            this.state.currentPainView = savedPainView;
+        let settings = this.data.getSettings();
+        let settingsUpdated = false;
+
+        // One-time migration for users with old settings structure
+        const oldPainView = localStorage.getItem('wellTrackPainView');
+        if (oldPainView) {
+            settings.painView = oldPainView;
+            localStorage.removeItem('wellTrackPainView');
+            settingsUpdated = true;
         }
-        const savedLogVisibility = localStorage.getItem('wellTrackLogVisibility');
-        if (savedLogVisibility) {
-            this.state.isTodaysLogVisible = JSON.parse(savedLogVisibility);
+        const oldLogVisibility = localStorage.getItem('wellTrackLogVisibility');
+        if (oldLogVisibility) {
+            settings.logVisibility = JSON.parse(oldLogVisibility);
+            localStorage.removeItem('wellTrackLogVisibility');
+            settingsUpdated = true;
         }
-        const savedSettingsTab = localStorage.getItem('wellTrackActiveSettingsTab');
-        if (savedSettingsTab) {
-            this.state.activeSettingsTab = savedSettingsTab;
+        const oldSettingsTab = localStorage.getItem('wellTrackActiveSettingsTab');
+        if (oldSettingsTab) {
+            settings.activeSettingsTab = oldSettingsTab;
+            localStorage.removeItem('wellTrackActiveSettingsTab');
+            settingsUpdated = true;
         }
+
+        if (settingsUpdated) {
+            this.data.saveSettings(settings);
+        }
+
+        // Initialize state from settings
+        this.state.currentPainView = settings.painView;
+        this.state.isTodaysLogVisible = settings.logVisibility;
+        this.state.activeSettingsTab = settings.activeSettingsTab;
+
         document.addEventListener('DOMContentLoaded', () => {
             this.events.showPage(this.state.activePage);
             this.events.initEventListeners();
             this.events.registerServiceWorker();
+            this.events.checkVersion();
         });
     },
 
@@ -414,16 +439,23 @@ const WellTrackApp = {
     data: {
         getSettings() {
             let settings = JSON.parse(localStorage.getItem('wellTrackSettings')) || {};
-            const defaults = { reminderTimes: '', reminders_active: false };
+            const defaults = {
+                reminderTimes: '',
+                reminders_active: false,
+                painView: 'back',
+                logVisibility: false,
+                activeSettingsTab: 'eventTypes',
+                welltrack_latest: ''
+            };
             return { ...defaults, ...settings };
         },
         saveSettings(settings) {
-            localStorage.setItem('wellTrackSettings', JSON.stringify(rest));
+            localStorage.setItem('wellTrackSettings', JSON.stringify(settings));
         },
         getExportableData() {
             return {
                 metrics: this.getMetrics(),
-                events: this.getEvents(),
+                events: this.getEventTypes(),
                 settings: this.getSettings()
             };
         },
@@ -476,8 +508,8 @@ const WellTrackApp = {
             localStorage.setItem('wellTrackMetrics', JSON.stringify(metrics));
             if(WellTrackApp.state.activePage === 'today') WellTrackApp.render.todayPage();
         },
-        getEvents() {
-            const events = localStorage.getItem('wellTrackEvents');
+        getEventTypes() {
+            const events = localStorage.getItem('wellTrackEventTypes');
             const processEvents = (eventArray) => {
                 return eventArray.map(e => {
                     let newEvent = { ...e };
@@ -502,17 +534,17 @@ const WellTrackApp = {
                 const updatedEvents = processEvents(parsedEvents);
                 // If migration happened, save it back
                 if (JSON.stringify(parsedEvents) !== JSON.stringify(updatedEvents)) {
-                    this.saveEvents(updatedEvents);
+                    this.saveEventTypes(updatedEvents);
                 }
                 return updatedEvents;
             } else {
                 const defaultEvents = processEvents(JSON.parse(WellTrackApp.config.DEFAULT_EVENTS_JSON));
-                this.saveEvents(defaultEvents);
+                this.saveEventTypes(defaultEvents);
                 return defaultEvents;
             }
         },
-        saveEvents(events) {
-            localStorage.setItem('wellTrackEvents', JSON.stringify(events));
+        saveEventTypes(events) {
+            localStorage.setItem('wellTrackEventTypes', JSON.stringify(events));
         },
         loadTodaysState() {
             const page = WellTrackApp.state.activePage;
@@ -612,7 +644,7 @@ const WellTrackApp = {
 
                     const overwriteData = () => {
                         this.saveMetrics(imported.metrics);
-                        this.saveEvents(imported.events);
+                        this.saveEventTypes(imported.events);
                         this.saveSettings(imported.settings);
                         WellTrackApp.render.modal.hide();
                         location.reload();
@@ -620,13 +652,13 @@ const WellTrackApp = {
 
                     const appendData = () => {
                         // 1. Append Event Types without overwriting
-                        const currentEvents = this.getEvents();
+                        const currentEvents = this.getEventTypes();
                         const importedEvents = imported.events || [];
                         const currentEventActivities = new Set(currentEvents.map(e => e.activity));
                         const newEventTypes = importedEvents.filter(e => !currentEventActivities.has(e.activity));
 
                         const finalEvents = [...currentEvents, ...newEventTypes];
-                        this.saveEvents(finalEvents);
+                this.saveEventTypes(finalEvents);
                         const eventsByActivity = new Map(finalEvents.map(e => [e.activity, e]));
 
                         // 2. Merge Metrics with reconstructed labels
@@ -759,7 +791,7 @@ const WellTrackApp = {
 
             // --- Render Event Group Cards ---
             const eventGroupsContainer = document.getElementById('today-event-groups');
-            const allEvents = WellTrackApp.data.getEvents();
+            const allEvents = WellTrackApp.data.getEventTypes();
             const todaysEventMetrics = todaysMetrics.filter(e => e.metric.startsWith('event_'));
 
             const displayItems = [];
@@ -917,6 +949,17 @@ const WellTrackApp = {
 
             if (activeTab === 'eventTypes') {
                 this.manageEventList();
+            } else if (activeTab === 'about') {
+                const versionContainer = document.getElementById('version-info-container');
+                if (versionContainer) {
+                    const settings = WellTrackApp.data.getSettings();
+                    const lastModified = settings.welltrack_latest || document.lastModified;
+                    const formattedDate = new Date(lastModified).toLocaleString('de-DE', {
+                        day: '2-digit', month: '2-digit', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                    versionContainer.innerHTML = `<p class="font-semibold">Installierte Version:</p><p>${formattedDate}</p>`;
+                }
             }
         },
         historyPage() {
@@ -1002,7 +1045,7 @@ const WellTrackApp = {
             const todaysData = WellTrackApp.data.getMetrics();
             const todaysEventsDone = todaysData.filter(e => e.metric.startsWith('event_') && WellTrackApp.utils.isToday(new Date(e.timestamp)));
             
-            let allEvents = WellTrackApp.data.getEvents();
+            let allEvents = WellTrackApp.data.getEventTypes();
             let filteredEvents;
 
             if (groupType === '*') {
@@ -1123,17 +1166,14 @@ const WellTrackApp = {
             container.innerHTML = summaryHtml + listHtml;
         },
         pagination(totalItems) {
-            const paginationContainer = document.getElementById('log-pagination');
-            if(!paginationContainer) return;
-            const totalPages = Math.ceil(totalItems / WellTrackApp.config.ENTRIES_PER_PAGE);
-            if (totalPages <= 1) { paginationContainer.innerHTML = ''; return; }
-            paginationContainer.innerHTML = this.components.paginationControls(WellTrackApp.state.currentPage, totalPages);
+            // This function is no longer used as pagination is handled by week.
+            // Kept to avoid breaking any potential calls, but it does nothing.
         },
         manageEventList() {
             const container = document.getElementById('manage-event-list');
             if (!container) return;
             container.innerHTML = '';
-            WellTrackApp.data.getEvents().forEach((event, index) => {
+            WellTrackApp.data.getEventTypes().forEach((event, index) => {
                 const div = document.createElement('div');
                 div.className = 'flex items-center justify-between bg-gray-100 p-3 rounded-lg';
                 div.innerHTML = this.components.manageEventItem(event, index);
@@ -1209,7 +1249,7 @@ const WellTrackApp = {
                 if (!eventChartContainer) return;
                 eventChartContainer.innerHTML = ''; // Clear previous charts
 
-                const allEvents = WellTrackApp.data.getEvents();
+                const allEvents = WellTrackApp.data.getEventTypes();
                 const displayGroups = [];
                 const processedActivities = new Set();
 
@@ -1234,7 +1274,7 @@ const WellTrackApp = {
 
                 // 2. Add remaining individual events
                 allEvents
-                    .filter(e => !processedActivities.has(e.activity))
+                    .filter(e => !processedActivities.has(e.activity) && e.displayType !== 3)
                     .forEach(event => {
                         displayGroups.push({
                             isGroup: false, name: event.name, unit: event.unitType, activities: [event.activity]
@@ -1425,6 +1465,7 @@ const WellTrackApp = {
             hide() {
                 document.getElementById('modal-container').classList.add('hidden');
                 document.getElementById('modal-content').innerHTML = '';
+                WellTrackApp.state.currentEditingEvent = null;
             },
             showPainSelector(part, view) {
                 WellTrackApp.state.currentPainPart = part;
@@ -1710,7 +1751,6 @@ const WellTrackApp = {
 
                     <div id="settings-tab-eventTypes" class="settings-tab-content">
                         <div id="manage-event-list" class="space-y-2 mb-4"></div>
-                        <div id="edit-event-form-container"></div>
                         <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventForm()" class="btn btn-secondary w-full"><span class="material-symbols-outlined mr-2">add</span>Neue hinzufügen</button></div>
                     </div>
                     <div id="settings-tab-data" class="settings-tab-content">
@@ -1735,6 +1775,9 @@ const WellTrackApp = {
                                     <li><a href="https://github.com/wuxxin/welltrack" target="_blank" class="text-blue-600 hover:underline">Quellcode auf GitHub</a></li>
                                     <li><a href="https://github.com/wuxxin/welltrack/blob/main/LICENSE" target="_blank" class="text-blue-600 hover:underline">Lizenz (BSD 3-Clause License)</a></li>
                                 </ul>
+                            </div>
+                            <div id="version-info-container" class="pt-4 mt-4 border-t border-gray-200">
+                                <!-- Version info will be injected here -->
                             </div>
                         </div>
                     </div>
@@ -1819,8 +1862,9 @@ const WellTrackApp = {
                 return `(${time}) Unbekannter Eintrag`;
             },
             logEntry: (formattedDate, metrics) => {
+                // Sort events by time (newest first)
+                const eventMetrics = metrics.filter(m => m.metric.startsWith('event_')).sort((a, b) => b.timestamp - a.timestamp);
                 let eventsHtml = '';
-                const eventMetrics = metrics.filter(m => m.metric.startsWith('event_'));
                 if (eventMetrics.length > 0) {
                     const eventsByGroup = eventMetrics.reduce((acc, t) => {
                         const group = t.labels.groupType || 'Ohne Gruppe';
@@ -1843,21 +1887,24 @@ const WellTrackApp = {
                     }).join('');
                 }
 
-                let moodHtml = '';
+                // --- Mood Slots (newest first) ---
                 const moodMetrics = metrics.filter(m => m.metric.startsWith('mood_')).sort((a, b) => a.timestamp - b.timestamp);
+                let moodHtml = '';
                 if (moodMetrics.length > 0) {
-                    const moodGroups = [];
-                    let currentGroup = [];
-                    moodMetrics.forEach((metric, index) => {
-                        if (index > 0 && (metric.timestamp - moodMetrics[index-1].timestamp > 600000)) {
-                            moodGroups.push(currentGroup);
-                            currentGroup = [];
+                    const moodSlots = [];
+                    let currentSlot = [];
+                    // Iterate from oldest to newest to create slots
+                    [...moodMetrics].reverse().forEach((metric, index, arr) => {
+                        if (index > 0 && (metric.timestamp - arr[index-1].timestamp > 600000)) {
+                            moodSlots.push(currentSlot);
+                            currentSlot = [];
                         }
-                        currentGroup.push(metric);
+                        currentSlot.push(metric);
                     });
-                    moodGroups.push(currentGroup);
+                    moodSlots.push(currentSlot);
 
-                    moodHtml = moodGroups.map(group => {
+                    // Render slots newest first
+                    moodHtml = moodSlots.reverse().map(group => {
                         if (group.length === 0) return '';
                         const firstEntryTime = new Date(group[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                         const totalScore = group.reduce((sum, m) => sum + m.value, 0);
@@ -1866,119 +1913,67 @@ const WellTrackApp = {
 
                         const detailsMatrix = group.map(m => {
                             const valueColorClass = m.value > 0 ? 'text-green-600' : 'text-red-600';
-                            return `
-                                <div class="flex justify-between items-center p-2 rounded-lg bg-gray-50">
-                                    <span class="text-gray-800">${m.labels.name}</span>
-                                    <span class="font-bold text-lg ${valueColorClass}">${m.value > 0 ? '+' : ''}${m.value}</span>
-                                </div>
-                            `;
+                            return `<div class="flex justify-between items-center p-2 rounded-lg bg-gray-50"><span class="text-gray-800">${m.labels.name}</span><span class="font-bold text-lg ${valueColorClass}">${m.value > 0 ? '+' : ''}${m.value}</span></div>`;
                         }).join('');
 
-                        return `
-                            <div class="mt-2">
-                                <h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600"> Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></span></h5>
-                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div>
-                            </div>`;
+                        return `<div class="mt-2"><h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600"> Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
                     }).join('');
                 }
 
-                let painHtml = '';
+                // --- Pain Slots (newest first) ---
                 const painMetrics = metrics.filter(m => m.metric.startsWith('pain_')).sort((a, b) => a.timestamp - b.timestamp);
+                let painHtml = '';
                 if (painMetrics.length > 0) {
-                     const painGroups = [];
-                    let currentGroup = [];
-                    painMetrics.forEach((metric, index) => {
-                        if (index > 0 && (metric.timestamp - painMetrics[index-1].timestamp > 600000)) {
-                            painGroups.push(currentGroup);
-                            currentGroup = [];
+                    const painSlots = [];
+                    let currentSlot = [];
+                     // Iterate from oldest to newest to create slots
+                    [...painMetrics].reverse().forEach((metric, index, arr) => {
+                        if (index > 0 && (metric.timestamp - arr[index-1].timestamp > 600000)) {
+                            painSlots.push(currentSlot);
+                            currentSlot = [];
                         }
-                        currentGroup.push(metric);
+                        currentSlot.push(metric);
                     });
-                    painGroups.push(currentGroup);
+                    painSlots.push(currentSlot);
 
-                    painHtml = painGroups.map(group => {
+                    // Render slots newest first
+                    painHtml = painSlots.reverse().map(group => {
                         if (group.length === 0) return '';
                         const firstEntryTime = new Date(group[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                         const totalScore = group.reduce((sum, m) => sum + m.value, 0);
                         const totalColor = totalScore > 0 ? 'text-red-600' : 'text-gray-600';
 
                         const detailsMatrix = group.map(p => {
-                            if (p.metric === 'pain_free_level') {
-                                return `<div class="p-2 rounded-lg flex justify-center items-center font-semibold" style="background-color: #86efac">Schmerz Frei</div>`;
-                            }
+                            if (p.metric === 'pain_free_level') return `<div class="p-2 rounded-lg flex justify-center items-center font-semibold" style="background-color: #86efac">Schmerz Frei</div>`;
                             const props = WellTrackApp.config.PAIN_LEVELS[p.value] || {};
                             const textColor = (p.value > 2 && p.value < 6) ? 'text-white' : 'text-black';
-                            return `
-                                <div class="p-2 rounded-lg flex justify-between items-center" style="background-color: ${props.color || '#ccc'}">
-                                    <span class="${textColor}">${p.labels.name}</span>
-                                    <span class="font-bold text-lg ${textColor}">${p.value}</span>
-                                </div>
-                            `;
+                            return `<div class="p-2 rounded-lg flex justify-between items-center" style="background-color: ${props.color || '#ccc'}"><span class="${textColor}">${p.labels.name}</span><span class="font-bold text-lg ${textColor}">${p.value}</span></div>`;
                         }).join('');
 
-                        return `
-                             <div class="mt-2">
-                                <h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600">Gesamt: <span class="font-bold ${totalColor}">${totalScore}</span></span></h5>
-                                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div>
-                            </div>
-                        `;
+                        return `<div class="mt-2"><h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600">Gesamt: <span class="font-bold ${totalColor}">${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
                     }).join('');
                 }
 
                 let html = '';
-
                 if (eventsHtml) {
-                    html += `
-                        <div>
-                            <div class="flex justify-between items-baseline">
-                               <h4 class="font-semibold text-lg mb-2 text-gray-800">Ereignisse</h4>
-                               <h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3>
-                            </div>
-                            <div class="pl-4">${eventsHtml}</div>
-                        </div>
-                    `;
-                    if (moodHtml) {
-                        html += `
-                            <div class="mt-4 pt-4 border-t border-gray-200">
-                                <h4 class="font-semibold text-lg mb-2 text-gray-800">Stimmung</h4>
-                                <div class="pl-4">${moodHtml}</div>
-                            </div>
-                        `;
-                    }
-                    if (painHtml) {
-                         html += `
-                            <div class="mt-4 pt-4 border-t border-gray-200">
-                                <h4 class="font-semibold text-lg mb-2 text-gray-800">Schmerz</h4>
-                                <div class="pl-4">${painHtml}</div>
-                            </div>
-                        `;
-                    }
+                    html += `<div><div class="flex justify-between items-baseline"><h4 class="font-semibold text-lg mb-2 text-gray-800">Ereignisse</h4><h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3></div><div class="pl-4">${eventsHtml}</div></div>`;
+                    if (moodHtml) html += `<div class="mt-4 pt-4 border-t border-gray-200"><h4 class="font-semibold text-lg mb-2 text-gray-800">Stimmung</h4><div class="pl-4">${moodHtml}</div></div>`;
+                    if (painHtml) html += `<div class="mt-4 pt-4 border-t border-gray-200"><h4 class="font-semibold text-lg mb-2 text-gray-800">Schmerz</h4><div class="pl-4">${painHtml}</div></div>`;
                 } else {
                     html += `<div class="flex justify-end mb-2"><h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3></div>`;
                     let isFirstSection = true;
                     if (moodHtml) {
-                         html += `
-                            <div>
-                                <h4 class="font-semibold text-lg mb-2 text-gray-800">Stimmung</h4>
-                                <div class="pl-4">${moodHtml}</div>
-                            </div>
-                        `;
+                        html += `<div><h4 class="font-semibold text-lg mb-2 text-gray-800">Stimmung</h4><div class="pl-4">${moodHtml}</div></div>`;
                         isFirstSection = false;
                     }
                     if (painHtml) {
                         const dividerClass = isFirstSection ? '' : 'mt-4 pt-4 border-t border-gray-200';
-                        html += `
-                            <div class="${dividerClass}">
-                                <h4 class="font-semibold text-lg mb-2 text-gray-800">Schmerz</h4>
-                                <div class="pl-4">${painHtml}</div>
-                            </div>
-                        `;
+                        html += `<div class="${dividerClass}"><h4 class="font-semibold text-lg mb-2 text-gray-800">Schmerz</h4><div class="pl-4">${painHtml}</div></div>`;
                     }
                 }
-
                 return html;
             },
-            paginationControls: (currentPage, totalPages) => `<button onclick="WellTrackApp.events.handleChangePage(-1)" class="btn btn-secondary" ${currentPage === 1 ? 'disabled' : ''}>Zurück</button><span class="text-sm text-gray-700">Seite ${currentPage} von ${totalPages}</span><button onclick="WellTrackApp.events.handleChangePage(1)" class="btn btn-secondary" ${currentPage === totalPages ? 'disabled' : ''}>Weiter</button>`,
+            paginationControls: (currentPage, totalPages) => { /* No longer used */ },
             manageEventItem: (event, index) => {
                 const incrementText = event.increment === 0 ? 'Zeitstempel' : `+${event.increment}`;
                 const detailsText = `${incrementText} ${event.unitType || ''}`;
@@ -2022,8 +2017,7 @@ const WellTrackApp = {
                 const displayType = isEditing ? event.displayType : 0;
 
                 return `
-                <div class="p-4 border rounded-lg bg-white mt-4">
-                    <h3 class="text-xl font-semibold mb-4">${isEditing ? 'Ereignisart bearbeiten' : 'Neue Ereignisart'}</h3>
+                    <h3 class="text-2xl font-semibold mb-6 text-center">${isEditing ? 'Ereignisart bearbeiten' : 'Neue Ereignisart'}</h3>
                     <div class="space-y-4 text-left">
                         <div><label for="event-name" class="block mb-1 text-sm font-medium">Bezeichnung</label><input id="event-name" type="text" value="${name}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="z.B. Tassen Kaffee"></div>
                         <div><label for="event-activity" class="block mb-1 text-sm font-medium">Aktivität-ID</label><input id="event-activity" type="text" value="${activity}" ${isEditing ? 'disabled' : ''} class="w-full p-2 border border-gray-300 rounded-lg ${isEditing ? 'bg-gray-100' : ''}" placeholder="z.B. kaffee_tassen"></div>
@@ -2042,15 +2036,16 @@ const WellTrackApp = {
                                     <option value="0" ${displayType === 0 ? 'selected' : ''}>Zusammenzählen</option>
                                     <option value="1" ${displayType === 1 ? 'selected' : ''}>Einzeln, hervorheben</option>
                                     <option value="2" ${displayType === 2 ? 'selected' : ''}>Einzeln</option>
+                                    <option value="3" ${displayType === 3 ? 'selected' : ''}>Nur Aufzeichnen</option>
                                 </select>
                             </div>
                         </div>
                     </div>
-                    <div class="flex gap-4 mt-6">
-                        <button onclick="WellTrackApp.events.handleHideEventForm()" class="btn btn-tertiary flex-1">Abbrechen</button>
-                        <button onclick="WellTrackApp.events.handleSaveEvent()" class="btn btn-secondary flex-1">Speichern</button>
+                    <div class="flex justify-end gap-4 mt-8">
+                        <button onclick="WellTrackApp.events.handleHideEventForm()" class="btn btn-tertiary">Abbrechen</button>
+                        <button onclick="WellTrackApp.events.handleSaveEvent()" class="btn btn-primary">Speichern</button>
                     </div>
-                </div>`;
+                `;
             },
             moodSlider: (question) => `
                 <div>
@@ -2196,7 +2191,7 @@ const WellTrackApp = {
             WellTrackApp.render.modal.hide();
         },
         handleEventIncrement(activity, increment) {
-            const event = WellTrackApp.data.getEvents().find(t => t.activity === activity);
+            const event = WellTrackApp.data.getEventTypes().find(t => t.activity === activity);
             if (!event) return;
 
             let allMetrics = WellTrackApp.data.getMetrics();
@@ -2225,7 +2220,7 @@ const WellTrackApp = {
             WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
         },
         handleTimestampEvent(activity) {
-            const event = WellTrackApp.data.getEvents().find(e => e.activity === activity);
+            const event = WellTrackApp.data.getEventTypes().find(e => e.activity === activity);
             if (!event) return;
 
             const newEntry = {
@@ -2286,7 +2281,9 @@ const WellTrackApp = {
         },
         handleViewToggle(view) {
             WellTrackApp.state.currentPainView = view;
-            localStorage.setItem('wellTrackPainView', view);
+            const settings = WellTrackApp.data.getSettings();
+            settings.painView = view;
+            WellTrackApp.data.saveSettings(settings);
             document.getElementById('body-front').classList.toggle('hidden', view !== 'front');
             document.getElementById('body-back').classList.toggle('hidden', view === 'front');
             document.getElementById('btn-view-front').classList.toggle('active', view === 'front');
@@ -2297,7 +2294,7 @@ const WellTrackApp = {
             WellTrackApp.render.historyPage();
         },
         handleRemoveEvent(index) {
-            const events = WellTrackApp.data.getEvents();
+            const events = WellTrackApp.data.getEventTypes();
             const eventToDelete = events[index];
             let allMetrics = WellTrackApp.data.getMetrics();
 
@@ -2310,7 +2307,7 @@ const WellTrackApp = {
             WellTrackApp.render.modal.showConfirmation('Ereignis löschen', message, () => {
                 // Remove the event type
                 events.splice(index, 1);
-                WellTrackApp.data.saveEvents(events);
+                WellTrackApp.data.saveEventTypes(events);
 
                 // Remove the associated metrics if any
                 if (usedMetricsCount > 0) {
@@ -2335,7 +2332,7 @@ const WellTrackApp = {
         },
         handleSaveEvent() {
             const name = document.getElementById('event-name').value.trim();
-            const events = WellTrackApp.data.getEvents();
+            const events = WellTrackApp.data.getEventTypes();
             const isEditing = !!WellTrackApp.state.currentEditingEvent;
 
             // Get activity from state if editing, otherwise from form for a new event.
@@ -2370,30 +2367,19 @@ const WellTrackApp = {
                 events.push(newEventData);
             }
 
-            WellTrackApp.data.saveEvents(events);
-            this.handleHideEventForm();
+            WellTrackApp.data.saveEventTypes(events);
+            this.handleHideEventForm(); // This will now close the modal
             WellTrackApp.render.manageEventList();
             if(WellTrackApp.state.activePage === 'event') WellTrackApp.render.eventPage();
         },
         handleShowEventForm(index = null) {
-            const event = index !== null ? WellTrackApp.data.getEvents()[index] : null;
+            const event = index !== null ? WellTrackApp.data.getEventTypes()[index] : null;
             WellTrackApp.state.currentEditingEvent = event;
-            const formContainer = document.getElementById('edit-event-form-container');
-            formContainer.innerHTML = WellTrackApp.render.components.eventForm(event);
-            document.getElementById('add-new-event-btn').classList.add('hidden');
-
-            // Scroll the form into view
-            setTimeout(() => {
-                const elementToScroll = document.querySelector('#edit-event-form-container > div');
-                if (elementToScroll) {
-                    elementToScroll.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                }
-            }, 100);
+            const formContent = WellTrackApp.render.components.eventForm(event);
+            WellTrackApp.render.modal.show(formContent, { modalClass: 'w-full max-w-2xl' });
         },
         handleHideEventForm() {
-            WellTrackApp.state.currentEditingEvent = null;
-            document.getElementById('edit-event-form-container').innerHTML = '';
-            document.getElementById('add-new-event-btn').classList.remove('hidden');
+            WellTrackApp.render.modal.hide();
         },
         handleMoodRulerMouseDown(event) {
             WellTrackApp.state.sliderClickStartPosition = {
@@ -2518,12 +2504,16 @@ const WellTrackApp = {
         },
         handleSettingsTabClick(tabName) {
             WellTrackApp.state.activeSettingsTab = tabName;
-            localStorage.setItem('wellTrackActiveSettingsTab', tabName);
+            const settings = WellTrackApp.data.getSettings();
+            settings.activeSettingsTab = tabName;
+            WellTrackApp.data.saveSettings(settings);
             WellTrackApp.render.settingsPage();
         },
         toggleTodaysLog() {
             WellTrackApp.state.isTodaysLogVisible = !WellTrackApp.state.isTodaysLogVisible;
-            localStorage.setItem('wellTrackLogVisibility', JSON.stringify(WellTrackApp.state.isTodaysLogVisible));
+            const settings = WellTrackApp.data.getSettings();
+            settings.logVisibility = WellTrackApp.state.isTodaysLogVisible;
+            WellTrackApp.data.saveSettings(settings);
             WellTrackApp.render.todayPage();
         },
         async requestNotificationPermission() {
@@ -2570,7 +2560,7 @@ const WellTrackApp = {
                 'Sind Sie sicher, dass Sie alle ihre Einträge und Einstellungen unwiderruflich löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
                 () => {
                     localStorage.removeItem('wellTrackMetrics');
-                    localStorage.removeItem('wellTrackEvents');
+                    localStorage.removeItem('wellTrackEventTypes');
                     localStorage.removeItem('wellTrackSettings');
                     // Manually reset app state and re-render without a full page reload
                     WellTrackApp.init();
@@ -2578,6 +2568,37 @@ const WellTrackApp = {
                 'Löschen',
                 'Abbrechen'
             );
+        },
+        checkVersion() {
+            const lastModified = document.lastModified;
+            let settings = WellTrackApp.data.getSettings();
+
+            if (lastModified && settings.welltrack_latest !== lastModified) {
+                const formattedDate = new Date(lastModified).toLocaleString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const overlay = document.getElementById('version-overlay');
+                const overlayText = document.getElementById('version-overlay-text');
+
+                overlayText.textContent = `Aktualisiert auf Version ${formattedDate}`;
+                overlay.classList.remove('hidden');
+
+                setTimeout(() => {
+                    overlay.style.opacity = '0';
+                    setTimeout(() => {
+                        overlay.classList.add('hidden');
+                        overlay.style.opacity = '1'; // Reset for next time
+                    }, 500);
+                }, 4000);
+
+                settings.welltrack_latest = lastModified;
+                WellTrackApp.data.saveSettings(settings);
+            }
         }
     },
 
