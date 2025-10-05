@@ -1529,7 +1529,7 @@ const WellTrackApp = {
                 `;
             },
             eventSection: () => {
-                const events = WellTrackApp.data.getEvents();
+                const events = WellTrackApp.data.getEventTypes();
                 const hasNoGroup = events.some(e => !e.groupType);
                 const groups = [...new Set(events.map(e => e.groupType).filter(g => g))].sort();
                 if (hasNoGroup) { groups.push('*'); }
