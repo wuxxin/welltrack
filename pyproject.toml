@@ -25,6 +25,8 @@ requires-python = ">=3.10"
 dependencies = [
     "welltrack_lab",
     "build",
+    # cryptography - for scripts/dev_serve.py for make serve-docs local
+    "cryptography",
     "altair",
     "bokeh",
     "ipython",
@@ -45,8 +47,6 @@ test = [
     "pytest-playwright",
 ]
 docs = [
-    # cryptography - for scripts/dev_serve.py for make serve-docs local
-    "cryptography",
     # mkdocs - Project documentation with Markdown
     "mkdocs",
     # A Mermaid graphs plugin for MkDocs
