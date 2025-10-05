@@ -268,6 +268,13 @@
         .settings-tab-content.active {
             display: block;
         }
+        .submenu-container {
+            display: flex;
+            flex-wrap: wrap-reverse;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.25rem;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -314,6 +321,12 @@
     <div id="version-overlay" class="hidden fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-lg shadow-lg z-50 flex items-center gap-3 transition-opacity duration-300 opacity-100">
         <span class="material-symbols-outlined">celebration</span>
         <span id="version-overlay-text"></span>
+    </div>
+
+    <!-- General Notification Overlay -->
+    <div id="notification-overlay" class="hidden fixed bottom-4 right-4 bg-gray-800 text-white p-4 rounded-lg shadow-lg z-50 flex items-center gap-3 transition-opacity duration-300 opacity-100">
+        <span id="notification-overlay-icon" class="material-symbols-outlined">info</span>
+        <span id="notification-overlay-text"></span>
     </div>
 
     <!-- Modal Structure -->
@@ -399,6 +412,14 @@ const WellTrackApp = {
         let settingsUpdated = false;
 
         // One-time migration for users with old settings structure
+        const oldEventTypesData = localStorage.getItem('wellTrackEvents');
+        if (oldEventTypesData) {
+            const newEventTypesData = localStorage.getItem('wellTrackEventTypes');
+            if (!newEventTypesData) {
+                localStorage.setItem('wellTrackEventTypes', oldEventTypesData);
+            }
+            localStorage.removeItem('wellTrackEvents');
+        }
         const oldPainView = localStorage.getItem('wellTrackPainView');
         if (oldPainView) {
             settings.painView = oldPainView;
@@ -613,6 +634,7 @@ const WellTrackApp = {
             const a = document.createElement('a');
             a.href = url; a.download = `welltrack_export_${Date.now()}.json`;
             a.click(); URL.revokeObjectURL(url);
+            WellTrackApp.events.showNotification("Daten exportiert", "download");
         },
         importData(event) {
             const file = event.target.files[0]; if (!file) return;
@@ -624,14 +646,20 @@ const WellTrackApp = {
                     const isValidStructure = 
                         imported &&
                         Array.isArray(imported.metrics) && 
-                        Array.isArray(imported.eventTypes) && 
+                        (Array.isArray(imported.eventTypes) || Array.isArray(imported.events)) &&
                         typeof imported.settings === 'object' && 
                         imported.settings !== null;
 
                     if (!isValidStructure) {
-                         WellTrackApp.render.modal.showAlert('Fehler', 'Die Importdatei hat ein ungültiges Grundformat oder es fehlen erforderliche Daten (metrics, events, settings).');
+                         WellTrackApp.render.modal.showAlert('Fehler', 'Die Importdatei hat ein ungültiges Grundformat oder es fehlen erforderliche Daten (metrics, events oder eventTypes, settings).');
                          event.target.value = '';
                          return;
+                    }
+
+                    // Backwards compatibility for "events" key
+                    if (imported.events) {
+                        imported.eventTypes = imported.events;
+                        delete imported.events;
                     }
 
                     for(const metric of imported.metrics) {
@@ -643,23 +671,28 @@ const WellTrackApp = {
                     }
 
                     const overwriteData = () => {
-                        this.saveMetrics(imported.metrics);
-                        this.saveEventTypes(imported.eventTypes);
-                        this.saveSettings(imported.settings);
+                        const importedMetricsCount = imported.metrics?.length || 0;
+                        const importedEventTypesCount = imported.eventTypes?.length || 0;
+                        this.saveMetrics(imported.metrics || []);
+                        this.saveEventTypes(imported.eventTypes || []);
+                        this.saveSettings(imported.settings || {});
                         WellTrackApp.render.modal.hide();
-                        location.reload();
+                        WellTrackApp.events.showNotification(`Daten überschrieben: ${importedEventTypesCount} Ereignisarten und ${importedMetricsCount} Metriken importiert.`, 'file_upload');
+                        setTimeout(() => location.reload(), 4000);
                     };
 
                     const appendData = () => {
                         // 1. Append Event Types without overwriting
                         const currentEvents = this.getEventTypes();
-                        const importedEvents = imported.events || [];
+                        const importedEvents = imported.eventTypes || [];
                         const currentEventActivities = new Set(currentEvents.map(e => e.activity));
                         const newEventTypes = importedEvents.filter(e => !currentEventActivities.has(e.activity));
 
-                        const finalEvents = [...currentEvents, ...newEventTypes];
-                this.saveEventTypes(finalEvents);
-                        const eventsByActivity = new Map(finalEvents.map(e => [e.activity, e]));
+                        if (newEventTypes.length > 0) {
+                             const finalEvents = [...currentEvents, ...newEventTypes];
+                             this.saveEventTypes(finalEvents);
+                        }
+                        const eventsByActivity = new Map(this.getEventTypes().map(e => [e.activity, e]));
 
                         // 2. Merge Metrics with reconstructed labels
                         const currentMetrics = this.getMetrics();
@@ -696,12 +729,15 @@ const WellTrackApp = {
                             }
                         });
 
-                        const mergedMetrics = [...currentMetrics, ...newMetrics].sort((a, b) => a.timestamp - b.timestamp);
-                        this.saveMetrics(mergedMetrics);
+                        if (newMetrics.length > 0) {
+                            const mergedMetrics = [...currentMetrics, ...newMetrics].sort((a, b) => a.timestamp - b.timestamp);
+                            this.saveMetrics(mergedMetrics);
+                        }
 
                         // 3. Settings are not merged on append.
                         WellTrackApp.render.modal.hide();
-                        location.reload();
+                        WellTrackApp.events.showNotification(`Daten vereint: ${newEventTypes.length} neue Ereignisarten und ${newMetrics.length} neue Metriken importiert.`, 'merge_type');
+                        setTimeout(() => location.reload(), 4000);
                     };
 
                     const content = `
@@ -1549,7 +1585,7 @@ const WellTrackApp = {
                 <div class="card pt-2">
                     <div class="flex md:flex-row md:justify-between md:items-center gap-3 mb-6">
                         <h2 class="h2-style flex-shrink-0">Ereignisse</h2>
-                        <div class="flex flex-wrap items-center justify-start gap-1" role="group">
+                        <div class="submenu-container" role="group">
                             ${groupButtons}
                         </div>
                     </div>
@@ -1568,7 +1604,7 @@ const WellTrackApp = {
                 <div class="card pt-2">
                      <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-6">
                         <h2 id="mood-section-title" class="h2-style flex-shrink-0">Stimmung</h2>
-                        <div class="flex flex-wrap items-center justify-start gap-1" role="group">
+                        <div class="submenu-container" role="group">
                             ${groupButtons}
                         </div>
                     </div>
@@ -1581,7 +1617,7 @@ const WellTrackApp = {
                 <div class="card pt-2">
                     <div class="flex md:flex-row md:justify-between md:items-center gap-3">
                         <h2 id="pain-section-title" class="h2-style flex-shrink-0">Schmerzen</h2>
-                        <div class="flex flex-wrap items-center justify-start gap-1" role="group">
+                        <div class="submenu-container" role="group">
                             <button type="button" onclick="WellTrackApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100 ${currentView === 'front' ? 'active' : ''}">Vorderseite</button>
                             <button type="button" onclick="WellTrackApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100 ${currentView === 'back' ? 'active' : ''}">Rückseite</button>
                         </div>
@@ -1671,7 +1707,7 @@ const WellTrackApp = {
                                     <option value="90" ${WellTrackApp.state.timeRange === 90 ? 'selected' : ''}>Letzte 3 Monate</option>
                                 </select>
                             </div>
-                        <div id="history-tabs" class="flex flex-wrap items-center justify-start gap-1" role="group">
+                        <div id="history-tabs" class="submenu-container" role="group">
                                 <button onclick="WellTrackApp.events.handleHistoryTabClick('event')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="event">Ereignisse</button>
                                 <button onclick="WellTrackApp.events.handleHistoryTabClick('mood')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="mood">Stimmung</button>
                                 <button onclick="WellTrackApp.events.handleHistoryTabClick('pain')" class="history-tab view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="pain">Schmerz</button>
@@ -1741,9 +1777,9 @@ const WellTrackApp = {
                 <div class="card pt-2">
                      <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
                         <h2 class="h2-style flex-shrink-0">Einstellungen</h2>
-                        <div class="flex flex-wrap items-center justify-start gap-1" role="group">
+                        <div class="submenu-container" role="group">
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('eventTypes')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="eventTypes">Ereignisarten</button>
-                            <button onclick="WellTrackApp.events.handleSettingsTabClick('data')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="data">Datenverwaltung</button>
+                            <button onclick="WellTrackApp.events.handleSettingsTabClick('data')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="data">Import/Export</button>
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('reminders')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="reminders">Erinnerungen</button>
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('about')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="about">Über</button>
                         </div>
@@ -1767,16 +1803,17 @@ const WellTrackApp = {
                         </div>
                     </div>
                     <div id="settings-tab-about" class="settings-tab-content">
-                        <div class="text-sm text-gray-700 space-y-4">
-                            <p>WellTrack ist ein persönliches und 100% privates Gesundheitstagebuch. Alle Daten bleiben ausschließlich auf dem eigenen Gerät.</p>
+                        <div class="text-base text-gray-800 space-y-6 p-4">
+                            <p class="text-lg">WellTrack ist ein persönliches und 100% privates Gesundheitstagebuch. Alle Daten bleiben ausschließlich auf dem eigenen Gerät.</p>
                             <div>
-                                <ul class="list-disc list-inside mt-2 space-y-1">
+                                <h4 class="text-lg font-semibold mb-2">Ressourcen</h4>
+                                <ul class="list-disc list-inside space-y-2">
                                     <li><a href="https://wuxxin.github.io/welltrack/" target="_blank" class="text-blue-600 hover:underline">Homepage & Dokumentation</a></li>
                                     <li><a href="https://github.com/wuxxin/welltrack" target="_blank" class="text-blue-600 hover:underline">Quellcode auf GitHub</a></li>
                                     <li><a href="https://github.com/wuxxin/welltrack/blob/main/LICENSE" target="_blank" class="text-blue-600 hover:underline">Lizenz (BSD 3-Clause License)</a></li>
                                 </ul>
                             </div>
-                            <div id="version-info-container" class="pt-4 mt-4 border-t border-gray-200">
+                            <div id="version-info-container" class="pt-6 mt-6 border-t border-gray-300">
                                 <!-- Version info will be injected here -->
                             </div>
                         </div>
@@ -2300,7 +2337,12 @@ const WellTrackApp = {
                 metric.labels && metric.labels.activity === eventTypeToDelete.activity
             ).length;
 
-            const message = `<span class="text-lg">Möchten Sie das Ereignis "${eventTypeToDelete.name}" wirklich entfernen? Es sind ${usedMetricsCount} Einträge dieser Art vorhanden, die ebenfalls gelöscht werden.</span>`;
+            let message;
+            if (usedMetricsCount > 0) {
+                 message = `<span class="text-lg">Möchten Sie das Ereignis "${eventTypeToDelete.name}" wirklich entfernen? Es sind ${usedMetricsCount} Einträge dieser Art vorhanden, die ebenfalls gelöscht werden.</span>`;
+            } else {
+                 message = `<span class="text-lg">Möchten Sie das Ereignis "${eventTypeToDelete.name}" wirklich entfernen? Es gibt keine Einträge dieser Art.</span>`;
+            }
 
             WellTrackApp.render.modal.showConfirmation('Ereignis löschen', message, () => {
                 // Remove the event type
@@ -2560,12 +2602,29 @@ const WellTrackApp = {
                     localStorage.removeItem('wellTrackMetrics');
                     localStorage.removeItem('wellTrackEventTypes');
                     localStorage.removeItem('wellTrackSettings');
+                    WellTrackApp.events.showNotification("Alle Daten gelöscht", "delete_forever");
                     // Manually reset app state and re-render without a full page reload
-                    WellTrackApp.init();
+                    setTimeout(() => location.reload(), 4000);
                 },
-                'Löschen',
-                'Abbrechen'
+                { confirmText: 'Löschen', abortText: 'Abbrechen' }
             );
+        },
+        showNotification(message, icon = 'info', duration = 4000) {
+            const overlay = document.getElementById('notification-overlay');
+            const overlayText = document.getElementById('notification-overlay-text');
+            const overlayIcon = document.getElementById('notification-overlay-icon');
+
+            overlayText.textContent = message;
+            overlayIcon.textContent = icon;
+            overlay.classList.remove('hidden');
+
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    overlay.style.opacity = '1'; // Reset for next time
+                }, 500);
+            }, duration);
         },
         checkVersion() {
             const lastModified = document.lastModified;
