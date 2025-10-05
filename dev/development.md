@@ -12,9 +12,9 @@
 
 ### User Documentation
 
-- README.md: A user centric view on howto use the app. It is the primary source of user documentation and should be kept in sync with new features, including adding new sections and placeholders for screenshots.
+- README.md: A user centric view on howto use the app. It is the primary source of user documentation and should be kept in sync with new features, including adding new sections and placeholders for screenshots. The README.md is in German. Avoid using formal personal pronouns like 'Sie' or 'Du' 'ihre' 'ihr' in the documentation, preferring a neutral tone.
 - assets/*.png: The screenshots mainly used for README.md
-- docs: a mostly symlinked directory (including ../README.md and ../assests, and ../src/welltrack/icon*) for mkdocs
+- docs: a mostly symlinked directory (including ../README.md and ../assests, and ../src/welltrack/icon*) for mkdocs user documentation generation.
 
 ### Main Welltrack Webapp Software and Assets
 
@@ -50,28 +50,40 @@
     - `lint`                 Run Linting
     - `test`                 Run Tests
 - mkdocs.yml: mkdocs configuration
+    - In mkdocs.yml, file paths in the nav section are relative to the docs directory, not the project root.
 - pyproject.toml: python dependencies for interactive marimo, testing and mkdocs build
-
-### Documentation, Language and User Interface
-
-The application's UI is in German. The README.md is in German.
-
-User prefers long dates to be formatted as 'Weekday Day.Month.Year' in German (e.g., 'Montag 29.9.2025').
-
-Avoid using formal personal pronouns like 'Sie' or 'Du' in the documentation, preferring a neutral tone.
+- build/site/: mkdocs homepage
+- build/site/wheel/: welltrack_lab Library as wheel for integration in build/site/marimo
+- build/site/marimo/: Welltrack-Lab Interactive Mario html wasm page
+- build/site/welltrack/: Welltrack Main SingePage WebApp page
 
 ### Main Welltrack Webapp
 
-The application is a single-page application (SPA) contained entirely within src/welltrack/welltrack.html.
+- The application is a single-page application (SPA) contained entirely within src/welltrack/welltrack.html.
+- The application's UI is in German.
+- User prefers long dates to be formatted as 'Weekday Day.Month.Year' in German (e.g., 'Montag 29.9.2025').
+- The application uses localStorage for all data storage, making it a client-side-only application with no backend.
+- Dependencies like Tailwind CSS, Chart.js, and date-fns are loaded via CDNs.
+- Use python playwright for GUI Testing.  test all changes on a virtual screen size in portrait mode (mobile) 1080 x 1920, make screenshots before and after.
+- Python scripts related to welltrack data creation/parsing, should read configuration of mood types and body parts directly from src/welltrack/welltrack.html using regex to ensure they are in sync with the main application's settings.
 
-The application uses localStorage for all data storage, making it a client-side-only application with no backend.
+#### Implementation Specifics
 
-Dependencies like Tailwind CSS, Chart.js, and date-fns are loaded via CDNs.
+- A data 'slot' for mood or pain is defined as all entries of that type within a 10-minute window, calculated backwards from the most recent entry in a given set.
+- The date-fns library is used for week calculations (startOfWeek, endOfWeek, addWeeks, subWeeks, isSameWeek).
+- When merging imported data, existing event type configurations should not be overwritten. Imported metrics are de-duplicated using only their metric and timestamp, and their labels are reconstructed based on the current application settings.
+- When deleting an event type, the system should first count existing entries, display a confirmation message with the count, and then delete both the event type and all associated metric entries upon confirmation.
+- To prevent accidental selections on the mood slider, the onpointerdown event is used to record the initial scroll position, which is then checked against the position in the handleMoodChange function to abort if scrolling occurred.
 
-#### Architecture
+#### Playwright GUI Testing of Welltrack
 
-A data 'slot' for mood or pain is defined as all entries of that type within a 10-minute window, calculated backwards from the most recent entry in a given set.
-
+- Verification scripts in the jules-scratch directory should not be deleted until after a final submission is successful, to avoid having to recreate them if further changes are needed.
+- The user wants verification screenshots to be left in the jules-scratch/verification directory for review and not deleted after the verification process.
+- In Playwright, to check if a modal has been hidden (i.e., has the 'hidden' class), use expect(locator).to_be_hidden() instead of wait_for_selector('.hidden'), as the latter will time out waiting for a hidden element to become visible.
+- In Playwright, element selectors like page.get_by_title() are case-sensitive and must exactly match the attribute value in the HTML.
+- For single-page applications, Playwright scripts should avoid using page.reload() after navigation clicks, as this can reset the application state and cause tests to fail. The expect function's built-in wait is sufficient to handle asynchronous rendering.
+- When using Playwright to test features that are not initially visible on the page (e.g., at the bottom of a long scroll), use page.screenshot({ full_page: True }) to capture the entire page content for verification.
+- When using Playwright's to_have_class assertion, the argument must be a string or a regular expression, not a lambda function. A regular expression like re.compile(r'\bactive\b') can be used to check for the presence of a class.
 
 ## Python Style & Conventions
 
@@ -79,10 +91,11 @@ A data 'slot' for mood or pain is defined as all entries of that type within a 1
 - At the start of a new session
     - recreate python environment with "uv venv"
     - install packages with "uv pip install . -e"
-- **Use `pyproject.toml`** to write down new used dependencies.
+- **Use `pyproject.toml`** to add or modify dependencies installed during a task execution.
 - **Use python_dotenv and load_env()** for environment variables.
 - **Follow PEP8**, use type hints, and format with `black`.
 - **Use `pydantic` for data validation**.
+- **Use `pytest` for testing**, playwright and pytest-playwright for gui testing.
 - Use `FastAPI` for APIs and `SQLAlchemy` or `SQLModel` for ORM if applicable.
 - Write **docstrings for every function** using the Google style:
 

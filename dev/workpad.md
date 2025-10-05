@@ -10,24 +10,23 @@ Request a user review once finished.
 
 required changes:
 
-refactor: getEvents() , const events, 'wellTrackEvents' including settings, and all mentions are all targeting the array of event types. Rename it everywhere to relect that this array purpose and the corresponding names and functionnames to reflect this naming. The Array is a wellTackEventTypes EventTypes , so its getEventTypes, wellTrackEventTypes, and so on.
+- settings: edit event type: Anzeige-Art: Add posibility: "Nur Aufzeichnen" as last of the possibilities, so: "Zusammenzählen, Einzeln Hervorheben, Einzeln, Nur Aufzeichnen". settings that are "nur aufzeichen" have no distinct today and no verlauf diagram entry.
 
-refactor code: localStorage: Only Write three items: wellTrackSettings, wellTrackEventTypes, wellTrackMetrics, migrate other into Settings.
-load and write all states into settings that have an corresponding value there of have been saved to localstorage otherwise. reinitialize on page reload, refresh from settings item to state.
-settings: edit event type: Anzeige-Art: Add posibility: "Nur Aufzeichnen" as last of the possibilities, so:
-"Zusammenzählen, Einzeln Hervorheben, Einzeln, Nur Aufzeichnen", and settings that are "nur aufzeichen" have no distinct today and no verlauf diagram entry.
+- protokoll: sort the entries of one day on newest first (pushbuttons, other timestamped, mood, pain), also remove any usage of `ENTRIES_PER_PAGE` , because we select the entries per week now.
 
-protokoll: sort the entries of one day on newest first (pushbuttons, other timestamped, mood, pain), also remove any usage of ENTRIES_PER_PAGE , because we select the entries per week now.
+- on reload and refresh, check the modified datetime of the welltrack.html as we refresh, if `settings:welltrack_latest` is older display short overlay showing the welltrack icon and "aktualisiert auf die Version 23.4.2025 23:25" and writes the version to `settings:welltrack_latest`. in `settings:about` it also shows the `welltrack_latest` version.
 
-on reload and refresh, check the modified datetime of the welltrack.html as we refresh, if settings:welltrack_latest is older display short overlay "aktualisiert auf die Version 23.4.2025 23:25" and writes the version to settings:welltrack_latest. in settings:about it also shows the welltrack_latest version.
+- settings: event type edit: make it a modal overlay that fits the viewport horizontally. the modal content is equal to the current edit content, a click out of the modal aborts, "abbrechen" aborts too.
 
-settings: event type edit: make it a modal overlay that fits the viewport horizontally. the modal content is equal to the current edit content, a click out of the modal aborts, "abbrechen" aborts too.
-
-settings: edit event type: add Button (after subtab selector, right aligned just before event type list starts) with Icon Representing "Loosing Chains" for reorder, end "closed Chains" as the other icon once in reorder mode to freeze changes. clicking on it blurs everything except the event type list, that gets grab icons on the left, and disables,  greysout (modal type) all other user interface, so only the list and the icon "Closed Chains" are clickable,
+- settings: edit event type: add Button (after subtab selector, right aligned just before event type list starts) with Icon Representing "Loosing Chains" for reorder, and "closed Chains" as the other icon once in reorder mode to freeze changes. clicking "Reorder" Icon blurs everything except the event type list, that gets grab icons on the left, and disables/greysout (modal type) all other user interface, so only the list and the icon "Closed Chains" are clickable, the user can reorder the event types, and either abort (clicked outside) aborts the reordering, or the click on "closed Chain" freezes the new reordering, after the metrictype array gets resorted from the dom order.
 
 
 ## nice to have
 
+
+- refactor: `getEvents()` , `const events`, 'wellTrackEvents' including settings, and all mentions are all targeting the array of event types. Rename it everywhere to relect that this array purpose and the corresponding names and functionnames to reflect this naming. The Array is a `wellTackEventTypes` `EventTypes` , so its `getEventTypes`, `wellTrackEventTypes`, and so on.
+- refactor code: `localStorage`: Only Write three items: `wellTrackSettings`, `wellTrackEventTypes`, `wellTrackMetrics`, migrate other into Settings.
+- refactor code: load and write all states into settings that have an corresponding value there of have been saved to localstorage otherwise. reinitialize on page reload, refresh from settings item to state.
 
 
 button next too mood: Record Note: TinyWhisper modul pushbutton while speaking , transcribe to text as note with mood entry

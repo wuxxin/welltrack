@@ -3,20 +3,20 @@
 ## Project Awareness & Context
 
 - **Always read `dev/product-requirements.md` and `dev/development.md`** at the start of a new conversation to understand the project's architecture, goals, style, and constraints.
-- **Check `dev/tasks.md`** before starting a new task. If the task isn’t listed, add it with a brief description and today's date.
+- The `dev/tasks.md` file is used to track the implementation of new features.
 - **Use consistent naming conventions, file structure, and architecture patterns** as described in `dev/development.md`.
 
 ## Task Completion
 
-- **Mark completed tasks in `dev/tasks.md`** immediately after finishing them.
-- Add new dependencies installed during a task execution to the dependency list,
+- Check `dev/tasks.md`** before starting a new task. If the task isn’t listed, add it with a brief description and today's date under 'New Tasks'.
+- **Mark completed tasks in `dev/tasks.md`** with '[x]' markers upon completion immediately after finishing them.
 
 ## Documentation & Explainability
 
 - **Update `README.md`** when new features are added, dependencies change, or setup steps are modified.
 - **Comment non-obvious code** and ensure everything is understandable to a mid-level developer.
 - When writing complex logic, **add an inline `# Reason:` comment** explaining the why, not just the what.
-- **Update `dev/product-requirements.md` and `/dev/development.md`** if tasks done, expand or modify any of them.
+- **Update `dev/product-requirements.md` and `/dev/development.md`** if a task is done, if it expands or modify any of these documents.
 
 ## AI Behavior Rules
 
