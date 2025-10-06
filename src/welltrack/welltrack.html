@@ -324,12 +324,6 @@
         <span id="version-overlay-text"></span>
     </div>
 
-    <!-- General Notification Overlay -->
-    <div id="notification-overlay" class="hidden bg-gray-800 text-white p-4 rounded-lg shadow-lg z-50 flex justify-center items-center gap-3 transition-opacity duration-300 opacity-100">
-        <span id="notification-overlay-icon" class="material-symbols-outlined">info</span>
-        <span id="notification-overlay-text"></span>
-    </div>
-
     <!-- Modal Structure -->
     <div id="modal-container" onclick="if (event.target === this) { WellTrackApp.render.modal.hide() }" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div id="modal-content" class="bg-white rounded-3xl p-6 shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -412,7 +406,7 @@ const WellTrackApp = {
         let settings = this.data.getSettings();
         let settingsUpdated = false;
 
-        // One-time migration for users with old settings structure
+        // One-time migration for users with old EventTypes naming
         const oldEventTypesData = localStorage.getItem('wellTrackEvents');
         if (oldEventTypesData) {
             const newEventTypesData = localStorage.getItem('wellTrackEventTypes');
@@ -420,28 +414,6 @@ const WellTrackApp = {
                 localStorage.setItem('wellTrackEventTypes', oldEventTypesData);
             }
             localStorage.removeItem('wellTrackEvents');
-        }
-        const oldPainView = localStorage.getItem('wellTrackPainView');
-        if (oldPainView) {
-            settings.painView = oldPainView;
-            localStorage.removeItem('wellTrackPainView');
-            settingsUpdated = true;
-        }
-        const oldLogVisibility = localStorage.getItem('wellTrackLogVisibility');
-        if (oldLogVisibility) {
-            settings.logVisibility = JSON.parse(oldLogVisibility);
-            localStorage.removeItem('wellTrackLogVisibility');
-            settingsUpdated = true;
-        }
-        const oldSettingsTab = localStorage.getItem('wellTrackActiveSettingsTab');
-        if (oldSettingsTab) {
-            settings.activeSettingsTab = oldSettingsTab;
-            localStorage.removeItem('wellTrackActiveSettingsTab');
-            settingsUpdated = true;
-        }
-
-        if (settingsUpdated) {
-            this.data.saveSettings(settings);
         }
 
         // Initialize state from settings
@@ -453,7 +425,7 @@ const WellTrackApp = {
             this.events.showPage(this.state.activePage);
             this.events.initEventListeners();
             this.events.registerServiceWorker();
-            this.events.checkVersion();
+            this.events.checkLastModified();
         });
     },
 
@@ -635,7 +607,7 @@ const WellTrackApp = {
             const a = document.createElement('a');
             a.href = url; a.download = `welltrack_export_${Date.now()}.json`;
             a.click(); URL.revokeObjectURL(url);
-            WellTrackApp.events.showNotification("Daten exportiert", "download");
+            console.log("Export", "Daten wurden exportiert", "download");
         },
         importData(event) {
             const file = event.target.files[0]; if (!file) return;
@@ -678,7 +650,7 @@ const WellTrackApp = {
                         this.saveEventTypes(imported.eventTypes || []);
                         this.saveSettings(imported.settings || {});
                         WellTrackApp.render.modal.hide();
-                        WellTrackApp.events.showNotification(`Daten überschrieben: ${importedEventTypesCount} Ereignisarten und ${importedMetricsCount} Metriken importiert.`, 'file_upload');
+                        console.log('Daten überschrieben', '${importedEventTypesCount} Ereignisarten und ${importedMetricsCount} Metriken wurden importiert.', 'file_upload');
                         location.reload();
                     };
 
@@ -737,7 +709,7 @@ const WellTrackApp = {
 
                         // 3. Settings are not merged on append.
                         WellTrackApp.render.modal.hide();
-                        WellTrackApp.events.showNotification(`Daten vereint: ${newEventTypes.length} neue Ereignisarten und ${newMetrics.length} neue Metriken importiert.`, 'merge_type');
+                        console.log('Daten vereint', '${importedEventTypesCount} Ereignisarten und ${importedMetricsCount} Metriken wurden importiert.', 'merge_type');
                         location.reload();
                     };
 
@@ -2194,7 +2166,7 @@ const WellTrackApp = {
             }
 
             WellTrackApp.data.saveMetrics(metrics);
-            WellTrackApp.data.loadTodaysState(); // Reload UI
+            WellTrackApp.data.loadTodaysState();
         },
         handleSetPainLevel(level) {
             const part = WellTrackApp.state.currentPainPart; if (!part) return;
@@ -2608,31 +2580,13 @@ const WellTrackApp = {
                     localStorage.removeItem('wellTrackMetrics');
                     localStorage.removeItem('wellTrackEventTypes');
                     localStorage.removeItem('wellTrackSettings');
-                    WellTrackApp.events.showNotification("Alle Daten gelöscht", "delete_forever");
-                    // Manually reset app state and re-render without a full page reload
+                    console.log("Alle Daten gelöscht", "", "delete_forever");
                     location.reload();
                 },
                 { confirmText: 'Löschen', abortText: 'Abbrechen' }
             );
         },
-        showNotification(message, icon = 'info', duration = 4000) {
-            const overlay = document.getElementById('notification-overlay');
-            const overlayText = document.getElementById('notification-overlay-text');
-            const overlayIcon = document.getElementById('notification-overlay-icon');
-
-            overlayText.textContent = message;
-            overlayIcon.textContent = icon;
-            overlay.classList.remove('hidden');
-
-            setTimeout(() => {
-                overlay.style.opacity = '0';
-                setTimeout(() => {
-                    overlay.classList.add('hidden');
-                    overlay.style.opacity = '1'; // Reset for next time
-                }, 500);
-            }, duration);
-        },
-        checkVersion() {
+        checkLastModified() {
             const lastModified = document.lastModified;
             let settings = WellTrackApp.data.getSettings();
 
