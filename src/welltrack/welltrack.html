@@ -935,7 +935,7 @@ const WellTrackApp = {
                 let listHtml = '';
                 if (isVisible) {
                     summarizedToday.sort((a,b) => b.timestamp - a.timestamp).forEach(metric => {
-                        listHtml += `<li class="text-sm text-gray-700 py-1 border-b border-gray-200 last:border-b-0">${this.components.todaysLogEntry(metric)}</li>`;
+                        listHtml += `<li class="text-gray-800 py-1 border-b border-gray-200 last:border-b-0">${this.components.todaysLogEntry(metric)}</li>`;
                     });
                 }
 
@@ -1196,7 +1196,7 @@ const WellTrackApp = {
 
             let listHtml = '<h3 class="text-lg font-semibold mb-2 text-gray-800">Letzte Einträge:</h3><ul class="space-y-2">';
             summarizedToday.sort((a,b) => b.timestamp - a.timestamp).forEach(metric => {
-                 listHtml += `<li class="text-sm text-gray-700">${this.components.todaysLogEntry(metric)}</li>`;
+                 listHtml += `<li class="text-gray-800">${this.components.todaysLogEntry(metric)}</li>`;
             });
             listHtml += '</ul>';
 
@@ -1577,7 +1577,7 @@ const WellTrackApp = {
                 }
 
                 let groupButtons = groups.map((group) => {
-                    const groupName = group === '*' ? 'Ohne Gruppe' : group;
+                    const groupName = group === '*' ? 'Allgemein' : group;
                     const activeClass = WellTrackApp.state.activeEventGroup === group ? 'active' : '';
                     return `<button type="button" onclick="WellTrackApp.events.handleEventGroupToggle('${group}')" id="btn-event-group-${group}" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full ${activeClass}">${groupName}</button>`
                 }).join('');
@@ -1749,15 +1749,15 @@ const WellTrackApp = {
 
                 let reminderContentHtml = '';
                 if (perm === 'denied') {
-                    reminderContentHtml = '<p class="text-sm text-red-600">Sie müssen die Berechtigung in den Browser-Einstellungen ändern, um Benachrichtigungen zu erhalten.</p>';
+                    reminderContentHtml = '<p class="text-red-600">Sie müssen die Berechtigung in den Browser-Einstellungen ändern, um Benachrichtigungen zu erhalten.</p>';
                 } else if (perm === 'default') {
                     reminderContentHtml = '<button onclick="WellTrackApp.events.requestNotificationPermission()" class="btn btn-secondary w-full">Browser-Benachrichtigungen erlauben</button>';
                 } else { // perm === 'granted'
                     if (settings.reminders_active) {
                         reminderContentHtml = `
-                            <p class="text-sm text-gray-600">Status: <span class="font-bold text-green-600">Aktiviert</span></p>
+                            <p class="text-gray-600">Status: <span class="font-bold text-green-600">Aktiviert</span></p>
                             <div>
-                                <label for="reminder-times" class="block mb-1 text-sm font-medium text-gray-900">Erinnerungen um:</label>
+                                <label for="reminder-times" class="block mb-1 font-medium text-gray-900">Erinnerungen um:</label>
                                 <input type="text" id="reminder-times" value="${settings.reminderTimes}" onchange="WellTrackApp.events.saveReminderTimes(this.value)" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="12:00, 17:00, 23:30">
                                 <p class="text-xs text-gray-500 mt-1">Format: hh:mm[,hh:mm]*</p>
                             </div>
@@ -1768,7 +1768,7 @@ const WellTrackApp = {
                         `;
                     } else {
                         reminderContentHtml = `
-                            <p class="text-sm text-gray-600">Status: <span class="font-bold">Nicht aktiviert</span></p>
+                            <p class="text-gray-600">Status: <span class="font-bold">Nicht aktiviert</span></p>
                             <button onclick="WellTrackApp.events.handleActivateReminders()" class="btn btn-secondary w-full">Erinnerungen aktivieren</button>
                         `;
                     }
@@ -1868,7 +1868,7 @@ const WellTrackApp = {
                 return `
                     <div class="flex items-baseline">
                          <span class="text-base sm:text-lg font-medium text-gray-800">${event.name}</span>
-                         <span class="text-xs sm:text-sm text-gray-500 font-normal ml-2">${lastTimestampInfo}</span>
+                         <span class="text-sm sm:text-sm text-gray-800 font-normal ml-2">${lastTimestampInfo}</span>
                     </div>
                     <div class="flex items-center gap-2 ml-auto">
                         ${buttonsHtml}
