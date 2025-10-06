@@ -679,7 +679,7 @@ const WellTrackApp = {
                         this.saveSettings(imported.settings || {});
                         WellTrackApp.render.modal.hide();
                         WellTrackApp.events.showNotification(`Daten überschrieben: ${importedEventTypesCount} Ereignisarten und ${importedMetricsCount} Metriken importiert.`, 'file_upload');
-                        setTimeout(() => location.reload(), 4000);
+                        location.reload();
                     };
 
                     const appendData = () => {
@@ -738,7 +738,7 @@ const WellTrackApp = {
                         // 3. Settings are not merged on append.
                         WellTrackApp.render.modal.hide();
                         WellTrackApp.events.showNotification(`Daten vereint: ${newEventTypes.length} neue Ereignisarten und ${newMetrics.length} neue Metriken importiert.`, 'merge_type');
-                        setTimeout(() => location.reload(), 4000);
+                        location.reload();
                     };
 
                     const content = `
@@ -2610,7 +2610,7 @@ const WellTrackApp = {
                     localStorage.removeItem('wellTrackSettings');
                     WellTrackApp.events.showNotification("Alle Daten gelöscht", "delete_forever");
                     // Manually reset app state and re-render without a full page reload
-                    setTimeout(() => location.reload(), 4000);
+                    location.reload();
                 },
                 { confirmText: 'Löschen', abortText: 'Abbrechen' }
             );
