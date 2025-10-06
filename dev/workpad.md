@@ -10,6 +10,15 @@ Request a user review once finished.
 
 required changes:
 
+mache irgendwie hinein das heute zb bei pushbutton, oder daily event values sich auf 4 bis 4 bezieht,
+dh. ausserdem soll today: Heute -> Datum dann "Heute -> Nacht von Montag auf Dienstag 3.10.2025"
+clear to 0 für daily values soll erst um 04:00 passieren. push button values should state "3x last 03:30" if three times during last day up to next day 03:30" , and should also undo to last day, because it is currently the "same" day.
+
+today mood, pain trends stay same, because they are current againt previous value.
+
+diagrams could change, but dont care about diagrams now.
+
+
 ## nice to have
 
 - settings: edit event type: add Button (after subtab selector, right aligned just before event type list starts) with only an Icon (no text, but hovering reveals "Sortierung verändern", Representing "Loosing Chains" for reorder, and "closed Chains" as the other icon once in reorder mode to freeze changes. clicking "Reorder" Icon blurs everything except the event type list, that gets grab icons on the left, and disables/greysout (modal type) all other user interface, so only the list and the icon "Closed Chains" are clickable, the user can reorder the event types, and either abort (clicked outside) aborts the reordering, or the click on "closed Chain" freezes the new reordering, after the metrictype array gets resorted from the dom order.
