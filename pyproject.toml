@@ -25,8 +25,6 @@ requires-python = ">=3.10"
 dependencies = [
     "welltrack_lab",
     "build",
-    # cryptography - for scripts/dev_serve.py for make serve-docs local
-    "cryptography",
     "altair",
     "bokeh",
     "ipython",
@@ -45,6 +43,7 @@ test = [
     "pytest",
     "playwright",
     "pytest-playwright",
+    "cryptography",
 ]
 docs = [
     # mkdocs - Project documentation with Markdown

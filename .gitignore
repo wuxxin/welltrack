@@ -1,17 +1,43 @@
-# compiled python
+# Python
+__pycache__/
 *.pyc
-__pycache__
-__marimo__
-.pytest_cache
-
-# egg-info for now
-src/welltrack_lab.egg-info
-
-# uv locked dependencies
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+celerybeat-schedule
+*.egg-info/
+dist/
+build/
 uv.lock
 
-# python virtualenv
-.venv
+# Logs
+*.log
+logs/
 
-# build artifacts
-build
+# Test artifacts
+.pytest_cache/
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+junit.xml
+report.xml
+*.prof
+screenshots/
+test-results/
+
+# Editor-specific
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
