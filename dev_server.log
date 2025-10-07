@@ -1,0 +1,6 @@
+2025-10-07 01:33:32,308 - INFO - Serving files from: /app/build/site
+2025-10-07 01:33:32,308 - INFO - HTTP Protocol Version: HTTP/1.1
+2025-10-07 01:33:32,309 - INFO - MIME type for .wasm: application/wasm
+2025-10-07 01:33:32,309 - INFO - MIME type for .js: application/javascript
+2025-10-07 01:33:32,309 - INFO - Generating self-signed certificate for: devbox
+2025-10-07 01:33:32,379 - INFO - Serving on https://devbox:8443/ (Ctrl+C to quit)

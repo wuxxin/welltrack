@@ -319,9 +319,15 @@
     </main>
     
     <!-- Version Update Overlay -->
-    <div id="version-overlay" class="hidden bg-gray-800 text-white p-4 rounded-lg shadow-lg z-50 flex justify-center items-center gap-3 transition-opacity duration-300 opacity-100">
+    <div id="version-overlay" class="hidden bg-gray-800 text-white p-4 rounded-lg shadow-lg z-50 flex justify-center items-center gap-3 transition-opacity duration-300 opacity-100" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);">
         <span class="material-symbols-outlined">celebration</span>
         <span id="version-overlay-text"></span>
+    </div>
+
+    <!-- Rebirth Message Overlay -->
+    <div id="rebirth-overlay" class="hidden bg-blue-600 text-white p-4 rounded-lg shadow-lg z-50 flex justify-center items-center gap-3 transition-opacity duration-300 opacity-100" style="position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);">
+        <span id="rebirth-overlay-icon" class="material-symbols-outlined">info</span>
+        <span id="rebirth-overlay-text"></span>
     </div>
 
     <!-- Modal Structure -->
@@ -426,6 +432,7 @@ const WellTrackApp = {
             this.events.initEventListeners();
             this.events.registerServiceWorker();
             this.events.checkLastModified();
+            this.events.checkRebirthMessage();
         });
     },
 
@@ -458,12 +465,14 @@ const WellTrackApp = {
             const now = Date.now();
 
             if (entry.metric.startsWith('event_') && !entry.metric.endsWith('_timestamp')) {
-                // For incrementing events, find and replace the entry for the same activity today.
-                const startOfToday = new Date();
-                startOfToday.setHours(0, 0, 0, 0);
+                // For incrementing events, find and replace the entry for the same activity today (WellTrack Day).
+                const startOfWellTrackDay = WellTrackApp.utils.getWellTrackDay(new Date());
+                const endOfWellTrackDay = new Date(startOfWellTrackDay.getTime() + 24 * 60 * 60 * 1000);
+
                 const existingIndex = metrics.findIndex(oldEntry =>
                     oldEntry.labels.activity === entry.labels.activity &&
-                    oldEntry.timestamp >= startOfToday.getTime()
+                    oldEntry.timestamp >= startOfWellTrackDay.getTime() &&
+                    oldEntry.timestamp < endOfWellTrackDay.getTime()
                 );
                 if (existingIndex > -1) {
                     metrics.splice(existingIndex, 1);
@@ -543,7 +552,7 @@ const WellTrackApp = {
         loadTodaysState() {
             const page = WellTrackApp.state.activePage;
             const metrics = this.getMetrics();
-            const todaysMetrics = metrics.filter(e => WellTrackApp.utils.isToday(new Date(e.timestamp)));
+            const todaysMetrics = metrics.filter(e => WellTrackApp.utils.isTodayWellTrackDay(new Date(e.timestamp)));
             const now = Date.now();
            
             if (page === 'pain') {
@@ -650,8 +659,7 @@ const WellTrackApp = {
                         this.saveEventTypes(imported.eventTypes || []);
                         this.saveSettings(imported.settings || {});
                         WellTrackApp.render.modal.hide();
-                        console.log('Daten überschrieben', '${importedEventTypesCount} Ereignisarten und ${importedMetricsCount} Metriken wurden importiert.', 'file_upload');
-                        location.reload();
+                        WellTrackApp.utils.showMessageAndReload(`Daten überschrieben: ${importedMetricsCount} Metriken und ${importedEventTypesCount} Ereignisarten importiert.`, 'file_upload');
                     };
 
                     const appendData = () => {
@@ -709,8 +717,9 @@ const WellTrackApp = {
 
                         // 3. Settings are not merged on append.
                         WellTrackApp.render.modal.hide();
-                        console.log('Daten vereint', '${importedEventTypesCount} Ereignisarten und ${importedMetricsCount} Metriken wurden importiert.', 'merge_type');
-                        location.reload();
+                        const newEventsCount = newEventTypes.length;
+                        const newMetricsCount = newMetrics.length;
+                        WellTrackApp.utils.showMessageAndReload(`Daten vereint: ${newMetricsCount} neue Metriken und ${newEventsCount} neue Ereignisarten hinzugefügt.`, 'merge_type');
                     };
 
                     const content = `
@@ -740,7 +749,7 @@ const WellTrackApp = {
 
             // --- Data fetching ---
             const allData = WellTrackApp.data.getMetrics();
-            const todaysMetrics = allData.filter(e => WellTrackApp.utils.isSameDay(new Date(e.timestamp), new Date()));
+            const todaysMetrics = allData.filter(e => WellTrackApp.utils.isSameWellTrackDay(new Date(e.timestamp), new Date()));
             const summarizedToday = WellTrackApp.utils.summarizeMetrics(todaysMetrics);
 
             // --- Deltas ---
@@ -1007,26 +1016,28 @@ const WellTrackApp = {
             if (weekMetrics.length === 0) {
                 logContainer.innerHTML = '<div class="card"><p class="text-gray-500 text-center py-8">Keine Einträge in dieser Woche vorhanden.</p></div>';
             } else {
-                const groupedData = {};
+                const groupedByDay = {};
                 weekMetrics.forEach(metric => {
-                    const d = new Date(metric.timestamp);
-                    const dateKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-                    if (!groupedData[dateKey]) groupedData[dateKey] = [];
-                    groupedData[dateKey].push(metric);
+                    const dayStart = WellTrackApp.utils.getWellTrackDay(new Date(metric.timestamp));
+                    const dayKey = dayStart.getTime(); // Use timestamp as a unique key for the day
+                    if (!groupedByDay[dayKey]) {
+                        groupedByDay[dayKey] = [];
+                    }
+                    groupedByDay[dayKey].push(metric);
                 });
 
-                const sortedDates = Object.keys(groupedData).sort((a, b) => new Date(b) - new Date(a));
+                const sortedDays = Object.keys(groupedByDay).sort((a, b) => b - a);
 
-                sortedDates.forEach(dateKey => {
-                    const dateObj = new Date(dateKey);
+                sortedDays.forEach(dayKey => {
+                    const dateObj = new Date(parseInt(dayKey, 10));
                     const weekdays = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
                     const dayName = weekdays[dateObj.getDay()];
                     const formattedDate = `${dayName} ${dateObj.getDate()}.${dateObj.getMonth() + 1}.${dateObj.getFullYear()}`;
 
                     const div = document.createElement('div');
                     div.className = 'py-4 border-b border-gray-200 last:border-b-0';
-                    div.id = `log-day-${dateKey}`;
-                    const summarizedMetrics = WellTrackApp.utils.summarizeMetrics(groupedData[dateKey]);
+                    div.id = `log-day-${dayKey}`;
+                    const summarizedMetrics = WellTrackApp.utils.summarizeMetrics(groupedByDay[dayKey]);
                     div.innerHTML = this.components.logEntry(formattedDate, summarizedMetrics);
                     logContainer.appendChild(div);
                 });
@@ -1052,7 +1063,7 @@ const WellTrackApp = {
             if (!eventContainer) return;
 
             const todaysData = WellTrackApp.data.getMetrics();
-            const todaysEventsDone = todaysData.filter(e => e.metric.startsWith('event_') && WellTrackApp.utils.isToday(new Date(e.timestamp)));
+            const todaysEventsDone = todaysData.filter(e => e.metric.startsWith('event_') && WellTrackApp.utils.isTodayWellTrackDay(new Date(e.timestamp)));
             
             let allEvents = WellTrackApp.data.getEventTypes();
             let filteredEvents;
@@ -1098,12 +1109,11 @@ const WellTrackApp = {
             if (!container) return;
 
             const today = new Date();
-            const yesterday = new Date();
-            yesterday.setDate(today.getDate() - 1);
+            const yesterday = new Date(WellTrackApp.utils.getWellTrackDay(today).getTime() - 24 * 60 * 60 * 1000);
 
             const allData = WellTrackApp.data.getMetrics();
-            let todaysMetrics = allData.filter(e => WellTrackApp.utils.isSameDay(new Date(e.timestamp), today));
-            let yesterdaysMetrics = allData.filter(e => WellTrackApp.utils.isSameDay(new Date(e.timestamp), yesterday));
+            let todaysMetrics = allData.filter(e => WellTrackApp.utils.isSameWellTrackDay(new Date(e.timestamp), today));
+            let yesterdaysMetrics = allData.filter(e => WellTrackApp.utils.isSameWellTrackDay(new Date(e.timestamp), yesterday));
             
             // Summarize before calculating totals
             const summarizedToday = WellTrackApp.utils.summarizeMetrics(todaysMetrics);
@@ -1517,10 +1527,21 @@ const WellTrackApp = {
         },
         components: {
             todaySection: () => {
-                const today = new Date();
+                const now = new Date();
                 const weekdays = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-                const dayName = weekdays[today.getDay()];
-                const dateString = `${dayName} ${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
+                const startOfWellTrackDay = WellTrackApp.utils.getWellTrackDay(now);
+
+                let dateString;
+                if (now.getHours() < 5) {
+                    const prevDayName = weekdays[startOfWellTrackDay.getDay()];
+                    const currentDayName = weekdays[now.getDay()];
+                    const currentDate = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
+                    dateString = `${prevDayName} auf ${currentDayName} ${currentDate}`;
+                } else {
+                    const currentDayName = weekdays[now.getDay()];
+                    const currentDate = `${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
+                    dateString = `${currentDayName} ${currentDate}`;
+                }
                 return `
                 <div class="flex justify-between items-center pt-2 px-2 mb-4">
                     <h2 class="h2-style">Heute</h2>
@@ -1872,6 +1893,76 @@ const WellTrackApp = {
                 return `(${time}) Unbekannter Eintrag`;
             },
             logEntry: (formattedDate, metrics) => {
+                // Helper function to create and render slots for mood or pain
+                const createSlotsHtml = (metricPrefix, renderSlot) => {
+                    const typeMetrics = metrics.filter(m => m.metric.startsWith(metricPrefix)).sort((a, b) => a.timestamp - b.timestamp);
+                    if (typeMetrics.length === 0) return '';
+
+                    const slots = [];
+                    let processedIndices = new Set();
+
+                    for (let i = 0; i < typeMetrics.length; i++) {
+                        if (processedIndices.has(i)) continue;
+
+                        const firstEntry = typeMetrics[i];
+                        const slotStartTime = firstEntry.timestamp;
+                        const slotEndTime = slotStartTime + 600000; // 10 minutes
+
+                        const currentSlot = [firstEntry];
+                        processedIndices.add(i);
+
+                        for (let j = i + 1; j < typeMetrics.length; j++) {
+                            if (processedIndices.has(j)) continue;
+                            const nextEntry = typeMetrics[j];
+                            if (nextEntry.timestamp < slotEndTime) {
+                                currentSlot.push(nextEntry);
+                                processedIndices.add(j);
+                            }
+                        }
+
+                        // Sort items within the slot by name
+                        currentSlot.sort((a, b) => a.labels.name.localeCompare(b.labels.name));
+                        slots.push(currentSlot);
+                    }
+
+                    // Render slots newest first
+                    return slots.reverse().map(renderSlot).join('');
+                };
+
+                // --- Render Mood Slots ---
+                const moodHtml = createSlotsHtml('mood_', (slot) => {
+                    if (slot.length === 0) return '';
+                    const firstEntryTime = new Date(slot[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const totalScore = slot.reduce((sum, m) => sum + m.value, 0);
+                    const totalColorClass = totalScore > 0 ? 'text-green-600' : (totalScore < 0 ? 'text-red-600' : 'text-gray-600');
+                    const totalSign = totalScore > 0 ? '+' : '';
+
+                    const detailsMatrix = slot.map(m => {
+                        const valueColorClass = m.value > 0 ? 'text-green-600' : 'text-red-600';
+                        return `<div class="flex justify-between items-center p-2 rounded-lg bg-gray-50"><span class="text-gray-800">${m.labels.name}</span><span class="font-bold text-lg ${valueColorClass}">${m.value > 0 ? '+' : ''}${m.value}</span></div>`;
+                    }).join('');
+
+                    return `<div class="mt-2"><h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600"> Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
+                });
+
+                // --- Render Pain Slots ---
+                const painHtml = createSlotsHtml('pain_', (slot) => {
+                    if (slot.length === 0) return '';
+                    const firstEntryTime = new Date(slot[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const totalScore = slot.reduce((sum, m) => sum + m.value, 0);
+                    const totalColor = totalScore > 0 ? 'text-red-600' : 'text-gray-600';
+
+                     const detailsMatrix = slot.map(p => {
+                        if (p.metric === 'pain_free_level') return `<div class="p-2 rounded-lg flex justify-center items-center font-semibold" style="background-color: #86efac">Schmerz Frei</div>`;
+                        const props = WellTrackApp.config.PAIN_LEVELS[p.value] || {};
+                        const textColor = (p.value > 2 && p.value < 6) ? 'text-white' : 'text-black';
+                        return `<div class="p-2 rounded-lg flex justify-between items-center" style="background-color: ${props.color || '#ccc'}"><span class="${textColor}">${p.labels.name}</span><span class="font-bold text-lg ${textColor}">${p.value}</span></div>`;
+                    }).join('');
+
+                    return `<div class="mt-2"><h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600">Gesamt: <span class="font-bold ${totalColor}">${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
+                });
+
+
                 // Sort events by time (newest first)
                 const eventMetrics = metrics.filter(m => m.metric.startsWith('event_')).sort((a, b) => b.timestamp - a.timestamp);
                 let eventsHtml = '';
@@ -1897,73 +1988,7 @@ const WellTrackApp = {
                     }).join('');
                 }
 
-                // --- Mood Slots (newest first) ---
-                const moodMetrics = metrics.filter(m => m.metric.startsWith('mood_')).sort((a, b) => a.timestamp - b.timestamp);
-                let moodHtml = '';
-                if (moodMetrics.length > 0) {
-                    const moodSlots = [];
-                    let currentSlot = [];
-                    // Iterate from oldest to newest to create slots
-                    [...moodMetrics].reverse().forEach((metric, index, arr) => {
-                        if (index > 0 && (metric.timestamp - arr[index-1].timestamp > 600000)) {
-                            moodSlots.push(currentSlot);
-                            currentSlot = [];
-                        }
-                        currentSlot.push(metric);
-                    });
-                    moodSlots.push(currentSlot);
-
-                    // Render slots newest first
-                    moodHtml = moodSlots.reverse().map(group => {
-                        if (group.length === 0) return '';
-                        const firstEntryTime = new Date(group[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        const totalScore = group.reduce((sum, m) => sum + m.value, 0);
-                        const totalColorClass = totalScore > 0 ? 'text-green-600' : (totalScore < 0 ? 'text-red-600' : 'text-gray-600');
-                        const totalSign = totalScore > 0 ? '+' : '';
-
-                        const detailsMatrix = group.map(m => {
-                            const valueColorClass = m.value > 0 ? 'text-green-600' : 'text-red-600';
-                            return `<div class="flex justify-between items-center p-2 rounded-lg bg-gray-50"><span class="text-gray-800">${m.labels.name}</span><span class="font-bold text-lg ${valueColorClass}">${m.value > 0 ? '+' : ''}${m.value}</span></div>`;
-                        }).join('');
-
-                        return `<div class="mt-2"><h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600"> Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
-                    }).join('');
-                }
-
-                // --- Pain Slots (newest first) ---
-                const painMetrics = metrics.filter(m => m.metric.startsWith('pain_')).sort((a, b) => a.timestamp - b.timestamp);
-                let painHtml = '';
-                if (painMetrics.length > 0) {
-                    const painSlots = [];
-                    let currentSlot = [];
-                     // Iterate from oldest to newest to create slots
-                    [...painMetrics].reverse().forEach((metric, index, arr) => {
-                        if (index > 0 && (metric.timestamp - arr[index-1].timestamp > 600000)) {
-                            painSlots.push(currentSlot);
-                            currentSlot = [];
-                        }
-                        currentSlot.push(metric);
-                    });
-                    painSlots.push(currentSlot);
-
-                    // Render slots newest first
-                    painHtml = painSlots.reverse().map(group => {
-                        if (group.length === 0) return '';
-                        const firstEntryTime = new Date(group[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        const totalScore = group.reduce((sum, m) => sum + m.value, 0);
-                        const totalColor = totalScore > 0 ? 'text-red-600' : 'text-gray-600';
-
-                        const detailsMatrix = group.map(p => {
-                            if (p.metric === 'pain_free_level') return `<div class="p-2 rounded-lg flex justify-center items-center font-semibold" style="background-color: #86efac">Schmerz Frei</div>`;
-                            const props = WellTrackApp.config.PAIN_LEVELS[p.value] || {};
-                            const textColor = (p.value > 2 && p.value < 6) ? 'text-white' : 'text-black';
-                            return `<div class="p-2 rounded-lg flex justify-between items-center" style="background-color: ${props.color || '#ccc'}"><span class="${textColor}">${p.labels.name}</span><span class="font-bold text-lg ${textColor}">${p.value}</span></div>`;
-                        }).join('');
-
-                        return `<div class="mt-2"><h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600">Gesamt: <span class="font-bold ${totalColor}">${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
-                    }).join('');
-                }
-
+                // --- Final Assembly ---
                 let html = '';
                 if (eventsHtml) {
                     html += `<div><div class="flex justify-between items-baseline"><h4 class="font-semibold text-lg mb-2 text-gray-800">Ereignisse</h4><h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3></div><div class="pl-4">${eventsHtml}</div></div>`;
@@ -2209,12 +2234,13 @@ const WellTrackApp = {
 
             let allMetrics = WellTrackApp.data.getMetrics();
 
-            const startOfToday = new Date();
-            startOfToday.setHours(0, 0, 0, 0);
+            const startOfWellTrackDay = WellTrackApp.utils.getWellTrackDay(new Date());
+            const endOfWellTrackDay = new Date(startOfWellTrackDay.getTime() + 24 * 60 * 60 * 1000);
 
             const todaysEntry = allMetrics.find(m =>
                 m.labels.activity === activity &&
-                m.timestamp >= startOfToday.getTime()
+                m.timestamp >= startOfWellTrackDay.getTime() &&
+                m.timestamp < endOfWellTrackDay.getTime()
             );
 
             const currentValue = todaysEntry ? todaysEntry.value : 0;
@@ -2248,14 +2274,17 @@ const WellTrackApp = {
         handleUndoTimestamp(activity) {
             let metrics = WellTrackApp.data.getMetrics();
 
-            const startOfToday = new Date();
-            startOfToday.setHours(0, 0, 0, 0);
+            const startOfWellTrackDay = WellTrackApp.utils.getWellTrackDay(new Date());
+            const endOfWellTrackDay = new Date(startOfWellTrackDay.getTime() + 24 * 60 * 60 * 1000);
 
-            // Find the last timestamp entry for this activity today
+            // Find the last timestamp entry for this activity today (WellTrack Day)
             let lastEntryIndex = -1;
             for(let i = metrics.length - 1; i >= 0; i--) {
                 const entry = metrics[i];
-                if (entry.labels.activity === activity && entry.metric.endsWith('_timestamp') && entry.timestamp >= startOfToday.getTime()) {
+                if (entry.labels.activity === activity &&
+                    entry.metric.endsWith('_timestamp') &&
+                    entry.timestamp >= startOfWellTrackDay.getTime() &&
+                    entry.timestamp < endOfWellTrackDay.getTime()) {
                     lastEntryIndex = i;
                     break;
                 }
@@ -2580,8 +2609,7 @@ const WellTrackApp = {
                     localStorage.removeItem('wellTrackMetrics');
                     localStorage.removeItem('wellTrackEventTypes');
                     localStorage.removeItem('wellTrackSettings');
-                    console.log("Alle Daten gelöscht", "", "delete_forever");
-                    location.reload();
+                    WellTrackApp.utils.showMessageAndReload('Alle Daten wurden gelöscht.', 'delete_forever');
                 },
                 { confirmText: 'Löschen', abortText: 'Abbrechen' }
             );
@@ -2616,11 +2644,41 @@ const WellTrackApp = {
                 settings.welltrack_latest = lastModified;
                 WellTrackApp.data.saveSettings(settings);
             }
+        },
+        checkRebirthMessage() {
+            let settings = WellTrackApp.data.getSettings();
+            if (settings.rebirth_message && settings.rebirth_message.text) {
+                const overlay = document.getElementById('rebirth-overlay');
+                const overlayText = document.getElementById('rebirth-overlay-text');
+                const overlayIcon = document.getElementById('rebirth-overlay-icon');
+
+                overlayText.textContent = settings.rebirth_message.text;
+                overlayIcon.textContent = settings.rebirth_message.icon || 'info';
+                overlay.classList.remove('hidden');
+
+                setTimeout(() => {
+                    overlay.style.opacity = '0';
+                    setTimeout(() => {
+                        overlay.classList.add('hidden');
+                        overlay.style.opacity = '1'; // Reset for next time
+                    }, 500);
+                }, 4000);
+
+                // Clear the message
+                delete settings.rebirth_message;
+                WellTrackApp.data.saveSettings(settings);
+            }
         }
     },
 
     // --- UTILITIES ---
     utils: {
+        showMessageAndReload(text, icon = 'info') {
+            let settings = WellTrackApp.data.getSettings();
+            settings.rebirth_message = { text, icon };
+            WellTrackApp.data.saveSettings(settings);
+            location.reload();
+        },
         isSameDay(d1, d2) {
             return d1.getFullYear() === d2.getFullYear() &&
                    d1.getMonth() === d2.getMonth() &&
@@ -2628,6 +2686,21 @@ const WellTrackApp = {
         },
         isToday(date) {
             return this.isSameDay(date, new Date());
+        },
+        getWellTrackDay(date) {
+            const d = new Date(date);
+            if (d.getHours() < 5) {
+                d.setDate(d.getDate() - 1);
+            }
+            d.setHours(5, 0, 0, 0);
+            return d;
+        },
+        isSameWellTrackDay(d1, d2) {
+            if (!d1 || !d2) return false;
+            return this.getWellTrackDay(d1).getTime() === this.getWellTrackDay(d2).getTime();
+        },
+        isTodayWellTrackDay(date) {
+            return this.isSameWellTrackDay(date, new Date());
         },
         getStartOfWeek(date) {
             return dateFns.startOfWeek(date, { weekStartsOn: 1 });
