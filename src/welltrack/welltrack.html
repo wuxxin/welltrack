@@ -607,7 +607,7 @@ const WellTrackApp = {
             const a = document.createElement('a');
             a.href = url; a.download = `welltrack_export_${Date.now()}.json`;
             a.click(); URL.revokeObjectURL(url);
-            console.log("Export", "Daten wurden exportiert", "download");
+            console.log("Daten exportiert", "Die Daten wurden exportiert", "download");
         },
         importData(event) {
             const file = event.target.files[0]; if (!file) return;
@@ -650,7 +650,7 @@ const WellTrackApp = {
                         this.saveEventTypes(imported.eventTypes || []);
                         this.saveSettings(imported.settings || {});
                         WellTrackApp.render.modal.hide();
-                        console.log('Daten überschrieben', '${importedEventTypesCount} Ereignisarten und ${importedMetricsCount} Metriken wurden importiert.', 'file_upload');
+                        console.log('Daten importiert', '${importedEventTypesCount} Ereignisarten und ${importedMetricsCount} Metriken wurden importiert.', 'file_upload');
                         location.reload();
                     };
 
@@ -2580,7 +2580,7 @@ const WellTrackApp = {
                     localStorage.removeItem('wellTrackMetrics');
                     localStorage.removeItem('wellTrackEventTypes');
                     localStorage.removeItem('wellTrackSettings');
-                    console.log("Alle Daten gelöscht", "", "delete_forever");
+                    console.log("Daten gelöscht", "Alle Daten gelöscht", "delete_forever");
                     location.reload();
                 },
                 { confirmText: 'Löschen', abortText: 'Abbrechen' }
