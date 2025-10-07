@@ -48,7 +48,7 @@
     - `docs-serve-ssl`       HTTPS Serve Documentation on port 8443
     - `lab`                  Edit welltrack-lab.py in marimo
     - `lint`                 Run Linting
-    - `test`                 Run Tests
+    - `test`                 Run Tests, currently build build/tests/sample-data.json
 - mkdocs.yml: mkdocs configuration
     - In mkdocs.yml, file paths in the nav section are relative to the docs directory, not the project root.
 - pyproject.toml: python dependencies for interactive marimo, testing and mkdocs build
@@ -69,24 +69,23 @@
 
 #### Implementation Specifics
 
-- A data 'slot' for mood or pain is defined as all entries of that type within a 10-minute window, calculated backwards from the most recent entry in a given set.
-- The date-fns library is used for week calculations (startOfWeek, endOfWeek, addWeeks, subWeeks, isSameWeek).
-- When merging imported data, existing event type configurations should not be overwritten. Imported metrics are de-duplicated using only their metric and timestamp, and their labels are reconstructed based on the current application settings.
-- When deleting an event type, the system should first count existing entries, display a confirmation message with the count, and then delete both the event type and all associated metric entries upon confirmation.
-- To prevent accidental selections on the mood slider, the onpointerdown event is used to record the initial scroll position, which is then checked against the position in the handleMoodChange function to abort if scrolling occurred.
+- A data 'slot' for mood or pain is defined as all entries of that type within a 10-minute window, calculated forwards from the first entry in a given subset
 
 #### Playwright GUI Testing and Verification of Welltrack
 
-- run scripts/dev_serve.py for testing with `source .venv/bin/activate && python scripts/dev_serve.py -d build/site 8443 > dev_server.log 2>&1 &`
-- run playwright jules verification with: `source .venv/bin/activate && python jules-scratch/verification/verify_changes.py`.
-- test all changes on a virtual screen size in portrait mode (mobile) of 1080 x 1920.
-- Verification scripts in the jules-scratch directory should not be deleted until after a final submission is successful, to avoid having to recreate them if further changes are needed.
-- The user wants verification screenshots to be left in the jules-scratch/verification directory for review and not deleted after the verification process.
+- run `make docs` to build all site files, `make test` to run integrated tests
+- run `mkdir -p build/tests/; source .venv/bin/activate && scripts/create-sample-data.py build/tests/sample-data.json` to  to create `build/tests/sample-data.json`
+- run pytest-playwright tests withhin `source .venv/bin/activate`
+- run the dev server `dev_serve.py` for serving files of the build with `source .venv/bin/activate && python scripts/dev_serve.py -d build/site 8443 > dev_server.log 2>&1 &`
+- playwright testing should be alway done on a virtual screen size in portrait mode (mobile) of 1080 x 1920.
 - In Playwright, to check if a modal has been hidden (i.e., has the 'hidden' class), use expect(locator).to_be_hidden() instead of wait_for_selector('.hidden'), as the latter will time out waiting for a hidden element to become visible.
 - In Playwright, element selectors like page.get_by_title() are case-sensitive and must exactly match the attribute value in the HTML.
 - For single-page applications, Playwright scripts should avoid using page.reload() after navigation clicks, as this can reset the application state and cause tests to fail. The expect function's built-in wait is sufficient to handle asynchronous rendering.
 - When using Playwright to test features that are not initially visible on the page (e.g., at the bottom of a long scroll), use page.screenshot({ full_page: True }) to capture the entire page content for verification.
 - When using Playwright's to_have_class assertion, the argument must be a string or a regular expression, not a lambda function. A regular expression like re.compile(r'\bactive\b') can be used to check for the presence of a class.
+
+- run playwright jules verification with: `source .venv/bin/activate && python jules-scratch/verification/verify_changes.py`.
+- Verification scripts in the jules-scratch directory should not be deleted until after a final submission is successful, for the user for verification and to avoid having to recreate them if further changes are needed,
 
 ## Python Style & Conventions
 
