@@ -14,8 +14,11 @@ def test_welltrack_refactoring(page: Page, event_types_data: list):
 
     rebirth_overlay = page.locator("#rebirth-overlay")
     expect(rebirth_overlay).to_be_visible(timeout=5000)
-    expect(rebirth_overlay).to_have_text(re.compile("Alle Daten wurden gelöscht."))
-    page.screenshot(path="jules-scratch/verification/01_rebirth_message.png")
+    # Check for the new title and text
+    expect(rebirth_overlay.locator("#rebirth-overlay-title")).to_have_text("Daten Gelöscht")
+    expect(rebirth_overlay.locator("#rebirth-overlay-text")).to_have_text("Alle Daten wurden gelöscht.")
+
+    page.screenshot(path="jules-scratch/verification/01_rebirth_message_updated.png")
     expect(rebirth_overlay).to_be_hidden(timeout=5000)
 
     # 2. Test the 5-to-5 Day Logic and Protokoll Refactor
@@ -67,7 +70,7 @@ def test_welltrack_refactoring(page: Page, event_types_data: list):
     expect(slot_1015).to_contain_text("Gesamt: +3")
     expect(slot_1015.locator("..").locator(".grid")).to_contain_text("Fokus")
 
-    page.screenshot(path="jules-scratch/verification/02_protokoll_refactor.png", full_page=True)
+    page.screenshot(path="jules-scratch/verification/02_protokoll_refactor_updated.png", full_page=True)
 
 if __name__ == "__main__":
     with open("src/welltrack/welltrack.html", "r", encoding="utf-8") as f:
