@@ -1,6 +1,6 @@
 # Makefile
 
-.PHONY: help buildenv lab docs docs-serve lint clean clean-all
+.PHONY: help buildenv test lab docs docs-serve lint clean clean-all
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' | sort
 
@@ -28,9 +28,12 @@ lab: buildenv ## Edit welltrack-lab.py in marimo
 	@echo "+++ $@"
 	. .venv/bin/activate && marimo edit scripts/welltrack-lab.py
 
-test: buildenv ## Run Tests
+test: build/tests/sample-data.json ## Run Tests on the build Site
 	@echo "+++ $@"
-	mkdir -p build/test
+
+build/tests/sample-data.json: buildenv
+	mkdir -p build/tests
+	. .venv/bin/activate && scripts/create-sample-data.py build/tests/sample-data.json
 
 build/site/index.html:
 	mkdir -p build/site

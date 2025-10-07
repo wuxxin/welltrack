@@ -1,63 +1,82 @@
 #!/usr/bin/env python
 """Random Event/Mood/Pain Data Generator for WellTrack
 
-This script reads data definitions directly from the 'welltrack.html' file
-to ensure the generated sample data is always in sync with the application.
+This script generates realistic, configurable sample data for the WellTrack app.
+It reads mood and pain configurations directly from the 'welltrack.html' file
+to ensure compatibility, while using a predefined set of event types.
 """
 
+import argparse
 import json
 import random
 import re
-from datetime import datetime, timedelta
+import sys
+from datetime import datetime, time, timedelta
+
+# Predefined event configurations as per the new requirements
+NEW_EVENT_TYPES = [
+    {"name": "Kaffee Tassen", "activity": "coffee_cups", "increment": 1, "unitType": "", "groupType": "Ernährung", "displayType": 1},
+    {"name": "Rückenübungen", "activity": "back_exercises", "increment": 15, "unitType": "min", "groupType": "Bewegung", "displayType": 0},
+    {"name": "Inline skaten", "activity": "inlineskating", "increment": 15, "unitType": "min", "groupType": "Bewegung", "displayType": 0},
+    {"name": "Ring Übungen", "activity": "ring_training", "increment": 5, "unitType": "min", "groupType": "Bewegung", "displayType": 0},
+    {"name": "Tanzen", "activity": "dancing", "increment": 15, "unitType": "min", "groupType": "Bewegung", "displayType": 0},
+    {"name": "Ibuprofen 400mg", "activity": "ibuprofen_400", "increment": 0, "unitType": "", "groupType": "Medikamente", "displayType": 2},
+    {"name": "Ascorbisal", "activity": "acetylsalicylacid_500", "increment": 0, "unitType": "", "groupType": "Medikamente", "displayType": 2},
+    {"name": "Vitamin D3+K2", "activity": "vitamin_d3_k2", "increment": 0, "unitType": "", "groupType": "Medikamente", "displayType": 2},
+    {"name": "Joe", "activity": "joe", "increment": 0, "unitType": "", "groupType": "😀", "displayType": 0},
+    {"name": "William", "activity": "william", "increment": 0, "unitType": "", "groupType": "😀", "displayType": 0},
+    {"name": "Jack", "activity": "jack", "increment": 0, "unitType": "", "groupType": "😀", "displayType": 0},
+    {"name": "Averell", "activity": "averell", "increment": 0, "unitType": "", "groupType": "😀", "displayType": 0},
+    {"name": "Ein Hobby", "activity": "hobby_1", "increment": 0, "unitType": "min", "groupType": "Hobby", "displayType": 0},
+    {"name": "Zwei Hobby", "activity": "hobby_2", "increment": 0, "unitType": "min", "groupType": "Hobby", "displayType": 0},
+    {"name": "Drei Hobby", "activity": "hobby_3", "increment": 0, "unitType": "min", "groupType": "Hobby", "displayType": 0},
+    {"name": "One Hobby", "activity": "hobby_4", "increment": 0, "unitType": "min", "groupType": "Hobby", "displayType": 0},
+    {"name": "Eine Hausarbeit", "activity": "hausarbeit_1", "increment": 0, "unitType": "min", "groupType": "Hausarbeit", "displayType": 0},
+    {"name": "Zwei Hausarbeit", "activity": "hausarbeit_2", "increment": 0, "unitType": "min", "groupType": "Hausarbeit", "displayType": 0},
+    {"name": "Drei Hausarbeit", "activity": "hausarbeit_3", "increment": 0, "unitType": "min", "groupType": "Hausarbeit", "displayType": 0},
+    {"name": "Vier Hausarbeit", "activity": "hausarbeit_4", "increment": 0, "unitType": "min", "groupType": "Hausarbeit", "displayType": 0},
+    {"name": "Fünf Hausarbeit", "activity": "hausarbeit_5", "increment": 0, "unitType": "min", "groupType": "Hausarbeit", "displayType": 0}
+]  # fmt: skip
+
 
 def extract_config_from_html(html_content):
-    """Extracts MOOD_GROUPS, DEFAULT_EVENTS_JSON, and body parts from the HTML script."""
+    """Extracts MOOD_GROUPS and body parts from the HTML script."""
     config = {}
 
     # 1. Extract MOOD_GROUPS
-    mood_match = re.search(r'MOOD_GROUPS:\s*(\{.*?\s*\}\s*\})', html_content, re.DOTALL)
+    mood_match = re.search(r"MOOD_GROUPS:\s*(\{.*?\s*\}\s*\})", html_content, re.DOTALL)
     if mood_match:
         mood_str = mood_match.group(1)
-        # Clean up for JSON parsing: remove trailing commas, use double quotes
         mood_str = re.sub(r",\s*(\}|\])", r"\1", mood_str)
         mood_str = re.sub(r"(\w+)\s*:", r'"\1":', mood_str)
         mood_str = mood_str.replace("'", '"')
         try:
-            config['MOOD_GROUPS'] = json.loads(mood_str)
+            config["MOOD_GROUPS"] = json.loads(mood_str)
         except json.JSONDecodeError as e:
-            print(f"Error parsing MOOD_GROUPS: {e}")
-            print(f"Content: {mood_str}")
-            config['MOOD_GROUPS'] = {}
+            print(f"Error parsing MOOD_GROUPS: {e}", file=sys.stderr)
+            config["MOOD_GROUPS"] = {}
 
-    # 2. Extract DEFAULT_EVENTS_JSON
-    events_match = re.search(r'DEFAULT_EVENTS_JSON:\s*`(\[.*?\])`', html_content, re.DOTALL)
-    if events_match:
-        events_str = events_match.group(1)
-        try:
-            config['DEFAULT_EVENTS_JSON'] = json.loads(events_str)
-        except json.JSONDecodeError as e:
-            print(f"Error parsing DEFAULT_EVENTS_JSON: {e}")
-            print(f"Content: {events_str}")
-            config['DEFAULT_EVENTS_JSON'] = []
-
-    # 3. Extract Body Parts from SVG
+    # 2. Extract Body Parts from SVG
     body_parts = []
-    # Regex to find any SVG element with id and data-name attributes
-    part_matches = re.findall(r'<(?:rect|circle).*?id="([^"]+)".*?data-name="([^"]+)"', html_content)
+    part_matches = re.findall(
+        r'<(?:rect|circle).*?id="([^"]+)".*?data-name="([^"]+)"', html_content
+    )
     for part_id, part_name in part_matches:
-        body_parts.append({'id': part_id, 'name': part_name})
+        body_parts.append({"id": part_id, "name": part_name})
 
-    # Remove duplicates
     seen = set()
     unique_body_parts = []
     for part in body_parts:
-        if part['id'] not in seen:
+        if part["id"] not in seen:
             unique_body_parts.append(part)
-            seen.add(part['id'])
+            seen.add(part["id"])
+    config["ALL_BODY_PARTS"] = unique_body_parts
 
-    config['ALL_BODY_PARTS'] = unique_body_parts
+    # 3. Use predefined event types
+    config["DEFAULT_EVENTS_JSON"] = NEW_EVENT_TYPES
 
     return config
+
 
 def get_event_labels(event_config):
     """Extracts the correct label properties from an event configuration object."""
@@ -65,124 +84,378 @@ def get_event_labels(event_config):
         "name": event_config.get("name", ""),
         "activity": event_config.get("activity", ""),
         "unitType": event_config.get("unitType", ""),
-        "groupType": event_config.get("groupType", "")
+        "groupType": event_config.get("groupType", ""),
     }
 
-def generate_random_data(config):
-    """Generates 180 days of random health metrics based on the provided config."""
+
+def get_random_timestamp_in_slot(base_date, start_hour, end_hour):
+    """Generates a random millisecond timestamp within a given time slot for a base date."""
+    # A WellTrack day starts at 5 AM. A slot like (0, 2) is on the next calendar day.
+    slot_date = base_date if start_hour >= 5 else base_date + timedelta(days=1)
+
+    start_time = slot_date.replace(hour=start_hour, minute=0, second=0, microsecond=0)
+
+    # Handle overnight slots like (21, 0) which means 21:00 to 23:59:59
+    if end_hour == 0:
+        end_time = slot_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+    else:
+        end_time = slot_date.replace(
+            hour=end_hour, minute=0, second=0, microsecond=0
+        ) - timedelta(microseconds=1)
+
+    start_ts = int(start_time.timestamp())
+    end_ts = int(end_time.timestamp())
+
+    random_ts = random.randint(start_ts, end_ts)
+
+    return random_ts * 1000
+
+
+def get_random_timestamp_for_day(base_date):
+    """Generates a random millisecond timestamp within a WellTrack day (5 AM to 4:59 AM)."""
+    day_start = base_date.replace(hour=5, minute=0, second=0, microsecond=0)
+    day_end = (base_date + timedelta(days=1)).replace(
+        hour=4, minute=59, second=59, microsecond=999999
+    )
+
+    start_ts = int(day_start.timestamp())
+    end_ts = int(day_end.timestamp())
+
+    random_ts = random.randint(start_ts, end_ts)
+    return random_ts * 1000
+
+
+def generate_random_data(config, days_to_generate, settings={}):
+    """Generates random health metrics based on the provided config."""
     metrics = []
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    now = datetime.now()
+    # We generate data for days *before* today.
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    all_mood_questions = [q for group in config.get('MOOD_GROUPS', {}).values() for q in group.get('questions', [])]
-    all_body_parts = config.get('ALL_BODY_PARTS', [])
-    default_events = config.get('DEFAULT_EVENTS_JSON', [])
+    all_mood_questions = [
+        q
+        for group in config.get("MOOD_GROUPS", {}).values()
+        for q in group.get("questions", [])
+    ]
+    all_body_parts = config.get("ALL_BODY_PARTS", [])
+    events_map = {e["activity"]: e for e in config.get("DEFAULT_EVENTS_JSON", [])}
 
-    if not all_mood_questions or not all_body_parts or not default_events:
-        print("Error: Configuration missing from HTML. Could not find mood, body, or event data.")
+    if not all_mood_questions or not all_body_parts or not events_map:
+        print(
+            "Error: Configuration missing. Could not find mood, body part, or event data.",
+            file=sys.stderr,
+        )
         return None
 
-    for i in range(180+28, 0, -1):
-        # --- Day Skipping Logic ---
-        day_roll = random.random()
-        if day_roll < 0.03:
-            continue # 3% chance of a missing day
+    # Pick 4-6 recurring pain body parts from a random starting point
+    start_index = random.randint(0, len(all_body_parts) - 6)
+    num_recurring_parts = random.randint(4, 6)
+    recurring_pain_parts = all_body_parts[start_index : start_index + num_recurring_parts]
 
-        date = today - timedelta(days=i)
+    # Time slots for entries: (start_hour, end_hour)
+    time_slots = [(8, 11), (11, 14), (14, 16), (16, 18), (18, 21), (21, 0), (0, 2), (2, 4)]
 
-        def get_random_timestamp(start_hour, end_hour, end_minute=59):
-            hour = random.randint(start_hour, end_hour)
-            minute = random.randint(0, end_minute)
-            second = random.randint(0, 59)
-            if hour == end_hour:
-                minute = random.randint(0, end_minute)
-            dt_obj = date.replace(hour=hour, minute=minute, second=second)
-            return int(dt_obj.timestamp() * 1000)
+    for i in range(days_to_generate, 0, -1):
+        current_day_base = today_start - timedelta(days=i)
+        day_of_week = current_day_base.weekday()  # Monday is 0, Sunday is 6
 
-        # --- Entry Block Logic ---
-        num_entries_roll = random.random()
-        num_entry_blocks = 3
-        if num_entries_roll < 0.025: num_entry_blocks = 1
-        elif num_entries_roll < 0.15: num_entry_blocks = 2
+        # Rule: 1 out of 20 days has no entries at all.
+        if random.random() < (1 / 20):
+            continue
 
-        time_windows = [(9, 12), (17, 19), (23, 23, 50)]
-        selected_windows = random.sample(time_windows, num_entry_blocks)
+        # --- Generate Mood and Pain Data ---
+        num_slots_today = random.randint(2, 8)
+        # Sort slots by start hour to simulate chronological order (handle overnight)
+        slots_for_today = sorted(
+            random.sample(time_slots, num_slots_today), key=lambda x: (x[0] < 5, x[0])
+        )
 
-        for window in selected_windows:
-            ts = get_random_timestamp(*window)
+        for slot_num, (start_hour, end_hour) in enumerate(slots_for_today):
+            ts = get_random_timestamp_in_slot(current_day_base, start_hour, end_hour)
+            day_progress = (slot_num + 1) / len(slots_for_today)
 
-            # --- Generate Mood Data ---
-            if all_mood_questions:
-                num_mood_entries = random.randint(3, len(all_mood_questions))
-                mood_values = [random.choice([-3, -2, -1, 1, 2, 3]) for _ in range(num_mood_entries)]
-                random.shuffle(all_mood_questions)
-                for val, question in zip(mood_values, all_mood_questions[:num_mood_entries]):
-                    metrics.append({
-                        'metric': f"mood_{question['id']}_level",
-                        'timestamp': ts + random.randint(-60000, 60000),
-                        'labels': {'mood_id': question['id'], 'name': question['name']},
-                        'value': val
-                    })
+            # Mood
+            num_mood_questions_to_answer = random.randint(2, len(all_mood_questions))
+            questions_for_slot = random.sample(
+                all_mood_questions, num_mood_questions_to_answer
+            )
+            for question in questions_for_slot:
+                mood_weights = [0.30, 0.30, 0.15, 0.15, 0.05, 0.05]
+                mood_values = [-1, 1, -2, 2, -3, 3]
+                if random.random() < (0.2 * day_progress):
+                    mood_weights = [0.45, 0.15, 0.225, 0.075, 0.075, 0.025]
+                value = random.choices(mood_values, weights=mood_weights, k=1)[0]
+                metrics.append(
+                    {
+                        "metric": f"mood_{question['id']}_level",
+                        "timestamp": ts + random.randint(-30000, 30000),
+                        "labels": {"mood_id": question["id"], "name": question["name"]},
+                        "value": value,
+                    }
+                )
 
-            # --- Generate Pain Data ---
-            if all_body_parts and random.random() < 0.6:
-                num_pain_entries = random.randint(1, 4)
-                random.shuffle(all_body_parts)
-                for p in range(num_pain_entries):
-                    part = all_body_parts[p]
-                    metrics.append({
-                        'metric': f"pain_{part['id']}_level",
-                        'timestamp': ts + random.randint(-60000, 60000),
-                        'labels': {'body_part': part['id'], 'name': part['name']},
-                        'value': random.randint(1, 5)
-                    })
+            # Pain
+            if random.random() < (1 / 20):
+                metrics.append(
+                    {
+                        "metric": "pain_free_level",
+                        "timestamp": ts + random.randint(-30000, 30000),
+                        "labels": {"name": "Schmerz Frei"},
+                        "value": 0,
+                    }
+                )
+            else:
+                num_pain_parts = random.randint(3, 5)
+                parts_for_slot = random.sample(
+                    recurring_pain_parts, min(num_pain_parts, len(recurring_pain_parts))
+                )
+                pain_level_weights = [0.7, 0.25, 0.05]
+                if random.random() < (0.2 * day_progress):
+                    pain_level_weights = [0.55, 0.35, 0.10]
+                for part in parts_for_slot:
+                    level = random.choices([1, 2, 3], weights=pain_level_weights, k=1)[0]
+                    metrics.append(
+                        {
+                            "metric": f"pain_{part['id']}_level",
+                            "timestamp": ts + random.randint(-30000, 30000),
+                            "labels": {"body_part": part["id"], "name": part["name"]},
+                            "value": level,
+                        }
+                    )
+                    if level == 3:
+                        ibu_cfg = events_map["ibuprofen_400"]
+                        metrics.append(
+                            {
+                                "metric": f"event_{ibu_cfg['activity']}_timestamp",
+                                "timestamp": ts + random.randint(0, 5000),
+                                "labels": get_event_labels(ibu_cfg),
+                                "value": 1,
+                            }
+                        )
 
-            # --- Generate Event Data ---
-            if default_events and random.random() < 0.5:
-                event_config = random.choice(default_events)
-                if event_config['increment'] > 0:
-                     metrics.append({
-                        'metric': f"event_{event_config['activity']}_value",
-                        'timestamp': ts + random.randint(-60000, 60000),
-                        'labels': get_event_labels(event_config),
-                        'value': event_config['increment'] * random.randint(1, 4)
-                    })
-                else:
-                    metrics.append({
-                        'metric': f"event_{event_config['activity']}_timestamp",
-                        'timestamp': ts + random.randint(-60000, 60000),
-                        'labels': get_event_labels(event_config),
-                        'value': 1
-                    })
+                if random.random() < (1 / 15):
+                    available_random_parts = [
+                        p for p in all_body_parts if p not in parts_for_slot
+                    ]
+                    if available_random_parts:
+                        random_part = random.choice(available_random_parts)
+                        level = random.choices([1, 2], weights=[0.8, 0.2], k=1)[0]
+                        metrics.append(
+                            {
+                                "metric": f"pain_{random_part['id']}_level",
+                                "timestamp": ts + random.randint(-30000, 30000),
+                                "labels": {
+                                    "body_part": random_part["id"],
+                                    "name": random_part["name"],
+                                },
+                                "value": level,
+                            }
+                        )
 
-    metrics.sort(key=lambda x: x['timestamp'])
+        # --- Generate Event Data ---
+        # Coffee: 2-6 per day
+        coffee_cfg = events_map["coffee_cups"]
+        for _ in range(random.randint(2, 6)):
+            metrics.append(
+                {
+                    "metric": f"event_{coffee_cfg['activity']}_timestamp",
+                    "timestamp": get_random_timestamp_for_day(current_day_base),
+                    "labels": get_event_labels(coffee_cfg),
+                    "value": 1,
+                }
+            )
+
+        # Contacts: 3-7 per day
+        daltons = ["joe", "william", "jack", "averell"]
+        for _ in range(random.randint(3, 7)):
+            contact_activity = random.choice(daltons)
+            contact_cfg = events_map[contact_activity]
+            metrics.append(
+                {
+                    "metric": f"event_{contact_cfg['activity']}_timestamp",
+                    "timestamp": get_random_timestamp_for_day(current_day_base),
+                    "labels": get_event_labels(contact_cfg),
+                    "value": 1,
+                }
+            )
+
+        # Inline Skating: 60 min, 5/7 days
+        if random.random() < (5 / 7):
+            skate_cfg = events_map["inlineskating"]
+            metrics.append(
+                {
+                    "metric": f"event_{skate_cfg['activity']}_value",
+                    "timestamp": get_random_timestamp_for_day(current_day_base),
+                    "labels": get_event_labels(skate_cfg),
+                    "value": 60,
+                }
+            )
+
+        # Ring Training: 5 min, 2-3 times per week (avg 2.5/7)
+        if random.random() < (2.5 / 7):
+            ring_cfg = events_map["ring_training"]
+            metrics.append(
+                {
+                    "metric": f"event_{ring_cfg['activity']}_value",
+                    "timestamp": get_random_timestamp_for_day(current_day_base),
+                    "labels": get_event_labels(ring_cfg),
+                    "value": 5,
+                }
+            )
+
+        # Dancing: 120min, 0-2 times per week on Th, Fr, Sa (avg 1/week -> 1/3 on those days)
+        if day_of_week in [3, 4, 5] and random.random() < (1 / 3):
+            dance_cfg = events_map["dancing"]
+            metrics.append(
+                {
+                    "metric": f"event_{dance_cfg['activity']}_value",
+                    "timestamp": get_random_timestamp_for_day(current_day_base),
+                    "labels": get_event_labels(dance_cfg),
+                    "value": 120,
+                }
+            )
+
+        # Ascorbisal: 3 out of 14 days
+        if random.random() < (3 / 14):
+            ascor_cfg = events_map["acetylsalicylacid_500"]
+            metrics.append(
+                {
+                    "metric": f"event_{ascor_cfg['activity']}_timestamp",
+                    "timestamp": get_random_timestamp_for_day(current_day_base),
+                    "labels": get_event_labels(ascor_cfg),
+                    "value": 1,
+                }
+            )
+
+        # Vitamin D3+K2: every 3rd day, 10% chance to forget
+        day_number = days_to_generate - i
+        if day_number % 3 == 0 and random.random() < 0.9:
+            vit_cfg = events_map["vitamin_d3_k2"]
+            metrics.append(
+                {
+                    "metric": f"event_{vit_cfg['activity']}_timestamp",
+                    "timestamp": get_random_timestamp_for_day(current_day_base),
+                    "labels": get_event_labels(vit_cfg),
+                    "value": 1,
+                }
+            )
+
+    metrics.sort(key=lambda x: x["timestamp"])
+
+    # Final pass to consolidate cumulative events like coffee
+    final_metrics = []
+    daily_cumulative_events = {}  # key: (day_str, activity), value: combined_metric
+
+    for metric in metrics:
+        if metric["metric"].startswith("event_") and not metric["metric"].endswith("_value"):
+            ts = datetime.fromtimestamp(metric["timestamp"] / 1000)
+            day_str = ts.strftime("%Y-%m-%d")
+            activity = metric["labels"]["activity"]
+            key = (day_str, activity)
+
+            if key not in daily_cumulative_events:
+                # This is the first time we see this event for this day, initialize it
+                metric["value"] = 1  # Start count at 1
+                metric["metric"] = f"event_{activity}_value"  # Change metric type
+                daily_cumulative_events[key] = metric
+            else:
+                # We've seen this event today, just increment the value
+                daily_cumulative_events[key]["value"] += 1
+                # Update timestamp to the latest one for this event on this day
+                daily_cumulative_events[key]["timestamp"] = metric["timestamp"]
+        else:
+            final_metrics.append(metric)
+
+    # Add the consolidated cumulative events back to the list
+    final_metrics.extend(daily_cumulative_events.values())
+    final_metrics.sort(key=lambda x: x["timestamp"])
 
     return {
-        "metrics": metrics,
-        "events": default_events,
-        "settings": {
-            "reminderTime": "20:00",
-            "committedIndex": len(metrics) - 1
-        }
+        "metrics": final_metrics,
+        "eventTypes": config["DEFAULT_EVENTS_JSON"],
+        "settings": settings,
     }
 
-if __name__ == "__main__":
+
+def main():
+    """Main function to parse arguments and generate data."""
+    parser = argparse.ArgumentParser(
+        description="Random Event/Mood/Pain Data Generator for WellTrack.",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    parser.add_argument(
+        "--days",
+        type=int,
+        default=112,
+        help="Number of days to generate data for (default: 112).",
+    )
+    parser.add_argument(
+        "--setting",
+        action="append",
+        type=str,
+        help="""Set a key-value pair in the settings object.
+The value will be parsed as a boolean, integer, or string.
+Example: --setting theme=dark --setting notifications=true --setting maxItems=50""",
+    )
+    parser.add_argument("output_file", type=str, help='Output filename or "-" for stdout.')
+    args = parser.parse_args()
+
+    settings_dict = {}
+    if args.setting:
+        for s in args.setting:
+            if "=" not in s:
+                print(
+                    f"Warning: Ignoring invalid setting format: {s}. Expected key=value.",
+                    file=sys.stderr,
+                )
+                continue
+            key, value_str = s.split("=", 1)
+
+            # Attempt to parse value as boolean, then integer, finally string
+            if value_str.lower() == "true":
+                value = True
+            elif value_str.lower() == "false":
+                value = False
+            else:
+                try:
+                    value = int(value_str)
+                except ValueError:
+                    value = value_str
+            settings_dict[key] = value
+
     try:
-        with open("welltrack.html", "r", encoding="utf-8") as f:
+        # Adjusted path to be relative to project root, where the script is expected to be run from
+        with open("src/welltrack/welltrack.html", "r", encoding="utf-8") as f:
             html_content = f.read()
     except FileNotFoundError:
-        print("Error: welltrack.html not found. Make sure the script is in the same directory.")
-        exit(1)
+        print(
+            "Error: src/welltrack/welltrack.html not found. Make sure you are running the script from the project root.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     app_config = extract_config_from_html(html_content)
 
-    if not app_config.get('ALL_BODY_PARTS') or not app_config.get('MOOD_GROUPS') or not app_config.get('DEFAULT_EVENTS_JSON'):
-         print("\nCould not extract all required configurations from welltrack.html. Aborting.")
-         exit(1)
+    if not app_config.get("ALL_BODY_PARTS") or not app_config.get("MOOD_GROUPS"):
+        print(
+            "\nCould not extract required pain/mood configurations from welltrack.html.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
-    export_data = generate_random_data(app_config)
+    export_data = generate_random_data(app_config, args.days, settings=settings_dict)
 
     if export_data:
-        file_name = f"welltrack_export_{int(datetime.now().timestamp() * 1000)}.json"
-        with open(file_name, 'w', encoding='utf-8') as f:
-            json.dump(export_data, f, ensure_ascii=False, indent=2)
-        print(f"Random data was successfully saved to '{file_name}'.")
+        output_json = json.dumps(export_data, ensure_ascii=False, indent=2)
+        if args.output_file == "-":
+            print(output_json)
+        else:
+            with open(args.output_file, "w", encoding="utf-8") as f:
+                f.write(output_json)
+            print(
+                f"Random data was successfully saved to '{args.output_file}'.", file=sys.stderr
+            )
+
+
+if __name__ == "__main__":
+    main()
