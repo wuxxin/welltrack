@@ -28,8 +28,26 @@ lab: buildenv ## Edit welltrack-lab.py in marimo
 	@echo "+++ $@"
 	. .venv/bin/activate && marimo edit scripts/welltrack-lab.py
 
-test: build/tests/sample-data.json ## Run Tests on the build Site
+test: docs build/tests/sample-data.json ## Run Tests on the build Site
 	@echo "+++ $@"
+	@bash -c ' \
+		source .venv/bin/activate; \
+		mkdir -p build/tests/output; \
+		TEST_OUTPUT_FILE=$$(mktemp); \
+		pytest \
+			--screenshot only-on-failure \
+			--video retain-on-failure \
+			--output build/tests/output \
+			tests/test_gui.py 2>&1 | tee $$TEST_OUTPUT_FILE; \
+		TEST_EXIT_CODE=$${PIPESTATUS[0]}; \
+		echo "---"; \
+		if [ $$TEST_EXIT_CODE -ne 0 ]; then \
+			echo "Failed test screenshots:"; \
+			grep -o "Screenshot saved to .*png" $$TEST_OUTPUT_FILE | sed "s/Screenshot saved to //"; \
+		fi; \
+		rm $$TEST_OUTPUT_FILE; \
+		exit $$TEST_EXIT_CODE; \
+	'
 
 build/tests/sample-data.json: buildenv
 	mkdir -p build/tests
