@@ -40,15 +40,19 @@
 
 - Makefile: central make file for building and developing
     - `make` or `make help` for usage
-    - `buildenv`             Create build environment in $PWD/.venv
-    - `clean`                Remove test and build artifacts
-    - `clean-all`            Remove environment and all artifacts
-    - `docs`                 Make Onlinepage and WebApp
-    - `dev-serve`            HTTP Serve Documentation on port 8000
-    - `dev-serve-ssl`        HTTPS Serve Documentation on port 8443
-    - `lab`                  Edit welltrack-lab.py in marimo
-    - `lint`                 Run Linting
-    - `test`                 Create Sample Data, run Tests
+```txt
+buildenv             Create build environment
+clean                Remove test and build artifacts
+clean-all            Remove environment and all artifacts
+dev-serve            HTTP Serve Documentation on port 8000
+dev-serve-ssl        HTTPS Serve Documentation on port 8443
+docs                 Make Onlinepage and WebApp
+lab                  Edit welltrack-lab.py in marimo
+lint                 Run Linting
+sample-data          create build/tests/sample-data.json
+test                 Create Sample Data, run Tests
+```
+
 - mkdocs.yml: mkdocs configuration
     - In mkdocs.yml, file paths in the nav section are relative to the docs directory, not the project root.
 - pyproject.toml: python dependencies for interactive marimo, testing and mkdocs build
@@ -74,8 +78,10 @@
 #### Playwright GUI Testing and Verification of Welltrack
 
 - run `make test` creates a sample data file under `build/tests/sample-data.json`, starts the dev_server and runs all integrated playwright tests in `tests/`
+- run `make sample-data` to just create `build/tests/sample-data.json`.
 - to run the dev server manually, run `source .venv/bin/activate && python scripts/dev_serve.py -d build/site 8443 > dev_server.log 2>&1 &`
 - for specific playwright gui testing run `mkdir -p build/tests/output; source .venv/bin/activate pytest --device "Pixel 7" --screenshot on --video retain-on-failure --output build/tests/output` and the testfilename.
+- when requested to run "before after" gui tests as part of the procedure, create one screenshot before a change and another after the requested change. this means to create the test file first, then run the test to create the before screenshot to the `build/test/before` directory, then make the change, then create the after screenshot to the `build/test/after` dir. always use `--device "Pixel 7"` for proper sized viewport.
 
 - In Playwright, to check if a modal has been hidden (i.e., has the 'hidden' class), use expect(locator).to_be_hidden() instead of wait_for_selector('.hidden'), as the latter will time out waiting for a hidden element to become visible.
 - In Playwright, element selectors like page.get_by_title() are case-sensitive and must exactly match the attribute value in the HTML.

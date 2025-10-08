@@ -1,6 +1,6 @@
 # Makefile
 
-.PHONY: help buildenv test lab docs dev-serve dev-serve-sll lint clean clean-all
+.PHONY: help buildenv test lab docs sample-data dev-serve dev-serve-sll lint clean clean-all
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' | sort
 
@@ -32,7 +32,10 @@ lab: buildenv ## Edit welltrack-lab.py in marimo
 test: docs build/tests/sample-data.json ## Create Sample Data, run Tests
 	@echo "+++ $@"
 	mkdir -p build/tests/output
-	pytest --device "Pixel 7" --screenshot on --video retain-on-failure --output build/tests/output tests/
+	. .venv/bin/activate && pytest --device "Pixel 7" --screenshot on --video retain-on-failure --output build/tests/output tests/
+
+sample-data: build/tests/sample-data.json ## create build/tests/sample-data.json
+	@echo "+++ $@"
 
 build/tests/sample-data.json: buildenv scripts/create-sample-data.py
 	mkdir -p build/tests
