@@ -2057,15 +2057,12 @@ const WellTrackApp = {
             paginationControls: (currentPage, totalPages) => { /* No longer used */ },
             manageEventItem: (event, index) => {
                 const isTimestampEvent = event.increment === 0;
-                const incrementText = isTimestampEvent
-                    ? '<span class="material-symbols-outlined text-sm align-middle">nest_clock_farsight_analog</span>'
-                    : `+${event.increment}`;
                 const unitText = event.unitType || '';
                 const groupText = event.groupType;
 
                 const detailsText = isTimestampEvent
-                    ? `(${incrementText})`
-                    : `(${incrementText}${unitText ? ' ' + unitText : ''})`;
+                    ? ''
+                    : `(+${event.increment}${unitText ? ' ' + unitText : ''})`;
 
                 const groupHtml = groupText ? `
                     <div class="flex items-center gap-1">
