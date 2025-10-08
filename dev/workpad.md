@@ -10,12 +10,14 @@ Request a user review once finished.
 
 required changes:
 
-- protokoll: remove log-day-indicator, instead put it before "Ereignisse" in the day card, and display as: "Mittwoch 8.10.2025 auf Donnerstag"
+- create-sample-data.py:  at Generate Mood and Pain Data: check after assign of slots_for_today, if on last day and slot end_hour > currenttime: delete slot, random slot add, sort, recheck
 
-- Alternating Styles (background, slightly) bei:Heute,Heutige Einträge,Protokoll: Day Card Entries,Settings:Edit EventTypes,EventType List.
+- protokoll: remove log-day-indicator, instead put it as simple content before "Ereignisse" in the day card, and display as: "Mittwoch 8.10.2025 auf Donnerstag"
 
-- settings:edit eventtypes: keep edit icon and titel left,put rest (unit,groupicon,groupname) to the right next to delete.
-also, dont display groupicon and groupname if group is none, but keep the three (unit,groupicon,groupname) a flex group.
+- Alternating Styles (background, slightly brightness variation, keep it similar but distinctable) for: Heute: Heutige Einträge and for  Settings:Edit EventTypes,EventType List.
+
+- settings:edit eventtypes: keep edit icon and titel left,put rest "(value unit | pushbuttonicon) [groupicon groupname]" to the right next to delete.
+also, if group is none, but keep the content parts a flex group.
 
 - event entry: push button entry: Pressing "Erneut" or "rückgängig, Flashes the updated "(2x, zuletzt um hh:mm)" so user sees visual feedback on pressing erneut or rückgängig.
 

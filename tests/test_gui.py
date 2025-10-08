@@ -1,10 +1,9 @@
+import re
 import json
 import pytest
-import re
 from playwright.sync_api import Page, expect
 
 # Constants
-VIEWPORT_SIZE = {"width": 1080, "height": 1920}
 GERMAN_DATE_REGEX = re.compile(r"\w+ \d{1,2}\.\d{1,2}\.\d{4}")
 
 

@@ -7,14 +7,16 @@ to ensure compatibility, while using a predefined set of event types.
 """
 
 import argparse
+import bisect
 import json
 import random
 import re
 import sys
+
 from datetime import datetime, time, timedelta
 
 # Predefined event configurations as per the new requirements
-NEW_EVENT_TYPES = [
+SAMPLE_EVENT_TYPES = [
     {"name": "Kaffee Tassen", "activity": "coffee_cups", "increment": 1, "unitType": "", "groupType": "Ernährung", "displayType": 1},
     {"name": "Rückenübungen", "activity": "back_exercises", "increment": 15, "unitType": "min", "groupType": "Bewegung", "displayType": 0},
     {"name": "Inline skaten", "activity": "inlineskating", "increment": 15, "unitType": "min", "groupType": "Bewegung", "displayType": 0},
@@ -40,7 +42,7 @@ NEW_EVENT_TYPES = [
 
 
 def extract_config_from_html(html_content):
-    """Extracts MOOD_GROUPS and body parts from the HTML script."""
+    """Extracts MOOD_GROUPS and BODY_PARTS from the HTML script."""
     config = {}
 
     # 1. Extract MOOD_GROUPS
@@ -70,10 +72,7 @@ def extract_config_from_html(html_content):
         if part["id"] not in seen:
             unique_body_parts.append(part)
             seen.add(part["id"])
-    config["ALL_BODY_PARTS"] = unique_body_parts
-
-    # 3. Use predefined event types
-    config["DEFAULT_EVENTS_JSON"] = NEW_EVENT_TYPES
+    config["BODY_PARTS"] = unique_body_parts
 
     return config
 
@@ -90,14 +89,12 @@ def get_event_labels(event_config):
 
 def get_random_timestamp_in_slot(base_date, start_hour, end_hour):
     """Generates a random millisecond timestamp within a given time slot for a base date."""
-    # A WellTrack day starts at 5 AM. A slot like (0, 2) is on the next calendar day.
     slot_date = base_date if start_hour >= 5 else base_date + timedelta(days=1)
-
     start_time = slot_date.replace(hour=start_hour, minute=0, second=0, microsecond=0)
 
     # Handle overnight slots like (21, 0) which means 21:00 to 23:59:59
     if end_hour == 0:
-        end_time = slot_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        end_time = slot_date.replace(hour=23, minute=59, second=59, microsecond=0)
     else:
         end_time = slot_date.replace(
             hour=end_hour, minute=0, second=0, microsecond=0
@@ -105,9 +102,7 @@ def get_random_timestamp_in_slot(base_date, start_hour, end_hour):
 
     start_ts = int(start_time.timestamp())
     end_ts = int(end_time.timestamp())
-
     random_ts = random.randint(start_ts, end_ts)
-
     return random_ts * 1000
 
 
@@ -120,7 +115,6 @@ def get_random_timestamp_for_day(base_date):
 
     start_ts = int(day_start.timestamp())
     end_ts = int(day_end.timestamp())
-
     random_ts = random.randint(start_ts, end_ts)
     return random_ts * 1000
 
@@ -129,16 +123,16 @@ def generate_random_data(config, days_to_generate, settings={}):
     """Generates random health metrics based on the provided config."""
     metrics = []
     now = datetime.now()
-    # We generate data for days *before* today.
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    # We generate data for days_to_generate up to today
+    today_start = now.replace(hour=5, minute=0, second=0, microsecond=0)
 
     all_mood_questions = [
         q
         for group in config.get("MOOD_GROUPS", {}).values()
         for q in group.get("questions", [])
     ]
-    all_body_parts = config.get("ALL_BODY_PARTS", [])
-    events_map = {e["activity"]: e for e in config.get("DEFAULT_EVENTS_JSON", [])}
+    all_body_parts = config.get("BODY_PARTS", [])
+    events_map = {e["activity"]: e for e in SAMPLE_EVENT_TYPES}
 
     if not all_mood_questions or not all_body_parts or not events_map:
         print(
@@ -153,18 +147,19 @@ def generate_random_data(config, days_to_generate, settings={}):
     recurring_pain_parts = all_body_parts[start_index : start_index + num_recurring_parts]
 
     # Time slots for entries: (start_hour, end_hour)
-    time_slots = [(8, 11), (11, 14), (14, 16), (16, 18), (18, 21), (21, 0), (0, 2), (2, 4)]
+    time_slots = [(5, 11), (11, 14), (14, 16), (16, 18), (18, 21), (21, 0), (0, 2), (2, 4)]
 
-    for i in range(days_to_generate, 0, -1):
+    for i in range(days_to_generate, -1, -1):
         current_day_base = today_start - timedelta(days=i)
         day_of_week = current_day_base.weekday()  # Monday is 0, Sunday is 6
 
-        # Rule: 1 out of 20 days has no entries at all.
-        if random.random() < (1 / 20):
+        # Rule: 1 out of 20 days has no entries at all, except last two entries, which will always have entries
+        if (i > 1) and random.random() < (1 / 20):
             continue
 
         # --- Generate Mood and Pain Data ---
-        num_slots_today = random.randint(2, 8)
+        # last two days have 4 entries, the last day may have lesser because metric recording of future will break app.
+        num_slots_today = random.randint(2, 8) if (i > 2) else 4
         # Sort slots by start hour to simulate chronological order (handle overnight)
         slots_for_today = sorted(
             random.sample(time_slots, num_slots_today), key=lambda x: (x[0] < 5, x[0])
@@ -255,15 +250,14 @@ def generate_random_data(config, days_to_generate, settings={}):
         # --- Generate Event Data ---
         # Coffee: 2-6 per day
         coffee_cfg = events_map["coffee_cups"]
-        for _ in range(random.randint(2, 6)):
-            metrics.append(
-                {
-                    "metric": f"event_{coffee_cfg['activity']}_timestamp",
-                    "timestamp": get_random_timestamp_for_day(current_day_base),
-                    "labels": get_event_labels(coffee_cfg),
-                    "value": 1,
-                }
-            )
+        metrics.append(
+            {
+                "metric": f"event_{coffee_cfg['activity']}_timestamp",
+                "timestamp": get_random_timestamp_for_day(current_day_base),
+                "labels": get_event_labels(coffee_cfg),
+                "value": random.randint(2, 6),
+            }
+        )
 
         # Contacts: 3-7 per day
         daltons = ["joe", "william", "jack", "averell"]
@@ -342,37 +336,18 @@ def generate_random_data(config, days_to_generate, settings={}):
 
     metrics.sort(key=lambda x: x["timestamp"])
 
-    # Final pass to consolidate cumulative events like coffee
-    final_metrics = []
-    daily_cumulative_events = {}  # key: (day_str, activity), value: combined_metric
-
-    for metric in metrics:
-        if metric["metric"].startswith("event_") and not metric["metric"].endswith("_value"):
-            ts = datetime.fromtimestamp(metric["timestamp"] / 1000)
-            day_str = ts.strftime("%Y-%m-%d")
-            activity = metric["labels"]["activity"]
-            key = (day_str, activity)
-
-            if key not in daily_cumulative_events:
-                # This is the first time we see this event for this day, initialize it
-                metric["value"] = 1  # Start count at 1
-                metric["metric"] = f"event_{activity}_value"  # Change metric type
-                daily_cumulative_events[key] = metric
-            else:
-                # We've seen this event today, just increment the value
-                daily_cumulative_events[key]["value"] += 1
-                # Update timestamp to the latest one for this event on this day
-                daily_cumulative_events[key]["timestamp"] = metric["timestamp"]
-        else:
-            final_metrics.append(metric)
-
-    # Add the consolidated cumulative events back to the list
-    final_metrics.extend(daily_cumulative_events.values())
-    final_metrics.sort(key=lambda x: x["timestamp"])
+    last_valid_timestamp = int(datetime.now().timestamp()) * 1000
+    last_valid_index = bisect.bisect_right(
+        metrics, last_valid_timestamp, key=lambda x: x["timestamp"]
+    )
+    if last_valid_index > 0:
+        final_metrics = metrics[:last_valid_index]
+    else:
+        final_metrics = metrics
 
     return {
         "metrics": final_metrics,
-        "eventTypes": config["DEFAULT_EVENTS_JSON"],
+        "eventTypes": SAMPLE_EVENT_TYPES,
         "settings": settings,
     }
 
@@ -424,19 +399,18 @@ Example: --setting theme=dark --setting notifications=true --setting maxItems=50
             settings_dict[key] = value
 
     try:
-        # Adjusted path to be relative to project root, where the script is expected to be run from
         with open("src/welltrack/welltrack.html", "r", encoding="utf-8") as f:
             html_content = f.read()
     except FileNotFoundError:
         print(
-            "Error: src/welltrack/welltrack.html not found. Make sure you are running the script from the project root.",
+            "Error: src/welltrack/welltrack.html not found. Make sure you are running from the project root.",
             file=sys.stderr,
         )
         sys.exit(1)
 
     app_config = extract_config_from_html(html_content)
 
-    if not app_config.get("ALL_BODY_PARTS") or not app_config.get("MOOD_GROUPS"):
+    if not app_config.get("BODY_PARTS") or not app_config.get("MOOD_GROUPS"):
         print(
             "\nCould not extract required pain/mood configurations from welltrack.html.",
             file=sys.stderr,
@@ -445,16 +419,13 @@ Example: --setting theme=dark --setting notifications=true --setting maxItems=50
 
     export_data = generate_random_data(app_config, args.days, settings=settings_dict)
 
-    if export_data:
-        output_json = json.dumps(export_data, ensure_ascii=False, indent=2)
-        if args.output_file == "-":
-            print(output_json)
-        else:
-            with open(args.output_file, "w", encoding="utf-8") as f:
-                f.write(output_json)
-            print(
-                f"Random data was successfully saved to '{args.output_file}'.", file=sys.stderr
-            )
+    output_json = json.dumps(export_data, ensure_ascii=False, indent=2)
+    if args.output_file == "-":
+        print(output_json)
+    else:
+        with open(args.output_file, "w", encoding="utf-8") as f:
+            f.write(output_json)
+        print(f"Random data was successfully saved to '{args.output_file}'.", file=sys.stderr)
 
 
 if __name__ == "__main__":
