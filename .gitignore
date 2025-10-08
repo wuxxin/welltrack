@@ -20,3 +20,6 @@ dist/
 *.swp
 *.swo
 *~
+
+# logs
+dev_server.log

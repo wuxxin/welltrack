@@ -2056,11 +2056,23 @@ const WellTrackApp = {
             },
             paginationControls: (currentPage, totalPages) => { /* No longer used */ },
             manageEventItem: (event, index) => {
-                const incrementText = event.increment === 0
-                    ? '<span class="material-symbols-outlined text-base align-middle">nest_clock_farsight_analog</span>'
+                const isTimestampEvent = event.increment === 0;
+                const incrementText = isTimestampEvent
+                    ? '<span class="material-symbols-outlined text-sm align-middle">nest_clock_farsight_analog</span>'
                     : `+${event.increment}`;
                 const unitText = event.unitType || '';
-                const groupText = event.groupType || 'Keine';
+                const groupText = event.groupType;
+
+                const detailsText = isTimestampEvent
+                    ? `(${incrementText})`
+                    : `(${incrementText}${unitText ? ' ' + unitText : ''})`;
+
+                const groupHtml = groupText ? `
+                    <div class="flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base">group</span>
+                        <span class="text-xs font-medium">${groupText}</span>
+                    </div>
+                ` : '';
 
                 return `
                     <div class="flex items-center gap-3 flex-grow">
@@ -2068,14 +2080,10 @@ const WellTrackApp = {
                             <span class="material-symbols-outlined">edit</span>
                         </button>
                         <span class="font-medium">${event.name}</span>
+                        <span class="text-sm text-gray-600 ml-2">${detailsText}</span>
                     </div>
-                    <div class="flex items-center gap-4">
-                        <div class="flex items-center gap-2 text-sm text-gray-700">
-                            <span class="font-mono text-xs p-1 bg-gray-200 rounded">${incrementText}</span>
-                            ${unitText ? `<span class="font-mono text-xs p-1 bg-gray-200 rounded">${unitText}</span>` : ''}
-                            <span class="material-symbols-outlined text-base">group</span>
-                            <span class="text-xs font-medium">${groupText}</span>
-                        </div>
+                    <div class="flex items-center gap-4 text-sm text-gray-700">
+                        ${groupHtml}
                         <button onclick="WellTrackApp.events.handleRemoveEventType(${index})" class="text-red-400 hover:text-red-600 p-1">
                             <span class="material-symbols-outlined">delete</span>
                         </button>
