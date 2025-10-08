@@ -11,7 +11,10 @@ This document lists the curren implementation status of features and refactoring
 - **Protokoll Refactor**: Overhaul the "Protokoll" (log) view. The layout will be updated to feature a sticky week selector and a fixed, left-aligned date display that clarifies the "5-to-5" day (e.g., "Dienstag 7.10.2025 auf Mittwoch"). Timestamps will use icons to differentiate between same-day and next-day (pre-5:00 AM) entries. The data gathering logic will be rewritten to align with the new day definition. Mood and pain entries will be grouped into 10-minute slots, reversed, and sorted alphabetically. "Ereignisse" will be reordered, and entries without a group will be labeled "Allgemein".
 
 ## Completed Tasks
-
+- [x] **Protokoll Date Display**: Remove the floating `log-day-indicator` and display the date as "Wochentag TT.MM.JJJJ auf Wochentag" within the day card before "Ereignisse".
+- [x] **Alternating Row Styles**: Implement alternating background styles for entries in the "Heute" page log and the "EventType List" in settings for better readability.
+- [x] **Settings EventType Layout**: In the "Edit EventTypes" view, realign the layout to keep the edit icon and title on the left, while moving the value, unit, push-button icon, group icon, and group name to the right, next to the delete icon.
+- [x] **Push-Button Feedback**: Add a visual flash effect to the "(2x, zuletzt um hh:mm)" text when the "Erneut" or "rückgängig" buttons are pressed for push-button events to provide clear user feedback.
 - **GUI Test Implementation**: Create a suite of GUI tests using pytest-playwright. The tests should cover the initial application states (no data, empty data, sample data) and basic navigation. The test runner should be integrated into the `Makefile` under the `test` target. All tests will run in a 1080x1920 portrait mode, and screenshots of failed tests will be saved.
 
 ## Discovered Tasks

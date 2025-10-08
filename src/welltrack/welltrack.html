@@ -276,6 +276,13 @@
             justify-content: flex-end;
             gap: 0.25rem;
         }
+        @keyframes flash-bg {
+            0% { background-color: var(--md-sys-color-primary-container); }
+            100% { background-color: transparent; }
+        }
+        .flash {
+            animation: flash-bg 0.5s ease-out;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -914,8 +921,9 @@ const WellTrackApp = {
 
                 let listHtml = '';
                 if (isVisible) {
-                    summarizedToday.sort((a,b) => b.timestamp - a.timestamp).forEach(metric => {
-                        listHtml += `<li class="text-gray-800 py-1 border-b border-gray-200 last:border-b-0">${this.components.todaysLogEntry(metric)}</li>`;
+                    summarizedToday.sort((a,b) => b.timestamp - a.timestamp).forEach((metric, index) => {
+                        const bgColorClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                        listHtml += `<li class="text-gray-800 p-2 rounded-lg ${bgColorClass}">${this.components.todaysLogEntry(metric)}</li>`;
                     });
                 }
 
@@ -1027,51 +1035,23 @@ const WellTrackApp = {
 
                 sortedDates.forEach(dateKey => {
                     const { metrics, date } = groupedData[dateKey];
-                    const weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+                    const weekdays = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
                     const dayName = weekdays[date.getDay()];
 
                     const nextDay = new Date(date);
                     nextDay.setDate(date.getDate() + 1);
                     const nextDayName = weekdays[nextDay.getDay()];
 
-                    const formattedDate = `${dayName} ${date.getDate()}.${date.getMonth() + 1}. auf ${nextDayName}`;
+                    const formattedDate = `${dayName} ${date.getDate()}.${date.getMonth() + 1}.${date.getFullYear()} auf ${nextDayName}`;
 
                     const div = document.createElement('div');
                     div.className = 'py-4 border-b border-gray-200 last:border-b-0';
                     div.id = `log-day-${dateKey}`;
-                    div.dataset.dateLabel = formattedDate;
 
                     const summarizedMetrics = WellTrackApp.utils.summarizeMetrics(metrics);
                     div.innerHTML = this.components.logEntry(formattedDate, summarizedMetrics);
                     logContainer.appendChild(div);
                 });
-
-                // Setup Intersection Observer for the day indicator
-                const dayIndicator = document.getElementById('log-day-indicator');
-                const observer = new IntersectionObserver((entries) => {
-                    let topEntry = null;
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            if (!topEntry || entry.boundingClientRect.top < topEntry.boundingClientRect.top) {
-                                topEntry = entry;
-                            }
-                        }
-                    });
-                    if (topEntry) {
-                        dayIndicator.textContent = topEntry.target.dataset.dateLabel;
-                        dayIndicator.classList.remove('hidden');
-                    } else {
-                        const firstEntry = logContainer.querySelector('[data-date-label]');
-                        if (firstEntry) {
-                           dayIndicator.textContent = firstEntry.dataset.dateLabel;
-                           dayIndicator.classList.remove('hidden');
-                        } else {
-                           dayIndicator.classList.add('hidden');
-                        }
-                    }
-                }, { threshold: 0.1, rootMargin: "-50% 0px -50% 0px" });
-
-                logContainer.querySelectorAll('[data-date-label]').forEach(el => observer.observe(el));
             }
 
             // Update pagination controls
@@ -1226,7 +1206,8 @@ const WellTrackApp = {
             container.innerHTML = '';
             WellTrackApp.data.getEventTypes().forEach((event, index) => {
                 const div = document.createElement('div');
-                div.className = 'flex items-center justify-between bg-gray-100 p-3 rounded-lg';
+                const bgColorClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                div.className = `flex items-center justify-between p-3 rounded-lg ${bgColorClass}`;
                 div.innerHTML = this.components.manageEventItem(event, index);
                 container.appendChild(div);
             });
@@ -1774,9 +1755,6 @@ const WellTrackApp = {
                     </div>
                 </div>
                 <div class="relative">
-                    <div id="log-day-indicator" class="fixed top-1/2 left-4 -translate-y-1/2 bg-gray-800 text-white p-3 rounded-lg shadow-lg z-20 hidden md:block">
-                        <!-- Day indicator content will be injected here -->
-                    </div>
                     <div id="log-entries-container" class="card"></div>
                 </div>
             `,
@@ -1914,7 +1892,7 @@ const WellTrackApp = {
                 return `
                     <div class="flex items-baseline">
                          <span class="text-base sm:text-lg font-medium text-gray-800">${event.name}</span>
-                         <span class="text-sm sm:text-sm text-gray-800 font-normal ml-2">${lastTimestampInfo}</span>
+                         <span id="timestamp-info-${event.activity}" class="text-sm sm:text-sm text-gray-800 font-normal ml-2 p-1 rounded-md">${lastTimestampInfo}</span>
                     </div>
                     <div class="flex items-center gap-2 ml-auto">
                         ${buttonsHtml}
@@ -2060,7 +2038,7 @@ const WellTrackApp = {
                     }).join('');
                 }
 
-                let html = '';
+                let html = `<h3 class="font-semibold text-lg text-gray-700 mb-3">${formattedDate}</h3>`;
                 let isFirstSection = true;
                 const addSection = (title, content) => {
                     if (content) {
@@ -2078,28 +2056,31 @@ const WellTrackApp = {
             },
             paginationControls: (currentPage, totalPages) => { /* No longer used */ },
             manageEventItem: (event, index) => {
-                const incrementText = event.increment === 0 ? '<span class="material-symbols-outlined">nest_clock_farsight_analog</span>' : `+${event.increment}`;
-                const detailsText = `${incrementText} ${event.unitType || ''}`;
+                const incrementText = event.increment === 0
+                    ? '<span class="material-symbols-outlined text-base align-middle">nest_clock_farsight_analog</span>'
+                    : `+${event.increment}`;
+                const unitText = event.unitType || '';
+                const groupText = event.groupType || 'Keine';
+
                 return `
                     <div class="flex items-center gap-3 flex-grow">
-                        <button onclick="WellTrackApp.events.handleShowEventTypeForm(${index})" class="text-blue-500 hover:text-blue-700">
+                        <button onclick="WellTrackApp.events.handleShowEventTypeForm(${index})" class="text-blue-500 hover:text-blue-700 p-1">
                             <span class="material-symbols-outlined">edit</span>
                         </button>
-                        <div class="">
-                            <span>${event.name}
-                                <span class="text-xs text-gray-800 ">
-                                    ${detailsText}
-                                    <span class="material-symbols-outlined">group</span>
-                                    ${event.groupType || 'Keine'}
-                                </span>
-                            </span>
-                        </div>
+                        <span class="font-medium">${event.name}</span>
                     </div>
-                    <div class="flex items-center">
-                        <button onclick="WellTrackApp.events.handleRemoveEventType(${index})" class="text-red-400 hover:text-red-600">
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2 text-sm text-gray-700">
+                            <span class="font-mono text-xs p-1 bg-gray-200 rounded">${incrementText}</span>
+                            ${unitText ? `<span class="font-mono text-xs p-1 bg-gray-200 rounded">${unitText}</span>` : ''}
+                            <span class="material-symbols-outlined text-base">group</span>
+                            <span class="text-xs font-medium">${groupText}</span>
+                        </div>
+                        <button onclick="WellTrackApp.events.handleRemoveEventType(${index})" class="text-red-400 hover:text-red-600 p-1">
                             <span class="material-symbols-outlined">delete</span>
                         </button>
-                    </div>`;
+                    </div>
+                `;
             },
             painModalContent: (partName, viewName) => {
                 let buttons = '';
@@ -2336,6 +2317,15 @@ const WellTrackApp = {
             };
             WellTrackApp.data.addMetric(newEntry);
             WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
+
+            // Add flash effect after re-rendering
+            setTimeout(() => {
+                const infoEl = document.getElementById(`timestamp-info-${activity}`);
+                if (infoEl) {
+                    infoEl.classList.add('flash');
+                    infoEl.addEventListener('animationend', () => infoEl.classList.remove('flash'), { once: true });
+                }
+            }, 0);
         },
         handleUndoTimestamp(activity) {
             let metrics = WellTrackApp.data.getMetrics();
@@ -2356,6 +2346,15 @@ const WellTrackApp = {
                 metrics.splice(lastEntryIndex, 1);
                 WellTrackApp.data.saveMetrics(metrics);
                 WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
+
+                // Add flash effect after re-rendering
+                setTimeout(() => {
+                    const infoEl = document.getElementById(`timestamp-info-${activity}`);
+                    if (infoEl) {
+                        infoEl.classList.add('flash');
+                        infoEl.addEventListener('animationend', () => infoEl.classList.remove('flash'), { once: true });
+                    }
+                }, 0);
             }
         },
         handleWeekChange(direction) {
