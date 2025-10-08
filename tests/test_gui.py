@@ -5,7 +5,8 @@ from playwright.sync_api import Page, expect
 
 # Constants
 VIEWPORT_SIZE = {"width": 1080, "height": 1920}
-GERMAN_DATE_REGEX = re.compile(r'\w+ \d{1,2}\.\d{1,2}\.\d{4}')
+GERMAN_DATE_REGEX = re.compile(r"\w+ \d{1,2}\.\d{1,2}\.\d{4}")
+
 
 @pytest.fixture(scope="session")
 def sample_data():
@@ -13,12 +14,13 @@ def sample_data():
     with open("build/tests/sample-data.json", "r") as f:
         return json.load(f)
 
+
 @pytest.fixture
 def page(page: Page, live_server):
     """Fixture to configure the browser page and navigate to the app."""
-    page.set_viewport_size(VIEWPORT_SIZE)
     page.goto(f"{live_server}/welltrack/welltrack.html", wait_until="networkidle")
     return page
+
 
 def test_start_with_no_data(page: Page):
     """Test the application's initial state with no data in localStorage."""
@@ -30,13 +32,16 @@ def test_start_with_no_data(page: Page):
     expect(page.locator("h2:has-text('Heute') + span")).to_have_text(GERMAN_DATE_REGEX)
     expect(page.get_by_text("Noch keine Einträge für Heute")).to_be_visible()
 
+
 def test_start_with_empty_data(page: Page):
     """Test the application's initial state with empty data in localStorage."""
-    page.evaluate("() => { \
+    page.evaluate(
+        "() => { \
         localStorage.setItem('wellTrackMetrics', '[]'); \
         localStorage.setItem('wellTrackEventTypes', '[]'); \
         localStorage.setItem('wellTrackSettings', '{}'); \
-    }")
+    }"
+    )
     page.reload()
 
     # Check for "Heute" (Today) and the current date format.
@@ -44,13 +49,16 @@ def test_start_with_empty_data(page: Page):
     expect(page.locator("h2:has-text('Heute') + span")).to_have_text(GERMAN_DATE_REGEX)
     expect(page.get_by_text("Noch keine Einträge für Heute")).to_be_visible()
 
+
 def test_start_with_sample_data(page: Page, sample_data):
     """Test the application's state with sample data loaded from a file."""
-    page.evaluate(f"() => {{ \
+    page.evaluate(
+        f"() => {{ \
         localStorage.setItem('wellTrackMetrics', JSON.stringify({json.dumps(sample_data['metrics'])})); \
         localStorage.setItem('wellTrackEventTypes', JSON.stringify({json.dumps(sample_data['eventTypes'])})); \
         localStorage.setItem('wellTrackSettings', JSON.stringify({json.dumps(sample_data['settings'])})); \
-    }}")
+    }}"
+    )
     page.reload()
 
     # Navigate to the log page to see all entries
@@ -58,6 +66,7 @@ def test_start_with_sample_data(page: Page, sample_data):
 
     # Check for a known entry from the sample data
     expect(page.locator("text=Kaffee Tassen").first).to_be_visible()
+
 
 def test_settings_persistence(page: Page):
     """Test that changing a setting persists after a reload."""
@@ -84,13 +93,16 @@ def test_settings_persistence(page: Page):
     expect(page.locator("#body-front")).to_be_visible()
     expect(page.locator("#body-back")).to_be_hidden()
 
+
 def test_main_navigation(page: Page, sample_data):
     """Test clicking through all main navigation icons and checking page titles."""
-    page.evaluate(f"() => {{ \
+    page.evaluate(
+        f"() => {{ \
         localStorage.setItem('wellTrackMetrics', JSON.stringify({json.dumps(sample_data['metrics'])})); \
         localStorage.setItem('wellTrackEventTypes', JSON.stringify({json.dumps(sample_data['eventTypes'])})); \
         localStorage.setItem('wellTrackSettings', JSON.stringify({json.dumps(sample_data['settings'])})); \
-    }}")
+    }}"
+    )
     page.reload()
 
     nav_items = {

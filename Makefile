@@ -1,6 +1,6 @@
 # Makefile
 
-.PHONY: help buildenv test lab docs docs-serve lint clean clean-all
+.PHONY: help buildenv test lab docs dev-serve dev-serve-sll lint clean clean-all
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' | sort
 
@@ -19,6 +19,7 @@ uv.lock: pyproject.toml ensure-uv
 	@echo "+++ $@"
 	uv venv --clear
 	uv sync --all-extras
+	. .venv/bin/activate && playwright install chromium-headless-shell
 	@touch $@
 
 buildenv: .venv/bin/activate ## Create build environment
@@ -28,28 +29,12 @@ lab: buildenv ## Edit welltrack-lab.py in marimo
 	@echo "+++ $@"
 	. .venv/bin/activate && marimo edit scripts/welltrack-lab.py
 
-test: docs build/tests/sample-data.json ## Run Tests on the build Site
+test: docs build/tests/sample-data.json ## Create Sample Data, run Tests
 	@echo "+++ $@"
-	@bash -c ' \
-		source .venv/bin/activate; \
-		mkdir -p build/tests/output; \
-		TEST_OUTPUT_FILE=$$(mktemp); \
-		pytest \
-			--screenshot only-on-failure \
-			--video retain-on-failure \
-			--output build/tests/output \
-			tests/test_gui.py 2>&1 | tee $$TEST_OUTPUT_FILE; \
-		TEST_EXIT_CODE=$${PIPESTATUS[0]}; \
-		echo "---"; \
-		if [ $$TEST_EXIT_CODE -ne 0 ]; then \
-			echo "Failed test screenshots:"; \
-			grep -o "Screenshot saved to .*png" $$TEST_OUTPUT_FILE | sed "s/Screenshot saved to //"; \
-		fi; \
-		rm $$TEST_OUTPUT_FILE; \
-		exit $$TEST_EXIT_CODE; \
-	'
+	mkdir -p build/tests/output
+	pytest --device "Pixel 7" --screenshot on --video retain-on-failure --output build/tests/output tests/
 
-build/tests/sample-data.json: buildenv
+build/tests/sample-data.json: buildenv scripts/create-sample-data.py
 	mkdir -p build/tests
 	. .venv/bin/activate && scripts/create-sample-data.py build/tests/sample-data.json
 
@@ -94,11 +79,11 @@ docs-marimo: build/site/marimo/index.html
 docs: buildenv docs-mkdocs docs-welltrack-app docs-prototypes docs-wheel docs-marimo ## Make Onlinepage and WebApp
 	@echo "+++ $@"
 
-docs-serve-ssl: docs ## HTTPS Serve Documentation on port 8443
+dev-serve-ssl: docs ## HTTPS Serve Documentation on port 8443
 	@echo "+++ $@"
 	. .venv/bin/activate && scripts/dev_serve.py -d build/site 8443
 
-docs-serve: docs ## HTTP Serve Documentation on port 8000
+dev-serve: docs ## HTTP Serve Documentation on port 8000
 	@echo "+++ $@"
 	. .venv/bin/activate && python -m http.server -d build/site 8000
 

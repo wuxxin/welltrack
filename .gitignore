@@ -1,39 +1,18 @@
-# Python
-__pycache__/
+# python
 *.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-celerybeat-schedule
-*.egg-info/
-dist/
-build/
+__pycache__/
+__marimo__/
+src/welltrack_lab.egg-info/
+
+# uv locked dependencies
 uv.lock
 
-# Logs
-*.log
-logs/
+# python virtualenv
+.venv/
 
-# Test artifacts
-.pytest_cache/
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-junit.xml
-report.xml
-*.prof
-screenshots/
-test-results/
+# build artifacts
+build/
+dist/
 
 # Editor-specific
 .idea/

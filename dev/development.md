@@ -44,11 +44,11 @@
     - `clean`                Remove test and build artifacts
     - `clean-all`            Remove environment and all artifacts
     - `docs`                 Make Onlinepage and WebApp
-    - `docs-serve`           HTTP Serve Documentation on port 8000
-    - `docs-serve-ssl`       HTTPS Serve Documentation on port 8443
+    - `dev-serve`            HTTP Serve Documentation on port 8000
+    - `dev-serve-ssl`        HTTPS Serve Documentation on port 8443
     - `lab`                  Edit welltrack-lab.py in marimo
     - `lint`                 Run Linting
-    - `test`                 Run Tests, currently build build/tests/sample-data.json
+    - `test`                 Create Sample Data, run Tests
 - mkdocs.yml: mkdocs configuration
     - In mkdocs.yml, file paths in the nav section are relative to the docs directory, not the project root.
 - pyproject.toml: python dependencies for interactive marimo, testing and mkdocs build
@@ -73,24 +73,21 @@
 
 #### Playwright GUI Testing and Verification of Welltrack
 
-- run `make docs` to build all site files, `make test` to run integrated tests
-- run `mkdir -p build/tests/; source .venv/bin/activate && scripts/create-sample-data.py build/tests/sample-data.json` to  to create `build/tests/sample-data.json`
-- run pytest-playwright tests withhin `source .venv/bin/activate`
-- run the dev server `dev_serve.py` for serving files of the build with `source .venv/bin/activate && python scripts/dev_serve.py -d build/site 8443 > dev_server.log 2>&1 &`
-- playwright testing should be alway done on a virtual screen size in portrait mode (mobile) of 1080 x 1920.
+- run `make test` creates a sample data file under `build/tests/sample-data.json`, starts the dev_server and runs all integrated playwright tests in `tests/`
+- to run the dev server manually, run `source .venv/bin/activate && python scripts/dev_serve.py -d build/site 8443 > dev_server.log 2>&1 &`
+- for specific playwright gui testing run `mkdir -p build/tests/output; source .venv/bin/activate pytest --device "Pixel 7" --screenshot on --video retain-on-failure --output build/tests/output` and the testfilename.
+
 - In Playwright, to check if a modal has been hidden (i.e., has the 'hidden' class), use expect(locator).to_be_hidden() instead of wait_for_selector('.hidden'), as the latter will time out waiting for a hidden element to become visible.
 - In Playwright, element selectors like page.get_by_title() are case-sensitive and must exactly match the attribute value in the HTML.
 - For single-page applications, Playwright scripts should avoid using page.reload() after navigation clicks, as this can reset the application state and cause tests to fail. The expect function's built-in wait is sufficient to handle asynchronous rendering.
 - When using Playwright to test features that are not initially visible on the page (e.g., at the bottom of a long scroll), use page.screenshot({ full_page: True }) to capture the entire page content for verification.
 - When using Playwright's to_have_class assertion, the argument must be a string or a regular expression, not a lambda function. A regular expression like re.compile(r'\bactive\b') can be used to check for the presence of a class.
 
-- run playwright jules verification with: `source .venv/bin/activate && python jules-scratch/verification/verify_changes.py`.
-- Verification scripts in the jules-scratch directory should not be deleted until after a final submission is successful, for the user for verification and to avoid having to recreate them if further changes are needed,
 
 ## Python Style & Conventions
 
 - **Use uv** (the virtual environment and package manager) whenever executing Python commands, including for unit tests.
-- **Use `pyproject.toml`** to add or modify dependencies installed during a task execution.
+- **Use `pyproject.toml`** to add or modify dependencies installed during a task execution. as long as there is no version controlled uv.lock, dont add one to the repository
 - **Use python_dotenv and load_env()** for environment variables.
 - **Follow PEP8**, use type hints, and format with `black`.
 - **Use `pydantic` for data validation**.
