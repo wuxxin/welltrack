@@ -26,12 +26,7 @@ def live_server():
 
 @pytest.fixture(scope="session")
 def browser_context_args(browser_context_args, playwright: Playwright):
-    """
-    Fixture to configure browser context.
-
-    This fixture sets the `ignore_https_errors` option to True, which allows
-    Playwright to work with self-signed certificates used by the dev server.
-    """
+    """Fixture to configure browser context"""
     pixel_7 = playwright.devices["Pixel 7"]
     return {
         **browser_context_args,
@@ -40,5 +35,5 @@ def browser_context_args(browser_context_args, playwright: Playwright):
         "locale": "de-DE",
         "timezone_id": "Europe/Berlin",
         "geolocation": {"longitude": 48.208359954959, "latitude": 16.3723010569811},
-        "permissions": ["geolocation"],
+        "permissions": ["geolocation", "notifications"],
     }

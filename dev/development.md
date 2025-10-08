@@ -85,7 +85,21 @@ test                 Create Sample Data, run Tests
 - to serve files locally, execute `. .venv/bin/activate && python scripts/dev_serve.py -d build/site 8443 > dev_server.log 2>&1 &`. For this project, the built site is served from build/site on port 8443. only run the dev server if you dont use the dev server start/stop fixture from `tests/testconf.py`.
 - for specific playwright gui testing run `mkdir -p build/screeenshots; . .venv/bin/activate pytest --screenshot on --video retain-on-failure --output build/screenshots` and the testfilename.
 - when requested to run "before after" gui tests as part of the procedure, create one screenshot before a change and another after the requested change. this means to create the test file first, then run the test to create the before screenshot to the `build/test/before` directory, then make the change, then create the after screenshot to the `build/test/after` dir.
-- `jules-scratch/verification/verify_*.py` files should always include the fixtures from `tests/conftest.py` to have a proper configured browser and start and stop the dev server from the fixtures
+- `jules-scratch/verification/*.py` gui playwright verification files should always include the following playwright browser context setup:
+
+```py
+# Playwright: setup correct browser context for dev_server.py https and mobile device emulation testing
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True, args=["--ignore-certificate-errors"])
+    context = browser.new_context(
+        ignore_https_errors=True,
+        locale="de-DE",
+        timezone_id="Europe/Berlin",
+        geolocation={"longitude": 48.208359954959, "latitude": 16.3723010569811},
+        permissions=["geolocation", "notifications"],
+        **p.devices["Pixel 7"],
+    )
+```
 
 - In Playwright, to check if a modal has been hidden (i.e., has the 'hidden' class), use expect(locator).to_be_hidden() instead of wait_for_selector('.hidden'), as the latter will time out waiting for a hidden element to become visible.
 - In Playwright, element selectors like page.get_by_title() are case-sensitive and must exactly match the attribute value in the HTML.

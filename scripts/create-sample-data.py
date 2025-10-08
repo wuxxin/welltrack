@@ -252,7 +252,7 @@ def generate_random_data(config, days_to_generate, settings={}):
         coffee_cfg = events_map["coffee_cups"]
         metrics.append(
             {
-                "metric": f"event_{coffee_cfg['activity']}_timestamp",
+                "metric": f"event_{coffee_cfg['activity']}_value",
                 "timestamp": get_random_timestamp_for_day(current_day_base),
                 "labels": get_event_labels(coffee_cfg),
                 "value": random.randint(2, 6),

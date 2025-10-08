@@ -6,22 +6,13 @@ Read `dev/system-workflow.md`, `dev/product-requirements.md`, `dev/development.m
 Read the following required changes, considering which parts of the tasks should be combined and which should be separate, and in what order they should be performed.
 Update `dev/tasks.md` under Section "Planned Tasks" with the detailed description of that tasks.
 Then, do each of the described tasks one by one, and update `dev/tasks.md` accordingly.
-Request a user review once finished.
 
 required changes:
 
-- protokoll: remove log-day-indicator, instead put it as simple content before "Ereignisse" in the day card, and display as: "Mittwoch 8.10.2025 auf Donnerstag"
-
-- Alternating Styles (background, slightly brightness variation, keep it similar but distinctable) for: Heute: Heutige Einträge and for  Settings:Edit EventTypes,EventType List.
-
-- settings:edit eventtypes: keep edit icon and titel left,put rest "(value unit | pushbuttonicon) [groupicon groupname]" to the right next to delete.
-also, if group is none, but keep the content parts a flex group.
-
-- event entry: push button entry: Pressing "Erneut" or "rückgängig, Flashes the updated "(2x, zuletzt um hh:mm)" so user sees visual feedback on pressing erneut or rückgängig.
-
-- on access using "file:///home/wuxxin/code/welltrack/src/welltrack/welltrack.html": Access to manifest at 'file:///home/wuxxin/code/welltrack/src/welltrack/manifest.json' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. If possible, make it work with file:/// to, or explain why this is not possible in settings: "Erinnerungen" on enable "Browser benachrichtigungen erlauben" function.
 
 ## nice to have
+
+- on access using "file:///home/wuxxin/code/welltrack/src/welltrack/welltrack.html": Access to manifest at 'file:///home/wuxxin/code/welltrack/src/welltrack/manifest.json' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. If possible, make it work with file:/// to, or explain why this is not possible in settings: "Erinnerungen" on enable "Browser benachrichtigungen erlauben" function.
 
 + settings: edit event type: add Button (after subtab selector, right aligned just before event type list starts) with only an Icon (no text, but hovering reveals "Sortierung verändern", Representing "Loosing Chains" for reorder, and "closed Chains" as the other icon once in reorder mode to freeze changes. clicking "Reorder" Icon blurs everything except the event type list, that gets grab icons on the left, and disables/greysout (modal type) all other user interface, so only the list and the icon "Closed Chains" are clickable, the user can reorder the event types, and either abort (clicked outside) aborts the reordering, or the click on "closed Chain" freezes the new reordering, after the metrictype array gets resorted from the dom order.
 

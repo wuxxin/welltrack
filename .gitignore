@@ -14,6 +14,9 @@ uv.lock
 build/
 dist/
 
+# jules artifacts
+jules-scratch/
+
 # Editor-specific
 .idea/
 .vscode/
