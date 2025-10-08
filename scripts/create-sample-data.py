@@ -175,7 +175,7 @@ def generate_random_data(config, days_to_generate, settings={}):
             day_progress = (slot_num + 1) / len(slots_for_today)
 
             # Mood
-            num_mood_questions_to_answer = random.randint(2, len(all_mood_questions))
+            num_mood_questions_to_answer = len(all_mood_questions)
             questions_for_slot = random.sample(
                 all_mood_questions, num_mood_questions_to_answer
             )

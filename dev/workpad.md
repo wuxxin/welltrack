@@ -10,16 +10,6 @@ Request a user review once finished.
 
 required changes:
 
-make a some gui test cases. use pytest-playwright, add a new file in tests, make the test calling available as a step in Makefile: "make test" (currently existing but only creates the test import data. always test on a virtual screen size in portrait mode (mobile) of 1080 x 1920. use the build/tests/sample-data.json as Importfile in the pytest runner. load it once from file, write wellTrackMetrics wellTrackEventTypes wellTrackSettings from this import json, overwrite maybe some settings in wellTrackSettings and make test case. for every test case make a screenshot. name it clever so we can access it later on its name. write out the filenames of failed test screenshots.
-
-initial tests:
-
-- remove all wellTrack* localStorage, start welltrack, look for Today, "Heute" and Date
-- do this with existing but all empty wellTrack*
-- do this with the default data provided from sample-data.json , all further tests use default data
-- click through all main bar icons, and check for the titel of the subtab
-
-
 ---
 
 - refactor all console.log() calls next to location.reload(): save a rebirth_message settings to settings, then reload, on next init, check rebirth_message after loading settings from LocalStorage, and display overlay like Version Overlay, but in a way that versionoverlay and rebirth_message_overlay can be displayed simultan. make messagemodal color as version modal (blackish). make the modal layout linear: "icon Titel-in-Bold Message can overflow col", try to use screenwidth for width. if localstorage wellTrackSettings: hide_modal_overlays that will be loaded to state on init, is set (default is unset, can be only set by eg pywright directly to localstorage, but not by welltrack.html) do not display rebirth_overlay or version_overlay. This is for taking clean screenshots while testing.
@@ -45,7 +35,12 @@ Group entries without group with wording "Allgemein" instead of "ohne gruppe".
 
 ---
 
+- Alternating Styles (background, slightly) bei:Heute,Heutige Einträge,Protokoll: Day Card Entries,Settings:Edit EventTypes,EventType List.
 
+- settings:edit eventtypes: keep edit icon and titel left,put rest (unit,groupicon,groupname) to the right next to delete.
+also, dont display groupicon and groupname if group is none, but keep the three (unit groupicon,groupname) a flex group.
+
+- change "schmerz frei" in svg" to Green bold Checkmark inside whole circle
 
 ## nice to have
 
@@ -69,7 +64,6 @@ verlauf: mood and pain chart: mavg of the totalsum (gesamtschmerz, gesamtwert st
 
 + body pain: body: back, front, other: other is a svg like front and back with "SchmerzFrei" as on the other svg's , but with selected bodyparts
   for detailed not covered on front and back parts, eg: ears, eyes, nose, mouth, fingers , toes, and some special "pain" like "tinitus" seperated.
-
 
 + Gui Dark Theme
     +make an additional dark theme, add switch to settings after Erinnerungen, "Darstellung", "Design", "Hell | Dunkel" , default hell

@@ -787,20 +787,20 @@ const WellTrackApp = {
 
             summaryContainer.innerHTML = `
                 <div class="pill-card !p-0 overflow-hidden">
-                    <div onclick="WellTrackApp.events.showPage('mood')" class="w-1/2 h-full flex items-center justify-start pl-6 pr-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
-                        <p class="text-xl font-bold">Stimmung</p>
+                    <div onclick="WellTrackApp.events.showPage('mood')" class="w-1/2 h-full flex items-center justify-start pl-4 pr-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
+                        <p class="text-lg font-bold">Stimmung</p>
                     </div>
-                    <div onclick="WellTrackApp.events.showHistoryFor('mood')" class="w-1/2 h-full flex items-baseline justify-end gap-3 pr-6 pl-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
-                        <p class="text-5xl font-bold">${displayMoodValue}</p>
+                    <div onclick="WellTrackApp.events.showHistoryFor('mood')" class="w-1/2 h-full flex items-baseline justify-end gap-1 pr-6 pl-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
+                        <p class="text-4xl font-bold">${displayMoodValue}</p>
                         ${renderArrowDelta(moodDelta, true)}
                     </div>
                 </div>
                 <div class="pill-card !p-0 overflow-hidden">
                      <div onclick="WellTrackApp.events.showPage('pain')" class="w-1/2 h-full flex items-center justify-start pl-6 pr-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
-                        <p class="text-xl font-bold">Schmerz</p>
+                        <p class="text-lg font-bold">Schmerz</p>
                     </div>
-                    <div onclick="WellTrackApp.events.showHistoryFor('pain')" class="w-1/2 h-full flex items-baseline justify-end gap-3 pr-6 pl-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
-                       <p class="text-5xl font-bold">${displayPainValue}</p>
+                    <div onclick="WellTrackApp.events.showHistoryFor('pain')" class="w-1/2 h-full flex items-baseline justify-end gap-1 pr-6 pl-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
+                       <p class="text-4xl font-bold">${displayPainValue}</p>
                        ${renderArrowDelta(painDelta, false)}
                     </div>
                 </div>
@@ -878,10 +878,10 @@ const WellTrackApp = {
                     const unitHtml = item.unit ? `<p class="text-base font-medium">${item.unit}</p>` : '';
                     return `
                         <div class="card !p-0 flex justify-between items-stretch overflow-hidden">
-                             <div onclick="WellTrackApp.events.showEventPageForGroup('${item.groupKey}')" class="p-4 flex-grow cursor-pointer hover:bg-gray-200/50 transition-colors flex items-center">
+                             <div onclick="WellTrackApp.events.showEventPageForGroup('${item.groupKey}')" class="p-2 flex-grow cursor-pointer hover:bg-gray-200/50 transition-colors flex items-center">
                                 <p class="text-lg font-semibold">${item.name}</p>
                             </div>
-                            <div onclick="WellTrackApp.events.showHistoryForEvent('${chartKey}')" class="p-4 cursor-pointer hover:bg-gray-200/50 transition-colors flex items-center justify-center flex-shrink-0">
+                            <div onclick="WellTrackApp.events.showHistoryForEvent('${chartKey}')" class="p-2 cursor-pointer hover:bg-gray-200/50 transition-colors flex items-center justify-center flex-shrink-0">
                                 <div class="flex items-baseline justify-center flex-wrap gap-x-1">
                                     <p class="text-3xl font-bold">${totalValue}</p>
                                     ${unitHtml}
@@ -1573,10 +1573,10 @@ const WellTrackApp = {
                     yesterday.setDate(now.getDate() - 1);
                     const dayNameYesterday = weekdays[yesterday.getDay()];
                     const dayNameToday = weekdays[now.getDay()];
-                    dateString = `Heute -> ${dayNameYesterday} auf ${dayNameToday} ${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
+                    dateString = `${dayNameYesterday} ${yesterday.getDate()}.${yesterday.getMonth() + 1}.${yesterday.getFullYear()} auf ${dayNameToday}`;
                 } else {
                     const dayName = weekdays[now.getDay()];
-                    dateString = `Heute -> ${dayName} ${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
+                    dateString = `${dayName} ${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
                 }
 
                 return `
@@ -1813,13 +1813,13 @@ const WellTrackApp = {
 
                 return `
                 <div class="card pt-2">
-                     <div class="flex md:flex-row md:justify-between md:items-center gap-3 mb-4">
+                     <div class="flex md:flex-row md:justify-between md:items-center gap-1 mb-4">
                         <h2 class="h2-style flex-shrink-0">Einstellungen</h2>
                         <div class="submenu-container" role="group">
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('about')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="about">Über</button>
+                            <button onclick="WellTrackApp.events.handleSettingsTabClick('display')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="display">Darstellung</button>
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('reminders')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="reminders">Erinnerungen</button>
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('data')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="data">Import/Export</button>
-                            <button onclick="WellTrackApp.events.handleSettingsTabClick('display')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="display">Darstellung</button>
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('eventTypes')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="eventTypes">Ereignisarten</button>
                         </div>
                     </div>
@@ -1972,8 +1972,8 @@ const WellTrackApp = {
                     const date = new Date(timestamp);
                     const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     const startHour = parseInt(dayStartTime.split(':')[0], 10);
-                    const icon = date.getHours() < startHour ? 'clock_plus' : 'schedule';
-                    return `<span class="material-symbols-outlined text-base">${icon}</span> ${time}`;
+                    const icon = date.getHours() < startHour ? 'clock_arrow_up' : 'schedule';
+                    return `<span class="material-symbols-outlined">${icon}</span> ${time}`;
                 };
 
                 const dayStartTime = WellTrackApp.data.getSettings().dayStartTime;
