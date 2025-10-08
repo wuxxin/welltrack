@@ -25,6 +25,7 @@ requires-python = ">=3.10"
 dependencies = [
     "welltrack_lab",
     "build",
+    "cryptography",
     "altair",
     "bokeh",
     "ipython",
@@ -43,7 +44,6 @@ test = [
     "pytest",
     "playwright",
     "pytest-playwright",
-    "cryptography",
 ]
 docs = [
     # mkdocs - Project documentation with Markdown

@@ -77,12 +77,15 @@ test                 Create Sample Data, run Tests
 
 #### Playwright GUI Testing and Verification of Welltrack
 
-- run `make test` creates a sample data file under `build/tests/sample-data.json`, starts the dev_server and runs all integrated playwright tests in `tests/`
-- run `make sample-data` to just create `build/tests/sample-data.json`.
-- to run the dev server manually, run `source .venv/bin/activate && python scripts/dev_serve.py -d build/site 8443 > dev_server.log 2>&1 &`
-- for specific playwright gui testing run `mkdir -p build/tests/output; source .venv/bin/activate pytest --screenshot on --video retain-on-failure --output build/tests/output` and the testfilename.
+- The command to set up the development environment is `make clean-all buildenv`.
+- run `make sample-data` to create `build/tests/sample-data.json`.
+- run `make docs` to create `build/site`, which is needed for testing.
+- run `make test` creates sample-data,  runs all integrated playwright tests in `tests/`
+    - pytest runs with fixtures from `tests/conftest.py`, to start and stop the `dev_server.py` server serving `build/site` and configure the browser for mobile viewport and locale settings.
+- to serve files locally, execute `. .venv/bin/activate && python scripts/dev_serve.py -d build/site 8443 > dev_server.log 2>&1 &`. For this project, the built site is served from build/site on port 8443. only run the dev server if you dont use the dev server start/stop fixture from `tests/testconf.py`.
+- for specific playwright gui testing run `mkdir -p build/screeenshots; . .venv/bin/activate pytest --screenshot on --video retain-on-failure --output build/screenshots` and the testfilename.
 - when requested to run "before after" gui tests as part of the procedure, create one screenshot before a change and another after the requested change. this means to create the test file first, then run the test to create the before screenshot to the `build/test/before` directory, then make the change, then create the after screenshot to the `build/test/after` dir.
-- `jules-scratch/verification/verify_changes.py` should always include the fixtures from `tests/conftest.py` to have a proper configured browser,
+- `jules-scratch/verification/verify_*.py` files should always include the fixtures from `tests/conftest.py` to have a proper configured browser and start and stop the dev server from the fixtures
 
 - In Playwright, to check if a modal has been hidden (i.e., has the 'hidden' class), use expect(locator).to_be_hidden() instead of wait_for_selector('.hidden'), as the latter will time out waiting for a hidden element to become visible.
 - In Playwright, element selectors like page.get_by_title() are case-sensitive and must exactly match the attribute value in the HTML.

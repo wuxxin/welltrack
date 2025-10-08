@@ -10,8 +10,6 @@ Request a user review once finished.
 
 required changes:
 
-- create-sample-data.py:  at Generate Mood and Pain Data: check after assign of slots_for_today, if on last day and slot end_hour > currenttime: delete slot, random slot add, sort, recheck
-
 - protokoll: remove log-day-indicator, instead put it as simple content before "Ereignisse" in the day card, and display as: "Mittwoch 8.10.2025 auf Donnerstag"
 
 - Alternating Styles (background, slightly brightness variation, keep it similar but distinctable) for: Heute: Heutige Einträge and for  Settings:Edit EventTypes,EventType List.

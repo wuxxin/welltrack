@@ -18,7 +18,7 @@ uv.lock: pyproject.toml ensure-uv
 .venv/bin/activate: uv.lock
 	@echo "+++ $@"
 	uv venv --clear
-	uv sync --all-extras
+	uv sync --all-extras --all-groups
 	. .venv/bin/activate && playwright install chromium-headless-shell
 	@touch $@
 
