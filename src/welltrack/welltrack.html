@@ -325,7 +325,7 @@
     </div>
 
     <!-- Rebirth Message Overlay -->
-    <div id="rebirth-message-overlay" class="hidden bg-gray-800 text-white p-4 rounded-lg shadow-lg z-50 flex items-center gap-4 transition-opacity duration-300 opacity-100 max-w-[90vw]">
+    <div id="rebirth-message-overlay" class="hidden bg-gray-800 text-white p-4 rounded-lg shadow-lg z-50 flex justify-center items-center gap-3 transition-opacity duration-300 opacity-100">
         <span id="rebirth-message-icon" class="material-symbols-outlined"></span>
         <div>
             <p id="rebirth-message-text" class="font-bold"></p>
@@ -2009,7 +2009,7 @@ const WellTrackApp = {
                         const entryDetails = sortedEntries.map(t => {
                             if (t.metric.endsWith('_timestamp')) {
                                 const timeHtml = getTimeHtml(t.timestamp, dayStartTime);
-                                return `<div class="ml-4 text-gray-700 text-base">${timeHtml}: ${t.labels.name}</div>`;
+                                return `<div class="ml-4 text-gray-700 text-base"><span class="font-semibold">${timeHtml}</span>: ${t.labels.name}</div>`;
                             } else {
                                 const valueHtml = `<span class="font-semibold">${t.value} ${t.labels.unitType || ''}</span>`;
                                 return `<div class="ml-4 text-gray-700 text-base">${t.labels.name}: ${valueHtml}</div>`;
