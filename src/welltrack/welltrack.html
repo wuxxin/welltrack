@@ -1411,73 +1411,136 @@ const WellTrackApp = {
                 const ctx = document.getElementById('moodChart')?.getContext('2d');
                 if (!ctx) return;
 
-                const { dailyData } = WellTrackApp.utils.getDailyChartData('mood_');
-                
+                const chartData = WellTrackApp.utils.getMoodChartData();
+                if (WellTrackApp.state.charts.mood) { WellTrackApp.state.charts.mood.destroy(); }
+
                 const datasets = [
+                    // Negative areas
                     {
-                        label: 'Positiv',
-                        data: dailyData.map(day => ({ x: day.timestamp, y: day.positiveSum })),
-                        backgroundColor: 'rgba(34, 197, 94, 0.7)', // green-500
+                        label: 'Stimmung -1',
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n1 })),
+                        backgroundColor: 'rgba(251, 191, 36, 0.7)', // yellow-400
+                        borderColor: 'rgba(251, 191, 36, 1)',
+                        borderWidth: 1,
+                        fill: true,
+                        stack: 'negative',
+                        tension: 0.4
                     },
                     {
-                        label: 'Negativ',
-                        data: dailyData.map(day => ({ x: day.timestamp, y: day.negativeSum })),
+                        label: 'Stimmung -2',
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n2 })),
+                        backgroundColor: 'rgba(249, 115, 22, 0.7)', // orange-500
+                        borderColor: 'rgba(249, 115, 22, 1)',
+                        borderWidth: 1,
+                        fill: true,
+                        stack: 'negative',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Stimmung -3',
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n3 })),
                         backgroundColor: 'rgba(239, 68, 68, 0.7)', // red-500
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 1,
+                        fill: true,
+                        stack: 'negative',
+                        tension: 0.4
+                    },
+                    // Positive areas
+                    {
+                        label: 'Stimmung +1',
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.sum_p1 })),
+                        backgroundColor: 'rgba(191, 219, 254, 0.7)', // blue-200
+                        borderColor: 'rgba(191, 219, 254, 1)',
+                        borderWidth: 1,
+                        fill: true,
+                        stack: 'positive',
+                        tension: 0.4
                     },
                     {
-                        type: 'line',
+                        label: 'Stimmung +2',
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.sum_p2 })),
+                        backgroundColor: 'rgba(110, 231, 183, 0.7)', // green-300 (greenish blue)
+                        borderColor: 'rgba(110, 231, 183, 1)',
+                        borderWidth: 1,
+                        fill: true,
+                        stack: 'positive',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Stimmung +3',
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.sum_p3 })),
+                        backgroundColor: 'rgba(34, 197, 94, 0.7)', // green-500
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 1,
+                        fill: true,
+                        stack: 'positive',
+                        tension: 0.4
+                    },
+                    // Total sum line
+                    {
                         label: 'Gesamtwert',
-                        data: dailyData.map(day => ({ x: day.timestamp, y: day.total })),
-                        borderColor: 'rgba(103, 80, 164, 1)', // primary color
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.total_sum })),
+                        borderColor: 'rgba(103, 80, 164, 1)',
                         backgroundColor: 'rgba(103, 80, 164, 0.1)',
                         borderWidth: 2,
-                        pointRadius: 1,
+                        pointRadius: 2,
                         pointBackgroundColor: 'rgba(103, 80, 164, 1)',
                         fill: false,
+                        type: 'line',
                         tension: 0.1,
-                        order: -1 // Render line on top of bars
+                        order: -1 // Render on top
                     }
                 ];
 
+                // Moving Average
+                const timeRange = WellTrackApp.state.timeRange;
+                let mvAgWindow = 0;
+                if (timeRange <= 7) mvAgWindow = 3;
+                else if (timeRange <= 28) mvAgWindow = 7;
+                else if (timeRange <= 84) mvAgWindow = 7;
                 
-                const yAxisOptions = {
-                    stacked: true,
-                    title: { display: false },
-                    ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }
-                };
-                
-                if (WellTrackApp.state.charts.mood) { WellTrackApp.state.charts.mood.destroy(); }
+                const totalSumData = chartData.map(d => ({x: d.timestamp, y: d.total_sum}));
+                if (totalSumData.length > mvAgWindow) {
+                    const movingAverageData = WellTrackApp.utils.calculateMovingAverageForMood(totalSumData, mvAgWindow);
+                    if(movingAverageData.length > 0) {
+                        datasets.push({
+                            label: `Durchschnitt (${mvAgWindow} Tage)`,
+                            data: movingAverageData,
+                            borderColor: 'rgba(239, 68, 68, 0.8)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: false,
+                            type: 'line',
+                            tension: 0.4,
+                            order: -2
+                        });
+                    }
+                }
+
+
                 WellTrackApp.state.charts.mood = new Chart(ctx, {
-                    type: 'bar',
+                    type: 'line', // Base type is line, individual datasets can override
                     data: { datasets },
                     options: {
                         maintainAspectRatio: false,
                         animation: false,
-                        layout: {
-                            padding: 0
-                        },
-                        plugins: { 
-                            legend: { position: 'bottom', labels: { ...WellTrackApp.config.CHART_FONT_OPTIONS } },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false,
-                                callbacks: {
-                                    label: function(context) {
-                                        let label = context.dataset.label || '';
-                                        if (label) {
-                                            label += ': ';
-                                        }
-                                        if (context.parsed.y !== null) {
-                                            label += context.parsed.y;
-                                        }
-                                        return label;
-                                    }
-                                }
-                            }
+                        plugins: {
+                            legend: { display: false }, // Hiding legend as it would be too cluttered
+                            tooltip: { mode: 'index', intersect: false }
                         },
                         scales: {
-                            x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd.MM' } }, grid: { display: false }, ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS }, stacked: true },
-                            y: yAxisOptions
+                            x: {
+                                type: 'time',
+                                time: { unit: 'day', displayFormats: { day: 'dd.MM' } },
+                                grid: { display: false },
+                                ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS }
+                            },
+                            y: {
+                                stacked: true,
+                                title: { display: false },
+                                ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }
+                            }
                         }
                     }
                 });
@@ -1715,8 +1778,8 @@ const WellTrackApp = {
                                 <h2 id="log-title" class="h2-style flex-shrink-0">Verlauf</h2>
                                 <select id="time-range-selector" onchange="WellTrackApp.events.handleTimeRangeChange(event)" class="border border-gray-300 rounded-full text-sm focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5">
                                     <option value="7" ${WellTrackApp.state.timeRange === 7 ? 'selected' : ''}>Letzte 7 Tage</option>
-                                    <option value="30" ${WellTrackApp.state.timeRange === 30 ? 'selected' : ''}>Letzte 30 Tage</option>
-                                    <option value="90" ${WellTrackApp.state.timeRange === 90 ? 'selected' : ''}>Letzte 3 Monate</option>
+                                    <option value="28" ${WellTrackApp.state.timeRange === 28 ? 'selected' : ''}>Letzte 28 Tage</option>
+                                    <option value="84" ${WellTrackApp.state.timeRange === 84 ? 'selected' : ''}>Letzte 84 Tage</option>
                                 </select>
                             </div>
                         <div id="history-tabs" class="submenu-container" role="group">
@@ -2830,6 +2893,56 @@ const WellTrackApp = {
 
             return { latestSlot: latestSlotValue, previousSlot: previousSlotValue };
         },
+        getMoodChartData() {
+            const timeRangeDays = WellTrackApp.state.timeRange || 7;
+            const startDate = new Date();
+            startDate.setHours(0, 0, 0, 0);
+            startDate.setDate(startDate.getDate() - (timeRangeDays - 1));
+
+            const allMetrics = WellTrackApp.data.getMetrics();
+            const moodMetrics = allMetrics.filter(entry => {
+                const entryDate = new Date(entry.timestamp);
+                return entry.metric.startsWith('mood_') && entryDate >= startDate;
+            });
+
+            if (moodMetrics.length === 0) {
+                return [];
+            }
+
+            // The data is already sorted by timestamp from getMetrics()
+            const oldestTimestamp = moodMetrics[0].timestamp;
+            const timeslots = {};
+            const tenMinutes = 10 * 60 * 1000;
+
+            moodMetrics.forEach(entry => {
+                const timeDiff = entry.timestamp - oldestTimestamp;
+                const timeslotIndex = Math.floor(timeDiff / tenMinutes);
+                const timeslotTimestamp = oldestTimestamp + (timeslotIndex * tenMinutes);
+
+                if (!timeslots[timeslotTimestamp]) {
+                    timeslots[timeslotTimestamp] = {
+                        timestamp: timeslotTimestamp,
+                        sum_p3: 0, sum_p2: 0, sum_p1: 0,
+                        sum_n1: 0, sum_n2: 0, sum_n3: 0,
+                        total_sum: 0
+                    };
+                }
+
+                const slot = timeslots[timeslotTimestamp];
+                slot.total_sum += entry.value;
+
+                switch (entry.value) {
+                    case 3: slot.sum_p3 += 3; break;
+                    case 2: slot.sum_p2 += 2; break;
+                    case 1: slot.sum_p1 += 1; break;
+                    case -1: slot.sum_n1 += -1; break;
+                    case -2: slot.sum_n2 += -2; break;
+                    case -3: slot.sum_n3 += -3; break;
+                }
+            });
+
+            return Object.values(timeslots).sort((a,b) => a.timestamp - b.timestamp);
+        },
         summarizeMetrics(metrics) {
             const summarized = {};
             // Create a copy to sort without mutating the original
@@ -2988,6 +3101,22 @@ const WellTrackApp = {
                 const sma = sum / windowSize;
                 movingAverages.push({
                     x: dailyAverages[i].x,
+                    y: parseFloat(sma.toFixed(2))
+                });
+            }
+            return movingAverages;
+        },
+        calculateMovingAverageForMood(data, windowSize) {
+            if (!data || data.length < windowSize) {
+                return [];
+            }
+            const movingAverages = [];
+            for (let i = 0; i <= data.length - windowSize; i++) {
+                const windowSlice = data.slice(i, i + windowSize);
+                const sum = windowSlice.reduce((acc, val) => acc + val.y, 0);
+                const sma = sum / windowSize;
+                movingAverages.push({
+                    x: windowSlice[windowSlice.length - 1].x, // Use the timestamp of the last day in the window
                     y: parseFloat(sma.toFixed(2))
                 });
             }

@@ -11,6 +11,13 @@ This document lists the curren implementation status of features and refactoring
 - **Protokoll Refactor**: Overhaul the "Protokoll" (log) view. The layout will be updated to feature a sticky week selector and a fixed, left-aligned date display that clarifies the "5-to-5" day (e.g., "Dienstag 7.10.2025 auf Mittwoch"). Timestamps will use icons to differentiate between same-day and next-day (pre-5:00 AM) entries. The data gathering logic will be rewritten to align with the new day definition. Mood and pain entries will be grouped into 10-minute slots, reversed, and sorted alphabetically. "Ereignisse" will be reordered, and entries without a group will be labeled "Allgemein".
 
 ## Completed Tasks
+- [x] **Refactor Mood Chart**:
+    - Implemented a new data preparation method for the mood chart. Data is now grouped into 10-minute timeslots based on the selected range (7, 28, 84 days).
+    - For each timeslot, mood values (-3, -2, -1, +1, +2, +3) are aggregated into buckets.
+    - The chart is now a stacked area graph, with areas for each mood value bucket, colored according to the specification (+1 light blue, +2 greenish blue, +3 green, -1 yellow, -2 orange, -3 red). The areas stack from the zero line outwards.
+    - A line graph showing the total sum of mood values is overlaid on the area chart.
+    - Moving averages (3-day for 7-day view, 7-day for 28/84-day views) are calculated and displayed.
+    - Screenshots of the new chart with test data for all three time ranges have been generated for verification.
 - [x] **Protokoll Date Display**: Remove the floating `log-day-indicator` and display the date as "Wochentag TT.MM.JJJJ auf Wochentag" within the day card before "Ereignisse".
 - [x] **Alternating Row Styles**: Implement alternating background styles for entries in the "Heute" page log and the "EventType List" in settings for better readability.
 - [x] **Settings EventType Layout**: In the "Edit EventTypes" view, realign the layout to keep the edit icon and title on the left, while moving the value, unit, push-button icon, group icon, and group name to the right, next to the delete icon.
