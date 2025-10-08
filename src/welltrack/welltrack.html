@@ -324,6 +324,14 @@
         <span id="version-overlay-text"></span>
     </div>
 
+    <!-- Rebirth Message Overlay -->
+    <div id="rebirth-message-overlay" class="hidden bg-gray-800 text-white p-4 rounded-lg shadow-lg z-50 flex items-center gap-4 transition-opacity duration-300 opacity-100 max-w-[90vw]">
+        <span id="rebirth-message-icon" class="material-symbols-outlined"></span>
+        <div>
+            <p id="rebirth-message-text" class="font-bold"></p>
+        </div>
+    </div>
+
     <!-- Modal Structure -->
     <div id="modal-container" onclick="if (event.target === this) { WellTrackApp.render.modal.hide() }" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
         <div id="modal-content" class="bg-white rounded-3xl p-6 shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -347,7 +355,7 @@ const WellTrackApp = {
         activeMoodGroup: 'arousal_level',
         activeEventGroup: null, // Set to null initially, will be set to first group on page load
         activeHistoryTab: 'event',
-        activeSettingsTab: 'eventTypes', // eventTypes, data, reminders, about
+        activeSettingsTab: 'eventTypes', // eventTypes, data, reminders, about, display
         isTodaysLogVisible: false,
         sliderClickStartPosition: null,
         currentPainView: 'back',
@@ -426,6 +434,7 @@ const WellTrackApp = {
             this.events.initEventListeners();
             this.events.registerServiceWorker();
             this.events.checkLastModified();
+            this.events.checkRebirthMessage();
         });
     },
 
@@ -439,7 +448,8 @@ const WellTrackApp = {
                 painView: 'back',
                 logVisibility: false,
                 activeSettingsTab: 'eventTypes',
-                welltrack_latest: ''
+                welltrack_latest: '',
+                dayStartTime: '05:00'
             };
             return { ...defaults, ...settings };
         },
@@ -650,8 +660,7 @@ const WellTrackApp = {
                         this.saveEventTypes(imported.eventTypes || []);
                         this.saveSettings(imported.settings || {});
                         WellTrackApp.render.modal.hide();
-                        console.log('Daten importiert', '${importedEventTypesCount} Ereignisarten und ${importedMetricsCount} Metriken wurden importiert.', 'file_upload');
-                        location.reload();
+                        WellTrackApp.utils.showMessageAndReload(`${importedMetricsCount} Metriken und ${importedEventTypesCount} Ereignisarten wurden importiert.`, 'file_upload');
                     };
 
                     const appendData = () => {
@@ -709,8 +718,7 @@ const WellTrackApp = {
 
                         // 3. Settings are not merged on append.
                         WellTrackApp.render.modal.hide();
-                        console.log('Daten vereint', '${importedEventTypesCount} Ereignisarten und ${importedMetricsCount} Metriken wurden importiert.', 'merge_type');
-                        location.reload();
+                        WellTrackApp.utils.showMessageAndReload(`${newEventTypes.length} neue Ereignisarten und ${newMetrics.length} neue Metriken importiert.`, 'merge_type');
                     };
 
                     const content = `
@@ -1009,27 +1017,61 @@ const WellTrackApp = {
             } else {
                 const groupedData = {};
                 weekMetrics.forEach(metric => {
-                    const d = new Date(metric.timestamp);
-                    const dateKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-                    if (!groupedData[dateKey]) groupedData[dateKey] = [];
-                    groupedData[dateKey].push(metric);
+                    const wtDay = WellTrackApp.utils.getWellTrackDay(new Date(metric.timestamp));
+                    const dateKey = `${wtDay.getFullYear()}-${wtDay.getMonth() + 1}-${wtDay.getDate()}`;
+                    if (!groupedData[dateKey]) groupedData[dateKey] = { metrics: [], date: wtDay };
+                    groupedData[dateKey].metrics.push(metric);
                 });
 
                 const sortedDates = Object.keys(groupedData).sort((a, b) => new Date(b) - new Date(a));
 
                 sortedDates.forEach(dateKey => {
-                    const dateObj = new Date(dateKey);
-                    const weekdays = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-                    const dayName = weekdays[dateObj.getDay()];
-                    const formattedDate = `${dayName} ${dateObj.getDate()}.${dateObj.getMonth() + 1}.${dateObj.getFullYear()}`;
+                    const { metrics, date } = groupedData[dateKey];
+                    const weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+                    const dayName = weekdays[date.getDay()];
+
+                    const nextDay = new Date(date);
+                    nextDay.setDate(date.getDate() + 1);
+                    const nextDayName = weekdays[nextDay.getDay()];
+
+                    const formattedDate = `${dayName} ${date.getDate()}.${date.getMonth() + 1}. auf ${nextDayName}`;
 
                     const div = document.createElement('div');
                     div.className = 'py-4 border-b border-gray-200 last:border-b-0';
                     div.id = `log-day-${dateKey}`;
-                    const summarizedMetrics = WellTrackApp.utils.summarizeMetrics(groupedData[dateKey]);
+                    div.dataset.dateLabel = formattedDate;
+
+                    const summarizedMetrics = WellTrackApp.utils.summarizeMetrics(metrics);
                     div.innerHTML = this.components.logEntry(formattedDate, summarizedMetrics);
                     logContainer.appendChild(div);
                 });
+
+                // Setup Intersection Observer for the day indicator
+                const dayIndicator = document.getElementById('log-day-indicator');
+                const observer = new IntersectionObserver((entries) => {
+                    let topEntry = null;
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            if (!topEntry || entry.boundingClientRect.top < topEntry.boundingClientRect.top) {
+                                topEntry = entry;
+                            }
+                        }
+                    });
+                    if (topEntry) {
+                        dayIndicator.textContent = topEntry.target.dataset.dateLabel;
+                        dayIndicator.classList.remove('hidden');
+                    } else {
+                        const firstEntry = logContainer.querySelector('[data-date-label]');
+                        if (firstEntry) {
+                           dayIndicator.textContent = firstEntry.dataset.dateLabel;
+                           dayIndicator.classList.remove('hidden');
+                        } else {
+                           dayIndicator.classList.add('hidden');
+                        }
+                    }
+                }, { threshold: 0.1, rootMargin: "-50% 0px -50% 0px" });
+
+                logContainer.querySelectorAll('[data-date-label]').forEach(el => observer.observe(el));
             }
 
             // Update pagination controls
@@ -1517,10 +1559,26 @@ const WellTrackApp = {
         },
         components: {
             todaySection: () => {
-                const today = new Date();
+                const now = new Date();
+                const settings = WellTrackApp.data.getSettings();
+                const timeParts = settings.dayStartTime.split(':');
+                const startHour = parseInt(timeParts[0], 10);
+                const startMinute = parseInt(timeParts[1], 10);
+
                 const weekdays = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-                const dayName = weekdays[today.getDay()];
-                const dateString = `${dayName} ${today.getDate()}.${today.getMonth() + 1}.${today.getFullYear()}`;
+                let dateString;
+
+                if (now.getHours() < startHour || (now.getHours() === startHour && now.getMinutes() < startMinute)) {
+                    const yesterday = new Date(now);
+                    yesterday.setDate(now.getDate() - 1);
+                    const dayNameYesterday = weekdays[yesterday.getDay()];
+                    const dayNameToday = weekdays[now.getDay()];
+                    dateString = `Heute -> ${dayNameYesterday} auf ${dayNameToday} ${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
+                } else {
+                    const dayName = weekdays[now.getDay()];
+                    dateString = `Heute -> ${dayName} ${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
+                }
+
                 return `
                 <div class="flex justify-between items-center pt-2 px-2 mb-4">
                     <h2 class="h2-style">Heute</h2>
@@ -1695,25 +1753,32 @@ const WellTrackApp = {
                 </div>`;
             },
             fullLogSection: () => `
-                <div class="flex flex-nowrap justify-between items-center gap-4 mb-2">
-                    <h2 class="h2-style">Protokoll</h2>
-                    <div id="log-pagination" class="flex items-center justify-end gap-1 bg-gray-100 p-1 rounded-full">
-                        <button id="log-week-first" onclick="WellTrackApp.events.handleWeekChange('first')" class="btn btn-secondary !rounded-full !p-2" title="Erste Woche">
-                            <span class="material-symbols-outlined">keyboard_double_arrow_left</span>
-                        </button>
-                        <button id="log-week-prev" onclick="WellTrackApp.events.handleWeekChange('prev')" class="btn btn-secondary !rounded-full !p-2" title="Woche zurück">
-                            <span class="material-symbols-outlined">chevron_left</span>
-                        </button>
-                        <span id="log-week-display" class="tabular-nums font-semibold text-gray-700 px-3"></span>
-                        <button id="log-week-next" onclick="WellTrackApp.events.handleWeekChange('next')" class="btn btn-secondary !rounded-full !p-2" title="Woche vor">
-                            <span class="material-symbols-outlined">chevron_right</span>
-                        </button>
-                        <button id="log-week-today" onclick="WellTrackApp.events.handleWeekChange('today')" class="btn btn-secondary !rounded-full !p-2" title="Heutige Woche">
-                            <span class="material-symbols-outlined">today</span>
-                        </button>
+                <div class="sticky top-[73px] z-10 bg-white/80 backdrop-blur-md py-2 mb-2">
+                    <div class="flex flex-nowrap justify-between items-center gap-4">
+                        <h2 class="h2-style">Protokoll</h2>
+                        <div id="log-pagination" class="flex items-center justify-end gap-1 bg-gray-100 p-1 rounded-full">
+                            <button id="log-week-first" onclick="WellTrackApp.events.handleWeekChange('first')" class="btn btn-secondary !rounded-full !p-2" title="Erste Woche">
+                                <span class="material-symbols-outlined">keyboard_double_arrow_left</span>
+                            </button>
+                            <button id="log-week-prev" onclick="WellTrackApp.events.handleWeekChange('prev')" class="btn btn-secondary !rounded-full !p-2" title="Woche zurück">
+                                <span class="material-symbols-outlined">chevron_left</span>
+                            </button>
+                            <span id="log-week-display" class="tabular-nums font-semibold text-gray-700 px-3"></span>
+                            <button id="log-week-next" onclick="WellTrackApp.events.handleWeekChange('next')" class="btn btn-secondary !rounded-full !p-2" title="Woche vor">
+                                <span class="material-symbols-outlined">chevron_right</span>
+                            </button>
+                            <button id="log-week-today" onclick="WellTrackApp.events.handleWeekChange('today')" class="btn btn-secondary !rounded-full !p-2" title="Heutige Woche">
+                                <span class="material-symbols-outlined">today</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div id="log-entries-container" class="card"></div>
+                <div class="relative">
+                    <div id="log-day-indicator" class="fixed top-1/2 left-4 -translate-y-1/2 bg-gray-800 text-white p-3 rounded-lg shadow-lg z-20 hidden md:block">
+                        <!-- Day indicator content will be injected here -->
+                    </div>
+                    <div id="log-entries-container" class="card"></div>
+                </div>
             `,
             settingsSection: () => {
                 const settings = WellTrackApp.data.getSettings();
@@ -1754,10 +1819,19 @@ const WellTrackApp = {
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('about')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="about">Über</button>
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('reminders')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="reminders">Erinnerungen</button>
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('data')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="data">Import/Export</button>
+                            <button onclick="WellTrackApp.events.handleSettingsTabClick('display')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="display">Darstellung</button>
                             <button onclick="WellTrackApp.events.handleSettingsTabClick('eventTypes')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="eventTypes">Ereignisarten</button>
                         </div>
                     </div>
 
+                    <div id="settings-tab-display" class="settings-tab-content">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="day-start-time" class="block mb-1 font-medium text-gray-900">Neuer Tag beginnt um:</label>
+                                <input type="time" id="day-start-time" value="${settings.dayStartTime}" onchange="WellTrackApp.events.saveDayStartTime(this.value)" class="w-full p-2 border border-gray-300 rounded-lg">
+                            </div>
+                        </div>
+                    </div>
                     <div id="settings-tab-eventTypes" class="settings-tab-content">
                         <div id="manage-event-list" class="space-y-2 mb-4"></div>
                         <div class="mt-4"><button id="add-new-event-btn" onclick="WellTrackApp.events.handleShowEventTypeForm()" class="btn btn-secondary w-full"><span class="material-symbols-outlined mr-2">add</span>Neue hinzufügen</button></div>
@@ -1872,22 +1946,70 @@ const WellTrackApp = {
                 return `(${time}) Unbekannter Eintrag`;
             },
             logEntry: (formattedDate, metrics) => {
-                // Sort events by time (newest first)
-                const eventMetrics = metrics.filter(m => m.metric.startsWith('event_')).sort((a, b) => b.timestamp - a.timestamp);
+                const createSlots = (data, dayStartTime) => {
+                    if (!data || data.length === 0) return [];
+
+                    const sortedData = [...data].sort((a, b) => a.timestamp - b.timestamp);
+                    const slots = [];
+                    let currentSlot = null;
+
+                    for (const item of sortedData) {
+                        if (!currentSlot || (item.timestamp - currentSlot.timestamp > 600000)) { // 10 minutes
+                            if (currentSlot) slots.push(currentSlot);
+                            currentSlot = { timestamp: item.timestamp, items: {} };
+                        }
+                        currentSlot.items[item.labels.name] = { value: item.value, timestamp: item.timestamp };
+                    }
+                    if (currentSlot) slots.push(currentSlot);
+
+                    return slots.reverse().map(slot => {
+                        const sortedItems = Object.entries(slot.items).sort(([nameA], [nameB]) => nameA.localeCompare(nameB));
+                        return { timestamp: slot.timestamp, items: sortedItems };
+                    });
+                };
+
+                const getTimeHtml = (timestamp, dayStartTime) => {
+                    const date = new Date(timestamp);
+                    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const startHour = parseInt(dayStartTime.split(':')[0], 10);
+                    const icon = date.getHours() < startHour ? 'clock_plus' : 'schedule';
+                    return `<span class="material-symbols-outlined text-base">${icon}</span> ${time}`;
+                };
+
+                const dayStartTime = WellTrackApp.data.getSettings().dayStartTime;
+
+                // --- Events ---
+                const eventMetrics = metrics.filter(m => m.metric.startsWith('event_'));
                 let eventsHtml = '';
                 if (eventMetrics.length > 0) {
                     const eventsByGroup = eventMetrics.reduce((acc, t) => {
-                        const group = t.labels.groupType || 'Ohne Gruppe';
+                        const group = t.labels.groupType || 'Allgemein';
                         if (!acc[group]) acc[group] = [];
                         acc[group].push(t);
                         return acc;
                     }, {});
 
-                    eventsHtml = Object.entries(eventsByGroup).map(([group, entries]) => {
-                        const entryDetails = entries.map(t => {
-                            const time = new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    // Sort groups to have 'Allgemein' first if it exists
+                    const sortedGroups = Object.entries(eventsByGroup).sort(([groupA], [groupB]) => {
+                        if (groupA === 'Allgemein') return -1;
+                        if (groupB === 'Allgemein') return 1;
+                        return groupA.localeCompare(groupB);
+                    });
+
+                    eventsHtml = sortedGroups.map(([group, entries]) => {
+                        // Sort entries within the group: non-timed first, then by timestamp
+                        const sortedEntries = entries.sort((a, b) => {
+                            const isATimestamp = a.metric.endsWith('_timestamp');
+                            const isBTimestamp = b.metric.endsWith('_timestamp');
+                            if (isATimestamp && !isBTimestamp) return 1;
+                            if (!isATimestamp && isBTimestamp) return -1;
+                            return b.timestamp - a.timestamp; // Newest first for timed entries
+                        });
+
+                        const entryDetails = sortedEntries.map(t => {
                             if (t.metric.endsWith('_timestamp')) {
-                                return `<div class="ml-4 text-gray-700 text-base"><span class="font-semibold">Um ${time}</span>: ${t.labels.name}</div>`;
+                                const timeHtml = getTimeHtml(t.timestamp, dayStartTime);
+                                return `<div class="ml-4 text-gray-700 text-base">${timeHtml}: ${t.labels.name}</div>`;
                             } else {
                                 const valueHtml = `<span class="font-semibold">${t.value} ${t.labels.unitType || ''}</span>`;
                                 return `<div class="ml-4 text-gray-700 text-base">${t.labels.name}: ${valueHtml}</div>`;
@@ -1897,90 +2019,61 @@ const WellTrackApp = {
                     }).join('');
                 }
 
-                // --- Mood Slots (newest first) ---
-                const moodMetrics = metrics.filter(m => m.metric.startsWith('mood_')).sort((a, b) => a.timestamp - b.timestamp);
+                // --- Mood ---
+                const moodMetrics = metrics.filter(m => m.metric.startsWith('mood_'));
+                const moodSlots = createSlots(moodMetrics, dayStartTime);
                 let moodHtml = '';
-                if (moodMetrics.length > 0) {
-                    const moodSlots = [];
-                    let currentSlot = [];
-                    // Iterate from oldest to newest to create slots
-                    [...moodMetrics].reverse().forEach((metric, index, arr) => {
-                        if (index > 0 && (metric.timestamp - arr[index-1].timestamp > 600000)) {
-                            moodSlots.push(currentSlot);
-                            currentSlot = [];
-                        }
-                        currentSlot.push(metric);
-                    });
-                    moodSlots.push(currentSlot);
-
-                    // Render slots newest first
-                    moodHtml = moodSlots.reverse().map(group => {
-                        if (group.length === 0) return '';
-                        const firstEntryTime = new Date(group[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        const totalScore = group.reduce((sum, m) => sum + m.value, 0);
+                if (moodSlots.length > 0) {
+                    moodHtml = moodSlots.map(slot => {
+                        const timeHtml = getTimeHtml(slot.timestamp, dayStartTime);
+                        const totalScore = slot.items.reduce((sum, [, item]) => sum + item.value, 0);
                         const totalColorClass = totalScore > 0 ? 'text-green-600' : (totalScore < 0 ? 'text-red-600' : 'text-gray-600');
                         const totalSign = totalScore > 0 ? '+' : '';
 
-                        const detailsMatrix = group.map(m => {
-                            const valueColorClass = m.value > 0 ? 'text-green-600' : 'text-red-600';
-                            return `<div class="flex justify-between items-center p-2 rounded-lg bg-gray-50"><span class="text-gray-800">${m.labels.name}</span><span class="font-bold text-lg ${valueColorClass}">${m.value > 0 ? '+' : ''}${m.value}</span></div>`;
+                        const detailsMatrix = slot.items.map(([name, item]) => {
+                            const valueColorClass = item.value > 0 ? 'text-green-600' : 'text-red-600';
+                            return `<div class="flex justify-between items-center p-2 rounded-lg bg-gray-50"><span class="text-gray-800">${name}</span><span class="font-bold text-lg ${valueColorClass}">${item.value > 0 ? '+' : ''}${item.value}</span></div>`;
                         }).join('');
 
-                        return `<div class="mt-2"><h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600"> Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
+                        return `<div class="mt-2"><h5 class="font-semibold text-lg">${timeHtml}: <span class="font-normal text-gray-600"> Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
                     }).join('');
                 }
 
-                // --- Pain Slots (newest first) ---
-                const painMetrics = metrics.filter(m => m.metric.startsWith('pain_')).sort((a, b) => a.timestamp - b.timestamp);
+                // --- Pain ---
+                const painMetrics = metrics.filter(m => m.metric.startsWith('pain_'));
+                const painSlots = createSlots(painMetrics, dayStartTime);
                 let painHtml = '';
-                if (painMetrics.length > 0) {
-                    const painSlots = [];
-                    let currentSlot = [];
-                     // Iterate from oldest to newest to create slots
-                    [...painMetrics].reverse().forEach((metric, index, arr) => {
-                        if (index > 0 && (metric.timestamp - arr[index-1].timestamp > 600000)) {
-                            painSlots.push(currentSlot);
-                            currentSlot = [];
-                        }
-                        currentSlot.push(metric);
-                    });
-                    painSlots.push(currentSlot);
-
-                    // Render slots newest first
-                    painHtml = painSlots.reverse().map(group => {
-                        if (group.length === 0) return '';
-                        const firstEntryTime = new Date(group[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        const totalScore = group.reduce((sum, m) => sum + m.value, 0);
+                if (painSlots.length > 0) {
+                     painHtml = painSlots.map(slot => {
+                        const timeHtml = getTimeHtml(slot.timestamp, dayStartTime);
+                        const totalScore = slot.items.reduce((sum, [, item]) => sum + item.value, 0);
                         const totalColor = totalScore > 0 ? 'text-red-600' : 'text-gray-600';
 
-                        const detailsMatrix = group.map(p => {
-                            if (p.metric === 'pain_free_level') return `<div class="p-2 rounded-lg flex justify-center items-center font-semibold" style="background-color: #86efac">Schmerz Frei</div>`;
-                            const props = WellTrackApp.config.PAIN_LEVELS[p.value] || {};
-                            const textColor = (p.value > 2 && p.value < 6) ? 'text-white' : 'text-black';
-                            return `<div class="p-2 rounded-lg flex justify-between items-center" style="background-color: ${props.color || '#ccc'}"><span class="${textColor}">${p.labels.name}</span><span class="font-bold text-lg ${textColor}">${p.value}</span></div>`;
+                        const detailsMatrix = slot.items.map(([name, item]) => {
+                             if (name === 'Schmerz Frei') return `<div class="p-2 rounded-lg flex justify-center items-center font-semibold" style="background-color: #86efac">Schmerz Frei</div>`;
+                            const props = WellTrackApp.config.PAIN_LEVELS[item.value] || {};
+                            const textColor = (item.value > 2 && item.value < 6) ? 'text-white' : 'text-black';
+                            return `<div class="p-2 rounded-lg flex justify-between items-center" style="background-color: ${props.color || '#ccc'}"><span class="${textColor}">${name}</span><span class="font-bold text-lg ${textColor}">${item.value}</span></div>`;
                         }).join('');
 
-                        return `<div class="mt-2"><h5 class="font-semibold text-lg">Um ${firstEntryTime}: <span class="font-normal text-gray-600">Gesamt: <span class="font-bold ${totalColor}">${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
+                        return `<div class="mt-2"><h5 class="font-semibold text-lg">${timeHtml}: <span class="font-normal text-gray-600">Gesamt: <span class="font-bold ${totalColor}">${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
                     }).join('');
                 }
 
                 let html = '';
-                if (eventsHtml) {
-                    html += `<div><div class="flex justify-between items-baseline"><h4 class="font-semibold text-lg mb-2 text-gray-800">Ereignisse</h4><h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3></div><div class="pl-4">${eventsHtml}</div></div>`;
-                    if (moodHtml) html += `<div class="mt-4 pt-4 border-t border-gray-200"><h4 class="font-semibold text-lg mb-2 text-gray-800">Stimmung</h4><div class="pl-4">${moodHtml}</div></div>`;
-                    if (painHtml) html += `<div class="mt-4 pt-4 border-t border-gray-200"><h4 class="font-semibold text-lg mb-2 text-gray-800">Schmerz</h4><div class="pl-4">${painHtml}</div></div>`;
-                } else {
-                    html += `<div class="flex justify-end mb-2"><h3 class="font-bold text-lg text-gray-600">${formattedDate}</h3></div>`;
-                    let isFirstSection = true;
-                    if (moodHtml) {
-                        html += `<div><h4 class="font-semibold text-lg mb-2 text-gray-800">Stimmung</h4><div class="pl-4">${moodHtml}</div></div>`;
+                let isFirstSection = true;
+                const addSection = (title, content) => {
+                    if (content) {
+                        const dividerClass = isFirstSection ? '' : 'mt-4 pt-4 border-t border-gray-200';
+                        html += `<div class="${dividerClass}"><h4 class="font-semibold text-xl mb-2 text-gray-800">${title}</h4><div class="pl-4">${content}</div></div>`;
                         isFirstSection = false;
                     }
-                    if (painHtml) {
-                        const dividerClass = isFirstSection ? '' : 'mt-4 pt-4 border-t border-gray-200';
-                        html += `<div class="${dividerClass}"><h4 class="font-semibold text-lg mb-2 text-gray-800">Schmerz</h4><div class="pl-4">${painHtml}</div></div>`;
-                    }
-                }
+                };
+
+                addSection('Ereignisse', eventsHtml);
+                addSection('Stimmung', moodHtml);
+                addSection('Schmerz', painHtml);
+
                 return html;
             },
             paginationControls: (currentPage, totalPages) => { /* No longer used */ },
@@ -2209,12 +2302,11 @@ const WellTrackApp = {
 
             let allMetrics = WellTrackApp.data.getMetrics();
 
-            const startOfToday = new Date();
-            startOfToday.setHours(0, 0, 0, 0);
+            const startOfWellTrackDay = WellTrackApp.utils.getWellTrackDay(new Date());
 
             const todaysEntry = allMetrics.find(m =>
                 m.labels.activity === activity &&
-                m.timestamp >= startOfToday.getTime()
+                m.timestamp >= startOfWellTrackDay.getTime()
             );
 
             const currentValue = todaysEntry ? todaysEntry.value : 0;
@@ -2248,14 +2340,13 @@ const WellTrackApp = {
         handleUndoTimestamp(activity) {
             let metrics = WellTrackApp.data.getMetrics();
 
-            const startOfToday = new Date();
-            startOfToday.setHours(0, 0, 0, 0);
+            const startOfWellTrackDay = WellTrackApp.utils.getWellTrackDay(new Date());
 
             // Find the last timestamp entry for this activity today
             let lastEntryIndex = -1;
             for(let i = metrics.length - 1; i >= 0; i--) {
                 const entry = metrics[i];
-                if (entry.labels.activity === activity && entry.metric.endsWith('_timestamp') && entry.timestamp >= startOfToday.getTime()) {
+                if (entry.labels.activity === activity && entry.metric.endsWith('_timestamp') && entry.timestamp >= startOfWellTrackDay.getTime()) {
                     lastEntryIndex = i;
                     break;
                 }
@@ -2527,6 +2618,12 @@ const WellTrackApp = {
             WellTrackApp.data.saveSettings(settings);
             WellTrackApp.render.settingsPage();
         },
+        saveDayStartTime(timeString) {
+            const settings = WellTrackApp.data.getSettings();
+            settings.dayStartTime = timeString.trim();
+            WellTrackApp.data.saveSettings(settings);
+            WellTrackApp.utils.showMessageAndReload(`Neuer Tag beginnt jetzt um ${timeString}.`, "schedule");
+        },
         toggleTodaysLog() {
             WellTrackApp.state.isTodaysLogVisible = !WellTrackApp.state.isTodaysLogVisible;
             const settings = WellTrackApp.data.getSettings();
@@ -2580,8 +2677,7 @@ const WellTrackApp = {
                     localStorage.removeItem('wellTrackMetrics');
                     localStorage.removeItem('wellTrackEventTypes');
                     localStorage.removeItem('wellTrackSettings');
-                    console.log("Daten gelöscht", "Alle Daten gelöscht", "delete_forever");
-                    location.reload();
+                    WellTrackApp.utils.showMessageAndReload("Alle Daten wurden gelöscht.", "delete_forever");
                 },
                 { confirmText: 'Löschen', abortText: 'Abbrechen' }
             );
@@ -2616,15 +2712,57 @@ const WellTrackApp = {
                 settings.welltrack_latest = lastModified;
                 WellTrackApp.data.saveSettings(settings);
             }
+        },
+        checkRebirthMessage() {
+            let settings = WellTrackApp.data.getSettings();
+            if (settings.hide_modal_overlays) return;
+
+            if (settings.rebirth_message && settings.rebirth_message.text) {
+                const { text, icon } = settings.rebirth_message;
+
+                const overlay = document.getElementById('rebirth-message-overlay');
+                const iconEl = document.getElementById('rebirth-message-icon');
+                const textEl = document.getElementById('rebirth-message-text');
+
+                iconEl.textContent = icon || 'info';
+                textEl.textContent = text;
+                overlay.classList.remove('hidden');
+
+                setTimeout(() => {
+                    overlay.style.opacity = '0';
+                    setTimeout(() => {
+                        overlay.classList.add('hidden');
+                        overlay.style.opacity = '1'; // Reset for next time
+                    }, 500);
+                }, 4000);
+
+                delete settings.rebirth_message;
+                WellTrackApp.data.saveSettings(settings);
+            }
         }
     },
 
     // --- UTILITIES ---
     utils: {
+        getWellTrackDay(date) {
+            const settings = WellTrackApp.data.getSettings();
+            const timeParts = settings.dayStartTime.split(':');
+            const startHour = parseInt(timeParts[0], 10);
+            const startMinute = parseInt(timeParts[1], 10);
+
+            const day = new Date(date);
+            if (date.getHours() < startHour || (date.getHours() === startHour && date.getMinutes() < startMinute)) {
+                day.setDate(day.getDate() - 1);
+            }
+            day.setHours(startHour, startMinute, 0, 0);
+            return day;
+        },
         isSameDay(d1, d2) {
-            return d1.getFullYear() === d2.getFullYear() &&
-                   d1.getMonth() === d2.getMonth() &&
-                   d1.getDate() === d2.getDate();
+            const wtDay1 = this.getWellTrackDay(d1);
+            const wtDay2 = this.getWellTrackDay(d2);
+            return wtDay1.getFullYear() === wtDay2.getFullYear() &&
+                   wtDay1.getMonth() === wtDay2.getMonth() &&
+                   wtDay1.getDate() === wtDay2.getDate();
         },
         isToday(date) {
             return this.isSameDay(date, new Date());
@@ -2850,6 +2988,12 @@ const WellTrackApp = {
                 });
             }
             return movingAverages;
+        },
+        showMessageAndReload(text, icon) {
+            let settings = WellTrackApp.data.getSettings();
+            settings.rebirth_message = { text, icon };
+            WellTrackApp.data.saveSettings(settings);
+            location.reload();
         }
     }
 };
