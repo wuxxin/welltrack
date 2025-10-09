@@ -78,16 +78,16 @@ test                 Create Sample Data, run Tests
 #### Playwright GUI Testing and Verification of Welltrack
 
 - The command to set up the development environment is `make clean-all buildenv`.
-- run `make sample-data` to create `build/tests/sample-data.json`.
+- run `make sample-data` to create `build/tests/sample-data.json`. Always use this sample data if the user requests tests with sample data.
 - run `make docs` to create `build/site`, which is needed for testing.
+- a changed src/welltrack/welltrack.html (or any other file in that directory) that will be tested for a change needs to be build into `build/site/welltrack` which is done by `make docs` which generates the whole `build/site` directory.
 - run `make test` creates sample-data,  runs all integrated playwright tests in `tests/`
     - pytest runs with fixtures from `tests/conftest.py`, to start and stop the `dev_server.py` server serving `build/site` and configure the browser for mobile viewport and locale settings.
-- to serve files locally, execute `. .venv/bin/activate && python scripts/dev_serve.py -d build/site 8443 > dev_server.log 2>&1 &`. For this project, the built site is served from build/site on port 8443. do not run the dev server if running `pytest` (or make test, which calls pytest) stop a possible running dev_serv.py before, because the pytest tests use the server start/stop fixtures from `tests/testconf.py`.
+- to serve the `build/site` files locally, execute `. .venv/bin/activate && python scripts/dev_serve.py -d build/site 8443 > dev_server.log 2>&1 &`. For this project, the built site is served from build/site on port 8443. do not run the dev server if running `pytest` (or make test, which calls pytest), stop a possible running dev_serv.py before, because the pytest tests use the server start/stop fixtures from `tests/testconf.py`.
 - for specific playwright gui testing run where every test screenshot is saved unconditionally: `mkdir -p build/tests/output; . .venv/bin/activate pytest --screenshot on --video retain-on-failure --output build/tests/output` and the testfilename.
-
-- creating new playwright tests under `tests/`:
+- create new playwright tests under `tests/`:
     - include the pytest fixtures of `tests/conftest.py`.
-    - use `build/tests/sample-data.json` as sample data.
+    - always use `build/tests/sample-data.json` as sample data, if not requested otherwise.
     - use the default (`build/tests/output/`) path as screenshot and other output dir, unless good reason for other dir.
     - when requested to run "before after" gui tests as part of the procedure, create one screenshot before a change and another after the requested change. create the test file first, then run the test to create the before screenshot to the `build/tests/output/before` directory, then make the change, then create the after screenshot to the `build/tests/output/after` dir.
 
@@ -106,8 +106,8 @@ with sync_playwright() as p:
         **p.devices["Pixel 7"],
     )
 ```
-
-- do not commit `jules-scratch/` directory, but also dont delete jules-scratch before final acknowledge of the user, to let the user see the screenshots.
+- `jules-scratch/verification/*.py` gui playwright verification files should always use the `build/tests/sample-data.json` data for testing
+- do not delete `jules-scratch` directory, before final acknowledge of the user, to let the user see any created files and screenshots for verification.
 
 - In Playwright, to check if a modal has been hidden (i.e., has the 'hidden' class), use expect(locator).to_be_hidden() instead of wait_for_selector('.hidden'), as the latter will time out waiting for a hidden element to become visible.
 - In Playwright, element selectors like page.get_by_title() are case-sensitive and must exactly match the attribute value in the HTML.

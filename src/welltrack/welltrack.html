@@ -1504,14 +1504,15 @@ const WellTrackApp = {
                     },
                     // Moving average line
                     {
-                        label: 'Gleitender Durchschnitt',
+                        label: 'Durchschnitt',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.avg_over_time_sum })),
-                        borderColor: 'rgba(255, 100, 100, 1)',
+                        borderColor: 'rgba(10, 10, 10, 1)',
                         borderWidth: 3,
                         pointRadius: 0,
                         fill: false,
                         type: 'line',
-                        tension: 0.4, // Smoothed line
+                        stack: "none",
+                        tension: 0.1, // Smoothed line
                         order: -2 // Render on top of areas, below total sum
                     }
                 ];
@@ -1525,7 +1526,7 @@ const WellTrackApp = {
                         animation: false,
                         plugins: {
                             legend: { position: 'bottom', labels: { ...WellTrackApp.config.CHART_FONT_OPTIONS } },
-                            tooltip: { mode: 'nearest', intersect: false },
+                            tooltip: { mode: 'index', intersect: true },
                         },
                         scales: {
                             x: {
@@ -2942,7 +2943,7 @@ const WellTrackApp = {
             const sortedTimeslots = Object.values(timeslots).sort((a, b) => a.timestamp - b.timestamp);
 
             // Calculate moving average
-            const movingAverageWindowSize = Math.max(1, Math.floor(sortedTimeslots.length * 0.1)); // 10% window size
+            const movingAverageWindowSize = Math.max(1, Math.floor(sortedTimeslots.length * 0.125)); // 1/8 window size
             for (let i = 0; i < sortedTimeslots.length; i++) {
                 const window = sortedTimeslots.slice(Math.max(0, i - movingAverageWindowSize + 1), i + 1);
                 const sum = window.reduce((acc, val) => acc + val.total_sum, 0);
