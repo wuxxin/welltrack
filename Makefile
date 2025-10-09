@@ -27,7 +27,7 @@ buildenv: .venv/bin/activate ## Create build environment
 	
 lab: buildenv ## Edit welltrack-lab.py in marimo
 	@echo "+++ $@"
-	. .venv/bin/activate && marimo edit scripts/welltrack-lab.py
+	. .venv/bin/activate && marimo edit scripts/welltrack-lab.py --no-token
 
 test: docs build/tests/sample-data.json ## Create Sample Data, run Tests
 	@echo "+++ $@"

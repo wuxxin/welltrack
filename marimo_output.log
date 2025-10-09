@@ -1,0 +1,12 @@
++++ ensure-uv
++++ uv.lock
+uv lock
+Resolved 167 packages in 1ms
++++ buildenv
++++ lab
+. .venv/bin/activate && marimo edit scripts/welltrack-lab.py --no-token
+[W 251009 22:05:30 cli:114] This notebook has errors, saving may lose data. Continuing anyway.
+
+        Edit welltrack-lab.py in your browser 📝
+
+        ➜  URL: http://localhost:2721
