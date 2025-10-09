@@ -475,16 +475,25 @@ const WellTrackApp = {
             const now = Date.now();
 
             if (entry.metric.startsWith('event_') && !entry.metric.endsWith('_timestamp')) {
-                // For incrementing events, find and replace the entry for the same activity today.
-                const startOfToday = new Date();
-                startOfToday.setHours(0, 0, 0, 0);
+                const startOfWellTrackDay = WellTrackApp.utils.getWellTrackDay(new Date());
                 const existingIndex = metrics.findIndex(oldEntry =>
                     oldEntry.labels.activity === entry.labels.activity &&
-                    oldEntry.timestamp >= startOfToday.getTime()
+                    oldEntry.metric === entry.metric &&
+                    oldEntry.timestamp >= startOfWellTrackDay.getTime()
                 );
+
+                if (entry.increment !== undefined) {
+                    const currentValue = existingIndex > -1 ? metrics[existingIndex].value : 0;
+                    let newValue = currentValue + entry.increment;
+                    if (newValue < 0) newValue = 0;
+                    entry.value = newValue;
+                    delete entry.increment;
+                }
+
                 if (existingIndex > -1) {
                     metrics.splice(existingIndex, 1);
                 }
+
             } else if (entry.metric.startsWith('mood_') || entry.metric.startsWith('pain_')) {
                 // For mood/pain, find and replace the entry for the same metric in the last 10 minutes.
                 const tenMinutesAgo = now - 600000;
@@ -504,7 +513,7 @@ const WellTrackApp = {
             }
 
             // Only add entry if it has a non-zero value, or it's a timestamp event.
-            if ((entry.value !== 0) || entry.metric.endsWith('_timestamp')) {
+            if ((entry.value !== 0 && entry.value !== undefined) || entry.metric.endsWith('_timestamp')) {
                  metrics.push(entry);
             }
 
@@ -2349,27 +2358,20 @@ const WellTrackApp = {
             const eventType = WellTrackApp.data.getEventTypes().find(t => t.activity === activity);
             if (!eventType) return;
 
-            let allMetrics = WellTrackApp.data.getMetrics();
-
-            const startOfWellTrackDay = WellTrackApp.utils.getWellTrackDay(new Date());
-
-            const todaysEntry = allMetrics.find(m =>
-                m.labels.activity === activity &&
-                m.timestamp >= startOfWellTrackDay.getTime()
-            );
-
-            const currentValue = todaysEntry ? todaysEntry.value : 0;
-            const newValue = currentValue + increment;
-            
             const newEntry = {
                 metric: `event_${activity}_value`,
                 timestamp: Date.now(),
-                labels: { activity: eventType.activity, name: eventType.name, unitType: eventType.unitType, groupType: eventType.groupType || '' },
-                value: newValue
+                labels: {
+                    activity: eventType.activity,
+                    name: eventType.name,
+                    unitType: eventType.unitType,
+                    groupType: eventType.groupType || ''
+                },
+                increment: increment
             };
 
             WellTrackApp.data.addMetric(newEntry);
-            
+
             // Re-render the list to update the value
             WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
         },

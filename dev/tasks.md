@@ -25,3 +25,4 @@ This document lists the curren implementation status of features and refactoring
 - **GUI Test Implementation**: Create a suite of GUI tests using pytest-playwright. The tests should cover the initial application states (no data, empty data, sample data) and basic navigation. The test runner should be integrated into the `Makefile` under the `test` target. All tests will run in a 1080x1920 portrait mode, and screenshots of failed tests will be saved.
 
 ## Discovered Tasks
+- **Fix Event Entry UI Bug**: The event entry for cumulative events (like "Kaffee Tassen") has a UI bug where the displayed value doesn't update correctly on increment/decrement, even though the underlying data is correct. Sometimes the value increments by two or the update is not visible. This will be investigated and fixed.
