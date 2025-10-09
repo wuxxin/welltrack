@@ -1426,7 +1426,7 @@ const WellTrackApp = {
                 const datasets = [
                     // Positive areas
                     {
-                        label: 'Stimmung +1',
+                        label: '+1',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_p1 })),
                         backgroundColor: 'rgba(191, 219, 254, 0.7)',
                         borderWidth: 0,
@@ -1436,7 +1436,7 @@ const WellTrackApp = {
                         tension: 0
                     },
                     {
-                        label: 'Stimmung +2',
+                        label: '+2',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_p2 })),
                         backgroundColor: 'rgba(0, 219, 150, 1)',
                         borderWidth: 0,
@@ -1446,7 +1446,7 @@ const WellTrackApp = {
                         tension: 0
                     },                    
                     {
-                        label: 'Stimmung +3',
+                        label: '+3',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_p3 })),
                         backgroundColor: 'rgba(123, 255, 0, 1)',
                         borderWidth: 0,
@@ -1457,7 +1457,7 @@ const WellTrackApp = {
                     },                    
                     // Negative areas
                     {
-                        label: 'Stimmung -1',
+                        label: '-1',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n1 })),
 
                         backgroundColor: 'rgba(251, 191, 36, 1)',
@@ -1468,7 +1468,7 @@ const WellTrackApp = {
                         tension: 0
                     },
                     {
-                        label: 'Stimmung -2',
+                        label: '-2',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n2 })),
                         backgroundColor: 'rgba(249, 115, 22, 1)',
                         borderWidth: 0,
@@ -1478,7 +1478,7 @@ const WellTrackApp = {
                         tension: 0
                     },
                     {
-                        label: 'Stimmung -3',
+                        label: '-3',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n3 })),
                         backgroundColor: 'rgba(212, 52, 52, 1)',
                         borderWidth: 0,
@@ -1495,7 +1495,7 @@ const WellTrackApp = {
                         borderColor: 'rgba(103, 80, 164, 1)',
                         backgroundColor: 'rgba(103, 80, 164, 0.1)',
                         borderWidth: 2,
-                        pointRadius: 1,
+                        pointRadius: 2,
                         pointBackgroundColor: 'rgba(103, 80, 164, 1)',
                         fill: false,
                         type: 'line',
@@ -1764,8 +1764,8 @@ const WellTrackApp = {
                                 <h2 id="log-title" class="h2-style flex-shrink-0">Verlauf</h2>
                                 <select id="time-range-selector" onchange="WellTrackApp.events.handleTimeRangeChange(event)" class="border border-gray-300 rounded-full text-sm focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5">
                                     <option value="7" ${WellTrackApp.state.timeRange === 7 ? 'selected' : ''}>Letzte 7 Tage</option>
-                                    <option value="28" ${WellTrackApp.state.timeRange === 28 ? 'selected' : ''}>Letzte 28 Tage</option>
-                                    <option value="84" ${WellTrackApp.state.timeRange === 84 ? 'selected' : ''}>Letzte 84 Tage</option>
+                                    <option value="28" ${WellTrackApp.state.timeRange === 28 ? 'selected' : ''}>Letzte 4 Wochen</option>
+                                    <option value="84" ${WellTrackApp.state.timeRange === 84 ? 'selected' : ''}>Letzte 3 Monate</option>
                                 </select>
                             </div>
                         <div id="history-tabs" class="submenu-container" role="group">

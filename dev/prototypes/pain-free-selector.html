@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schmerzfrei Icon Comparison (SVG)</title>
+    
+    <!-- Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Google Material Symbols --><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+    <style>
+        /* Custom styles for SVG implementation */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .schmerzfrei-svg-icon {
+            font-family: 'Material Symbols Outlined';
+            text-anchor: middle;
+            dominant-baseline: central;
+            cursor: pointer;
+        }
+
+        /* --- Default State --- */
+        .schmerzfrei-svg-circle {
+            fill: transparent;
+            stroke: #d1d5db; /* gray-300 */
+            stroke-width: 2;
+            transition: all 0.3s ease-in-out;
+        }
+        .schmerzfrei-svg-icon-primary {
+            fill: #6b7280; /* gray-500 */
+            font-size: 50px;
+            transition: fill 0.3s ease-in-out;
+        }
+        .schmerzfrei-svg-icon-secondary-bg {
+            fill: #ffffff; /* white */
+            stroke: #d1d5db; /* gray-300 */
+            stroke-width: 2;
+            transition: all 0.3s ease-in-out;
+        }
+        .schmerzfrei-svg-icon-secondary {
+            fill: #6b7280; /* gray-500 */
+            font-size: 24px;
+            transition: fill 0.3s ease-in-out;
+        }
+
+        /* --- Active State --- */
+        .schmerzfrei-icon-card.active .schmerzfrei-svg-circle {
+            fill: #38a169; /* green */
+            stroke: #38a169;
+        }
+        .schmerzfrei-icon-card.active .schmerzfrei-svg-icon-primary {
+            fill: white;
+        }
+        .schmerzfrei-icon-card.active .schmerzfrei-svg-icon-secondary-bg {
+            fill: #38a169; /* green */
+            stroke: white;
+        }
+        .schmerzfrei-icon-card.active .schmerzfrei-svg-icon-secondary {
+            fill: white;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+
+    <div class="container mx-auto px-4 py-12 md:py-20">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white">"Schmerzfrei" Icon Selector</h1>
+            <p class="mt-4 text-lg text-gray-600 dark:text-gray-400">"Healthy Body" combined with a secondary status icon. Click an icon to see its active state.</p>
+        </header>
+
+        <!-- Grid for displaying the combined icons -->
+        <div id="iconGridContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 md:gap-8 justify-center">
+            <!-- SVG Icons will be generated and placed here by the script -->
+        </div>
+
+    </div>
+
+    <script>
+        // Use the window.onload event to ensure all resources, including the icon font, are fully loaded.
+        window.onload = function () {
+            const iconGridContainer = document.getElementById('iconGridContainer');
+            
+            const iconConfigurations = [
+                { primary: 'accessibility_new', secondary: 'favorite', label: 'Body + Heart' },
+                { primary: 'accessibility_new', secondary: 'thumb_up', label: 'Body + Thumbs Up (R)' },
+                { primary: 'accessibility_new', secondary: 'verified', label: 'Body + Verified' },
+                { primary: 'accessibility_new', secondary: 'health_and_safety', label: 'Body + Safety' },
+                { primary: 'accessibility_new', secondary: 'task_alt', label: 'Body + All Clear' },
+                { primary: 'accessibility_new', secondary: 'thumb_up', label: 'Body + Thumbs Up (L)', style: 'transform: scaleX(-1);' }
+            ];
+
+            const svgNS = "http://www.w3.org/2000/svg";
+
+            /**
+             * Creates and returns a complete icon card element containing an SVG.
+             * @param {object} iconConfig - The configuration for the icon card.
+             * @returns {HTMLElement} The generated card element.
+             */
+            const generateIconCardElement = (iconConfig) => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = 'schmerzfrei-icon-card flex flex-col items-center p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 cursor-pointer transition-all duration-300 ease-in-out transform hover-scale-105';
+                
+                // --- Create SVG Structure ---
+                const svgEl = document.createElementNS(svgNS, "svg");
+                svgEl.setAttribute("viewBox", "0 0 100 100");
+                svgEl.setAttribute("class", "w-24 h-24 md:w-28 md:h-28");
+
+                // 1. Main Circle
+                const mainCircle = document.createElementNS(svgNS, "circle");
+                mainCircle.setAttribute("class", "schmerzfrei-svg-circle");
+                mainCircle.setAttribute("cx", "50");
+                mainCircle.setAttribute("cy", "50");
+                mainCircle.setAttribute("r", "48");
+                svgEl.appendChild(mainCircle);
+
+                // 2. Primary Icon
+                const primaryIcon = document.createElementNS(svgNS, "text");
+                primaryIcon.setAttribute("class", "schmerzfrei-svg-icon schmerzfrei-svg-icon-primary");
+                primaryIcon.setAttribute("x", "50");
+                primaryIcon.setAttribute("y", "52");
+                primaryIcon.textContent = iconConfig.primary;
+                svgEl.appendChild(primaryIcon);
+
+                // 3. Secondary Icon Group
+                const secondaryGroup = document.createElementNS(svgNS, "g");
+                secondaryGroup.setAttribute("transform", "translate(82, 18)");
+
+                const secondaryCircle = document.createElementNS(svgNS, "circle");
+                secondaryCircle.setAttribute("class", "schmerzfrei-svg-icon-secondary-bg");
+                secondaryCircle.setAttribute("cx", "0");
+                secondaryCircle.setAttribute("cy", "0");
+                secondaryCircle.setAttribute("r", "15");
+                secondaryGroup.appendChild(secondaryCircle);
+                
+                const secondaryIcon = document.createElementNS(svgNS, "text");
+                secondaryIcon.setAttribute("class", "schmerzfrei-svg-icon schmerzfrei-svg-icon-secondary");
+                secondaryIcon.setAttribute("x", "0");
+                secondaryIcon.setAttribute("y", "0");
+                if (iconConfig.style) {
+                    secondaryIcon.setAttribute("style", iconConfig.style);
+                }
+                secondaryIcon.textContent = iconConfig.secondary;
+                secondaryGroup.appendChild(secondaryIcon);
+                
+                svgEl.appendChild(secondaryGroup);
+
+                // --- Create Label ---
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'text-center mt-4';
+                labelDiv.innerHTML = `
+                    <p class="font-semibold text-gray-800 dark:text-white">Schmerzfrei</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-mono">${iconConfig.label}</p>
+                `;
+
+                // Append SVG and label to the card wrapper
+                cardWrapper.appendChild(svgEl);
+                cardWrapper.appendChild(labelDiv);
+                
+                return cardWrapper;
+            }
+
+            // Generate and append all cards to the grid
+            iconConfigurations.forEach(config => {
+                const newCard = generateIconCardElement(config);
+                iconGridContainer.appendChild(newCard);
+            });
+
+            // Set up a single click listener for all cards
+            const allCardElements = document.querySelectorAll('.schmerzfrei-icon-card');
+            allCardElements.forEach(card => {
+                card.addEventListener('click', () => {
+                    if (card.classList.contains('active')) {
+                        card.classList.remove('active');
+                    } else {
+                        allCardElements.forEach(c => c.classList.remove('active'));
+                        card.classList.add('active');
+                    }
+                });
+            });
+        };
+    </script>
+
+</body>
+</html>
+
