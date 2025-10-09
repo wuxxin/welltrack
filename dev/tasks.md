@@ -11,6 +11,12 @@ This document lists the curren implementation status of features and refactoring
 - **Protokoll Refactor**: Overhaul the "Protokoll" (log) view. The layout will be updated to feature a sticky week selector and a fixed, left-aligned date display that clarifies the "5-to-5" day (e.g., "Dienstag 7.10.2025 auf Mittwoch"). Timestamps will use icons to differentiate between same-day and next-day (pre-5:00 AM) entries. The data gathering logic will be rewritten to align with the new day definition. Mood and pain entries will be grouped into 10-minute slots, reversed, and sorted alphabetically. "Ereignisse" will be reordered, and entries without a group will be labeled "Allgemein".
 
 ## Completed Tasks
+- [x] **EventType Edit Error Handling**: In the EventType edit modal, prevent the modal from closing on validation errors (e.g., missing name, duplicate ID). Instead, display a clear error message within the modal, allowing the user to correct the input without losing their changes.
+- [x] **Pain Entry Circle Bug Fix**: The "schmerzfrei" (pain-free) circle on the pain entry page sometimes fails to visually update to green when clicked, even though the state is correctly registered. The logic will be corrected to ensure the UI consistently reflects the current pain-free status.
+- [x] **Mood Chart Refactor & Visualization**:
+    - **Moving Average**: Implement a Prometheus-style `avg_over_time` calculation for the mood chart data. This will be added as a new `avg_over_time_sum` column to the `getMoodChartData` result array.
+    - **Chart Visualization**: Add a new, smoothed line graph (3px thick) to the top of the mood chart to represent the moving average. The colors of the existing area charts will be lightened (more white) to improve contrast and align with the visual style of other charts.
+    - **Screenshots**: Generate new screenshots of the updated mood chart, with test data, for the 7-day, 4-week, and 3-month time ranges to document the changes.
 - [x] **Refactor Mood Chart**:
     - Implemented a new data preparation method for the mood chart. Data is now grouped into 10-minute timeslots based on the selected range (7, 28, 84 days).
     - For each timeslot, mood values (-3, -2, -1, +1, +2, +3) are aggregated into buckets.

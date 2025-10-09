@@ -574,24 +574,24 @@ const WellTrackApp = {
            
             if (page === 'pain') {
                 const todaysPainMetrics = todaysMetrics.filter(e => e.metric.startsWith('pain_'));
-                const lastPainFreeEntry = todaysPainMetrics.find(m => m.metric === 'pain_free_level');
+                const lastPainFreeEntry = todaysPainMetrics.findLast(m => m.metric === 'pain_free_level');
                 const isPainFreeActive = lastPainFreeEntry && (now - lastPainFreeEntry.timestamp < 600000);
 
                 document.querySelectorAll('.pain-free-btn circle').forEach(circle => {
-                    circle.style.fill = isPainFreeActive ? '#86efac' : WellTrackApp.config.DEFAULT_BODY_COLOR;
+                    circle.setAttribute('fill', isPainFreeActive ? '#86efac' : WellTrackApp.config.DEFAULT_BODY_COLOR);
                 });
 
                 document.querySelectorAll('.body-part').forEach(part => {
                     if (isPainFreeActive) {
-                        part.style.fill = WellTrackApp.config.DEFAULT_BODY_COLOR;
+                        part.setAttribute('fill', WellTrackApp.config.DEFAULT_BODY_COLOR);
                         delete part.dataset.level;
                     } else {
                         const latestEntry = todaysPainMetrics.filter(m => m.labels.body_part === part.id).pop();
                         if (latestEntry && (now - latestEntry.timestamp < 600000)) {
-                            part.style.fill = WellTrackApp.config.PAIN_LEVELS[latestEntry.value].color;
+                            part.setAttribute('fill', WellTrackApp.config.PAIN_LEVELS[latestEntry.value].color);
                             part.dataset.level = latestEntry.value;
                         } else {
-                            part.style.fill = WellTrackApp.config.DEFAULT_BODY_COLOR;
+                            part.setAttribute('fill', WellTrackApp.config.DEFAULT_BODY_COLOR);
                             delete part.dataset.level;
                         }
                     }
@@ -1428,7 +1428,7 @@ const WellTrackApp = {
                     {
                         label: '+1',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_p1 })),
-                        backgroundColor: 'rgba(191, 219, 254, 0.7)',
+                        backgroundColor: 'rgba(191, 219, 254, 0.4)',
                         borderWidth: 0,
                         pointRadius: 0,
                         fill: true,
@@ -1438,7 +1438,7 @@ const WellTrackApp = {
                     {
                         label: '+2',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_p2 })),
-                        backgroundColor: 'rgba(0, 219, 150, 1)',
+                        backgroundColor: 'rgba(0, 219, 150, 0.7)',
                         borderWidth: 0,
                         pointRadius: 0,
                         fill: true,
@@ -1448,7 +1448,7 @@ const WellTrackApp = {
                     {
                         label: '+3',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_p3 })),
-                        backgroundColor: 'rgba(123, 255, 0, 1)',
+                        backgroundColor: 'rgba(123, 255, 0, 0.7)',
                         borderWidth: 0,
                         pointRadius: 0,
                         fill: true,
@@ -1460,7 +1460,7 @@ const WellTrackApp = {
                         label: '-1',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n1 })),
 
-                        backgroundColor: 'rgba(251, 191, 36, 1)',
+                        backgroundColor: 'rgba(251, 191, 36, 0.7)',
                         borderWidth: 0,
                         pointRadius: 0,
                         fill: true,
@@ -1470,7 +1470,7 @@ const WellTrackApp = {
                     {
                         label: '-2',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n2 })),
-                        backgroundColor: 'rgba(249, 115, 22, 1)',
+                        backgroundColor: 'rgba(249, 115, 22, 0.7)',
                         borderWidth: 0,
                         pointRadius: 0,
                         fill: true,
@@ -1480,7 +1480,7 @@ const WellTrackApp = {
                     {
                         label: '-3',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n3 })),
-                        backgroundColor: 'rgba(212, 52, 52, 1)',
+                        backgroundColor: 'rgba(212, 52, 52, 0.7)',
                         borderWidth: 0,
                         pointRadius: 0,
                         fill: true,
@@ -1501,6 +1501,18 @@ const WellTrackApp = {
                         type: 'line',
                         tension: 0,
                         order: -1 // Render on top
+                    },
+                    // Moving average line
+                    {
+                        label: 'Gleitender Durchschnitt',
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.avg_over_time_sum })),
+                        borderColor: 'rgba(255, 100, 100, 1)',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        fill: false,
+                        type: 'line',
+                        tension: 0.4, // Smoothed line
+                        order: -2 // Render on top of areas, below total sum
                     }
                 ];
 
@@ -2161,6 +2173,7 @@ const WellTrackApp = {
 
                 return `
                     <h3 class="text-2xl font-semibold mb-6 text-center">${isEditing ? 'Ereignisart bearbeiten' : 'Neue Ereignisart'}</h3>
+                    <div id="event-type-form-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert"></div>
                     <div class="space-y-4 text-left">
                         <div><label for="event-name" class="block mb-1 text-sm font-medium">Bezeichnung</label><input id="event-name" type="text" value="${name}" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="z.B. Tassen Kaffee"></div>
                         <div><label for="event-activity" class="block mb-1 text-sm font-medium">Aktivität-ID</label><input id="event-activity" type="text" value="${activity}" ${isEditing ? 'disabled' : ''} class="w-full p-2 border border-gray-300 rounded-lg ${isEditing ? 'bg-gray-100' : ''}" placeholder="z.B. kaffee_tassen"></div>
@@ -2321,10 +2334,10 @@ const WellTrackApp = {
 
             // Update UI immediately
             if (level === 0) {
-                 part.style.fill = WellTrackApp.config.DEFAULT_BODY_COLOR; 
+                 part.setAttribute('fill', WellTrackApp.config.DEFAULT_BODY_COLOR);
                  delete part.dataset.level; 
             } else { 
-                part.style.fill = WellTrackApp.config.PAIN_LEVELS[level].color; 
+                part.setAttribute('fill', WellTrackApp.config.PAIN_LEVELS[level].color);
                 part.dataset.level = level; 
             }
             
@@ -2486,12 +2499,13 @@ const WellTrackApp = {
             }
         },
         handleSaveEventType() {
+            const errorContainer = document.getElementById('event-type-form-error');
+            errorContainer.classList.add('hidden'); // Hide on new attempt
+
             const name = document.getElementById('event-name').value.trim();
             const eventTypes = WellTrackApp.data.getEventTypes();
             const isEditing = !!WellTrackApp.state.currentEditingEvent;
 
-            // Get activity from state if editing, otherwise from form for a new event.
-            // This is more robust than reading from a disabled form field.
             const activity = isEditing
                 ? WellTrackApp.state.currentEditingEvent.activity
                 : WellTrackApp.utils.slugify(document.getElementById('event-activity').value.trim());
@@ -2501,13 +2515,18 @@ const WellTrackApp = {
             const groupType = document.getElementById('event-group').value.trim();
             const displayType = parseInt(document.getElementById('event-display-type').value, 10);
 
+            const showError = (message) => {
+                errorContainer.textContent = message;
+                errorContainer.classList.remove('hidden');
+            };
+
             if (!name || !activity) {
-                WellTrackApp.render.modal.showAlert('Fehler', 'Bezeichnung und Aktivität-ID sind erforderlich.');
+                showError('Bezeichnung und Aktivität-ID sind erforderlich.');
                 return;
             }
 
             if (!isEditing && eventTypes.some(t => t.activity === activity)) {
-                WellTrackApp.render.modal.showAlert('Fehler', 'Diese Aktivität-ID wird bereits verwendet.');
+                showError('Diese Aktivität-ID wird bereits verwendet.');
                 return;
             }
 
@@ -2888,7 +2907,6 @@ const WellTrackApp = {
                 return [];
             }
 
-            // The data is already sorted by timestamp from getMetrics()
             const oldestTimestamp = moodMetrics[0].timestamp;
             const timeslots = {};
             const tenMinutes = 10 * 60 * 1000;
@@ -2903,7 +2921,8 @@ const WellTrackApp = {
                         timestamp: timeslotTimestamp,
                         sum_p3: 0, sum_p2: 0, sum_p1: 0,
                         sum_n1: 0, sum_n2: 0, sum_n3: 0,
-                        total_sum: 0
+                        total_sum: 0,
+                        avg_over_time_sum: 0
                     };
                 }
 
@@ -2920,7 +2939,17 @@ const WellTrackApp = {
                 }
             });
 
-            return Object.values(timeslots).sort((a,b) => a.timestamp - b.timestamp);
+            const sortedTimeslots = Object.values(timeslots).sort((a, b) => a.timestamp - b.timestamp);
+
+            // Calculate moving average
+            const movingAverageWindowSize = Math.max(1, Math.floor(sortedTimeslots.length * 0.1)); // 10% window size
+            for (let i = 0; i < sortedTimeslots.length; i++) {
+                const window = sortedTimeslots.slice(Math.max(0, i - movingAverageWindowSize + 1), i + 1);
+                const sum = window.reduce((acc, val) => acc + val.total_sum, 0);
+                sortedTimeslots[i].avg_over_time_sum = sum / window.length;
+            }
+
+            return sortedTimeslots;
         },
         summarizeMetrics(metrics) {
             const summarized = {};
