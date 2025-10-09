@@ -34,7 +34,7 @@ def test_take_heute_screenshot_(page: Page, sample_data):
     expect(page.locator("h2:has-text('Heute')")).to_be_visible()
 
     # Take a full-page screenshot
-    page.screenshot(path="build/tests/screenshots/heute.png", full_page=True)
+    page.screenshot(path="build/tests/output/heute.png", full_page=True)
 
 
 def test_take_protokoll_screenshot_(page: Page, sample_data):
@@ -55,7 +55,7 @@ def test_take_protokoll_screenshot_(page: Page, sample_data):
     expect(page.locator("h2:has-text('Protokoll')")).to_be_visible()
 
     # Take a full-page screenshot
-    page.screenshot(path="build/tests/screenshots/protokoll.png", full_page=True)
+    page.screenshot(path="build/tests/output/protokoll.png", full_page=True)
 
 
 def test_take_settings_screenshot_(page: Page, sample_data):
@@ -76,4 +76,4 @@ def test_take_settings_screenshot_(page: Page, sample_data):
     expect(page.locator("h2:has-text('Einstellungen')")).to_be_visible()
 
     # Take a full-page screenshot
-    page.screenshot(path="build/tests/screenshots/settings.png", full_page=True)
+    page.screenshot(path="build/tests/output/settings.png", full_page=True)

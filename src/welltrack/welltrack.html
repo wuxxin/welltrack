@@ -1424,68 +1424,70 @@ const WellTrackApp = {
                 if (WellTrackApp.state.charts.mood) { WellTrackApp.state.charts.mood.destroy(); }
 
                 const datasets = [
-                    // Negative areas
-                    {
-                        label: 'Stimmung -1',
-                        data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n1 })),
-                        backgroundColor: 'rgba(251, 191, 36, 0.7)', // yellow-400
-                        borderColor: 'rgba(251, 191, 36, 1)',
-                        borderWidth: 1,
-                        fill: true,
-                        stack: 'negative',
-                        tension: 0.4
-                    },
-                    {
-                        label: 'Stimmung -2',
-                        data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n2 })),
-                        backgroundColor: 'rgba(249, 115, 22, 0.7)', // orange-500
-                        borderColor: 'rgba(249, 115, 22, 1)',
-                        borderWidth: 1,
-                        fill: true,
-                        stack: 'negative',
-                        tension: 0.4
-                    },
-                    {
-                        label: 'Stimmung -3',
-                        data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n3 })),
-                        backgroundColor: 'rgba(239, 68, 68, 0.7)', // red-500
-                        borderColor: 'rgba(239, 68, 68, 1)',
-                        borderWidth: 1,
-                        fill: true,
-                        stack: 'negative',
-                        tension: 0.4
-                    },
                     // Positive areas
                     {
                         label: 'Stimmung +1',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_p1 })),
-                        backgroundColor: 'rgba(191, 219, 254, 0.7)', // blue-200
-                        borderColor: 'rgba(191, 219, 254, 1)',
-                        borderWidth: 1,
+                        backgroundColor: 'rgba(191, 219, 254, 0.7)',
+                        borderWidth: 0,
+                        pointRadius: 0,
                         fill: true,
                         stack: 'positive',
-                        tension: 0.4
+                        tension: 0
                     },
                     {
                         label: 'Stimmung +2',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_p2 })),
-                        backgroundColor: 'rgba(110, 231, 183, 0.7)', // green-300 (greenish blue)
-                        borderColor: 'rgba(110, 231, 183, 1)',
-                        borderWidth: 1,
+                        backgroundColor: 'rgba(0, 219, 150, 1)',
+                        borderWidth: 0,
+                        pointRadius: 0,
                         fill: true,
                         stack: 'positive',
-                        tension: 0.4
-                    },
+                        tension: 0
+                    },                    
                     {
                         label: 'Stimmung +3',
                         data: chartData.map(d => ({ x: d.timestamp, y: d.sum_p3 })),
-                        backgroundColor: 'rgba(34, 197, 94, 0.7)', // green-500
-                        borderColor: 'rgba(34, 197, 94, 1)',
-                        borderWidth: 1,
+                        backgroundColor: 'rgba(123, 255, 0, 1)',
+                        borderWidth: 0,
+                        pointRadius: 0,
                         fill: true,
                         stack: 'positive',
-                        tension: 0.4
+                        tension: 0
+                    },                    
+                    // Negative areas
+                    {
+                        label: 'Stimmung -1',
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n1 })),
+
+                        backgroundColor: 'rgba(251, 191, 36, 1)',
+                        borderWidth: 0,
+                        pointRadius: 0,
+                        fill: true,
+                        stack: 'negative',
+                        tension: 0
                     },
+                    {
+                        label: 'Stimmung -2',
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n2 })),
+                        backgroundColor: 'rgba(249, 115, 22, 1)',
+                        borderWidth: 0,
+                        pointRadius: 0,
+                        fill: true,
+                        stack: 'negative',
+                        tension: 0
+                    },
+                    {
+                        label: 'Stimmung -3',
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.sum_n3 })),
+                        backgroundColor: 'rgba(212, 52, 52, 1)',
+                        borderWidth: 0,
+                        pointRadius: 0,
+                        fill: true,
+                        stack: 'negative',
+                        tension: 0
+                    },
+
                     // Total sum line
                     {
                         label: 'Gesamtwert',
@@ -1493,39 +1495,14 @@ const WellTrackApp = {
                         borderColor: 'rgba(103, 80, 164, 1)',
                         backgroundColor: 'rgba(103, 80, 164, 0.1)',
                         borderWidth: 2,
-                        pointRadius: 2,
+                        pointRadius: 1,
                         pointBackgroundColor: 'rgba(103, 80, 164, 1)',
                         fill: false,
                         type: 'line',
-                        tension: 0.1,
+                        tension: 0,
                         order: -1 // Render on top
                     }
                 ];
-
-                // Moving Average
-                const timeRange = WellTrackApp.state.timeRange;
-                let mvAgWindow = 0;
-                if (timeRange <= 7) mvAgWindow = 3;
-                else if (timeRange <= 28) mvAgWindow = 7;
-                else if (timeRange <= 84) mvAgWindow = 7;
-                
-                const totalSumData = chartData.map(d => ({x: d.timestamp, y: d.total_sum}));
-                if (totalSumData.length > mvAgWindow) {
-                    const movingAverageData = WellTrackApp.utils.calculateMovingAverageForMood(totalSumData, mvAgWindow);
-                    if(movingAverageData.length > 0) {
-                        datasets.push({
-                            label: `Durchschnitt (${mvAgWindow} Tage)`,
-                            data: movingAverageData,
-                            borderColor: 'rgba(239, 68, 68, 0.8)',
-                            borderWidth: 2,
-                            pointRadius: 0,
-                            fill: false,
-                            type: 'line',
-                            tension: 0.4,
-                            order: -2
-                        });
-                    }
-                }
 
 
                 WellTrackApp.state.charts.mood = new Chart(ctx, {
@@ -1535,8 +1512,8 @@ const WellTrackApp = {
                         maintainAspectRatio: false,
                         animation: false,
                         plugins: {
-                            legend: { display: false }, // Hiding legend as it would be too cluttered
-                            tooltip: { mode: 'index', intersect: false }
+                            legend: { position: 'bottom', labels: { ...WellTrackApp.config.CHART_FONT_OPTIONS } },
+                            tooltip: { mode: 'nearest', intersect: false },
                         },
                         scales: {
                             x: {

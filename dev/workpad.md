@@ -10,6 +10,15 @@ Then, do each of the described tasks one by one, and update `dev/tasks.md` accor
 required changes:
 
 
++ refactor: verlauf, mood chart:
+    + new way to prepare chart data: for the requested days 7, 28, 84 plus mvag 3 for 7, 7 for 28, 7 for 84, if data is available) select metrics entries in range from now-days, find oldest entry applicable, from oldest to newest, for all mood entrys
+    + begin with the first (oldest) entry, collect all mood data in 10 minute timeslots (counted from the first entry) in one group,
+    then create 6 buckets and fill them according there mood value (-3,-2,-1,1,2,3). Then create an array with timestamp, *bucket_name, *bucket_name_sum, total_sum. so two entries of mood value -3 should have minus_3_sum:-6 .from this array create an area graph, with areas growing from 0 in - and + by first in negative the -1 sum value, then the -2 sum value and then the -3 sum value, and on the positive side, +1, +2, +3. Then add a line with small point diagram over the area to show total_sum values.
+    + color the -1, -2, -3, 1, 2, 3 area graphs with +1:light blue,+2:grenish blue , +3 green, -1 yellow, -2 orange -3 red
+    + the areas grow from 0 in both directions and stack on each other, so they are not overlapping, and in total sum off all positive an negativ centered at 0 value,
+    - make a screenshot with test data for 7 28 and 84 days.
+
+
 ## nice to have
 
 - on access using "file:///home/wuxxin/code/welltrack/src/welltrack/welltrack.html": Access to manifest at 'file:///home/wuxxin/code/welltrack/src/welltrack/manifest.json' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-extension, chrome-untrusted, data, http, https, isolated-app. If possible, make it work with file:/// to, or explain why this is not possible in settings: "Erinnerungen" on enable "Browser benachrichtigungen erlauben" function.
@@ -18,12 +27,6 @@ required changes:
 
 + body pain entry tab: body: new subselector (additional to back and front) other: other "Weitere" is a svg like front and back with "SchmerzFrei" as on the other svg's , but with selected bodyparts that are grouped for detailed not covered on front and back parts, eg: ears, eyes, nose, mouth, fingers , toes, and some special "pain" like "tinitus" seperated.
 
-+ refactor: verlauf, mood and pain chart:
-    + prepare chart data: for the timerange (plus mvag days added if data is available) selected go through all mood entrys
-    + begin with the first entry, collect all mood data in 10 minute (from the first entry) in one group,
-    then create 6 buckets and fill them according there mood value (-3,-2,-1,1,2,3),
-    then create 6 buckets , -2, -1 , 1, 2, 3 sum of this bucket, and create a this then
-    Total -3 , Ziemlich -2 , Ein Wenig -1
     verlauf: stimmung 1 is broken:
         + does not correctly count. uses either negativ or positiv, but not the value.
     verlauf: mood and pain chart: mavg of the totalsum (gesamtschmerz, gesamtwert stimmung) value
