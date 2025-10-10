@@ -15,15 +15,13 @@ The app is structured into several main pages for clear separation of concerns:
 - **Today (Homepage):** A dashboard providing an at-a-glance summary of the current day's metrics. It displays total events, mood and pain scores, along with a comparison to the previous day's totals to highlight trends. A detailed log of all entries from the current day is listed below the summary.
 - **Entry Pages (Events, Mood, Pain):** Dedicated pages for data input. Users can navigate to each page via icons in the header to log specific metrics for the current day.
 - **History (Charts):** A visualization page showing trends over time for Events, Mood and Pain data in stacked bar charts.
-- **Full Log:** A paginated, chronological list of all recorded data, grouped by day.
-- **Settings:** managing Event types and routines and app settings like data import/export and notification permissions.
+- **Full Protocol:** A paginated, chronological list of all recorded data, grouped by day.
+- **Settings:** managing Event types and app settings like data import/export and notification permissions.
 
 ### Main Functions
 
 - Events Logging:
-    - On the "Events" page, users can log completed Events sessions for the current day.
-    - The duration of each session can be adjusted in 15-minute increments.
-    - The app highlights Events sessions that are scheduled for the current day but not yet completed.
+    - On the "Events" page, users can log Events for the current day.
 - Mood Logging:
     - On the "Mood" page, users rate various aspects of their mood on a -3 (most negative) to +3 (most positive) scale using visual sliders.
     - Moods are organized into switchable groups (e.g., "Energy & Motivation", "Well-being & Self-Esteem").
@@ -33,16 +31,17 @@ The app is structured into several main pages for clear separation of concerns:
 - Graphical History:
     - The "History" view visualizes collected data in stacked bar charts, allowing users to see the composition of their metrics each day.
     - There are separate charts for total pain (stacked by body part), total mood (stacked by mood type), and total Events duration (stacked by activity).
-    - The displayed time range can be filtered (last 7, 30, or 180 days).
-    - All charts feature a detailed Y-axis with at least 8 steps for better readability.
-- Full Log View:
-    - The "Full Log" provides a detailed historical record.
+    - The displayed time range can be filtered (last 7 days, 4 weeks or 3 months (84 days)).
+- Full Protocol View:
+    - The "Full Protocol" provides a detailed historical record.
     - Each day's entry displays total scores for events, mood and pain.
     - A detailed breakdown for each metric (e.g., individual pain points, specific mood ratings with color codes) is shown for each day.
-- Events Management:
-    - Users can create, edit, and delete custom Events routines in the settings modal.
-- Data Import & Export:
-    - All data and settings can be exported to a single JSON file for backup and restored via an import function.
+- Settings View:
+    - Event Types Management: Create, edit, and delete EventTypes
+    - Data Import & Export: All data and settings can be exported to a single JSON file for backup and restored via an import function.
+    - Notification configuration
+    - Appearance: Start of the Day Configuration, defaults to 05:00
+    - About App: A brief about page with linsk to the sourcecode
 
 ## Non-Functional Requirements / Technical Features
 
@@ -54,4 +53,4 @@ The app is structured into several main pages for clear separation of concerns:
 - **Dependencies via CDN:** All external libraries (Tailwind CSS, Chart.js, date-fns) are included via a Content Delivery Network (CDN), simplifying setup.
 - **Responsive UI:** The layout, built with Tailwind CSS, adapts to various screen sizes and is designed as mobile first.
 - **Interactive Data Visualization:** Chart.js is used to generate interactive and customizable bar charts.
-- **Implementation Architecture** The entire JavaScript code is encapsulated in a single global object, WellTrackApp, structured into logical sub-objects (state, config, data, render, events, utils).
+- **Implementation Architecture** The entire JavaScript code is encapsulated in a single global object, WellTrackApp, structured into logical sub-objects.

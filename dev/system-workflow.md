@@ -2,9 +2,9 @@
 
 ## Project Awareness & Context
 
-- **Always read `dev/product-requirements.md` and `dev/development.md`** at the start of a new conversation to understand the project's architecture, goals, style, and constraints.
-- The `dev/tasks.md` file is used to track the implementation of new features.
+- **Always read `dev/development.md`** at the start of a new conversation to understand the project's architecture, goals, style, and constraints.
 - **Use consistent naming conventions, file structure, and architecture patterns** as described in `dev/development.md`.
+- The `dev/tasks.md` file is used to track the implementation of new features.
 
 ## Task Completion
 
