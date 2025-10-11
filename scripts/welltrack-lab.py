@@ -10,6 +10,7 @@ def _():
     import altair as alt
     import json
     import welltrack_lab.data as wtd
+
     return mo, wtd
 
 
@@ -19,7 +20,7 @@ def _(mo):
     mo.vstack(
         [
             mo.md("## WellTrack Datenanalyse"),
-            mo.hstack([mo.md("Import/Export Daten File auswählen"), file_uploader]),
+            mo.hstack([mo.md("Import Daten File auswählen"), file_uploader]),
         ],
         align="start",
     )
@@ -33,13 +34,10 @@ def _(file_uploader, mo, wtd):
         raw_metrics_df, raw_event_types_df, raw_settings_df = wtd.load_from_json(
             file_uploader.contents()
         )
-        processed_df = wtd.process_metrics(
-            raw_metrics_df, raw_event_types_df, raw_settings_df
-        )
+        processed_df = wtd.process_metrics(raw_metrics_df, raw_event_types_df, raw_settings_df)
         print(f"Geladene Metriken: **{len(processed_df)}**")
-        df = processed_df
 
-        # --- UI Tabs ---
+        df = processed_df
         main_content = mo.vstack([mo.ui.data_explorer(df)])
         transform_content = mo.vstack([mo.ui.dataframe(df)])
         editor_content = mo.vstack([mo.ui.data_editor(df)])
