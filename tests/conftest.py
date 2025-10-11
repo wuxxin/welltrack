@@ -8,7 +8,9 @@ import os
 @pytest.fixture(scope="session", autouse=True)
 def create_sample_data_if_not_exists():
     """Fixture to ensure sample data exists before tests run."""
+
     sample_data_path = "build/tests/sample-data.json"
+
     if not os.path.exists(sample_data_path):
         os.makedirs("build/tests", exist_ok=True)
         subprocess.run(
@@ -21,7 +23,7 @@ def create_sample_data_if_not_exists():
 def live_server():
     """Fixture to start a live server for the test session."""
     port = 8443
-    command = ["python", "scripts/dev_serve.py", "-d", "build/site", str(port)]
+    command = [".venv/bin/python", "scripts/dev_serve.py", "-d", "build/site", str(port)]
 
     # Start the server as a subprocess
     server_process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

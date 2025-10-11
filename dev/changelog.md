@@ -271,3 +271,8 @@ This document lists the implementation status of features and refactorings for t
 - [x] **Push-Button Feedback**: Add a visual flash effect to the "(2x, zuletzt um hh:mm)" text when the "Erneut" or "rückgängig" buttons are pressed for push-button events to provide clear user feedback.
 - **GUI Test Implementation**: Create a suite of GUI tests using pytest-playwright. The tests should cover the initial application states (no data, empty data, sample data) and basic navigation. The test runner should be integrated into the `Makefile` under the `test` target. All tests will run in a 1080x1920 portrait mode, and screenshots of failed tests will be saved.
 - **Fix Event Entry UI Bug**: The event entry for cumulative events (like "Kaffee Tassen") has a UI bug where the displayed value doesn't update correctly on increment/decrement, even though the underlying data is correct. Sometimes the value increments by two or the update is not visible. This will be investigated and fixed.
+
+**2025-10-11**:
+- **Refactor Pain Chart Data Generation (`getPainChartData`)**: Create a new function `getPainChartData` analogous to `getMoodChartData`. It will bucket pain levels from 0 to 5, calculate total pain, and determine a time-weighted average pain (`avg_over_time_pain`).
+- **Standardize Time-Weighted Averages**: Refactor both `getMoodChartData` and the new `getPainChartData` to use a consistent, time-weighted average calculation for `avg_over_time`, similar to Prometheus's `avg_over_time`.
+- **Update Pain Chart Visualization**: The main pain chart will be updated to show pain levels 0-5 as stacked areas. "Total Pain" and "Average Pain" will be overlaid as line charts. Pain level 0 will be labeled "Schmerz frei" and colored green.
