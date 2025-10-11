@@ -1230,57 +1230,81 @@ const WellTrackApp = {
             pain() {
                 const ctx = document.getElementById('painChart')?.getContext('2d');
                 if (!ctx) return;
-                const { dailyData, allLabels } = WellTrackApp.utils.getDailyChartData('pain_');
 
-                // One dataset per body part for the stacked bar chart
-                const datasets = allLabels.map(partName => {
-                    return {
-                        type: 'bar',
-                        label: partName,
-                        data: dailyData.map(day => ({ x: day.timestamp, y: day.values[partName] || 0 })),
-                        backgroundColor: WellTrackApp.utils.generateColorFromHash(partName, 0.7),
-                    };
-                });
-
-                // Line for the total cumulative pain
-                datasets.push({
-                    type: 'line',
-                    label: 'Gesamtschmerz',
-                    data: dailyData.map(day => ({ x: day.timestamp, y: day.total })),
-                    borderColor: 'rgba(103, 80, 164, 1)',
-                    backgroundColor: 'rgba(103, 80, 164, 0.1)',
-                    borderWidth: 2,
-                    pointRadius: 3,
-                    pointBackgroundColor: 'rgba(103, 80, 164, 1)',
-                    fill: false,
-                    tension: 0.1,
-                    order: -1 // Render line on top
-                });
-                
-                
-                const yAxisOptions = {
-                    stacked: true,
-                    title: { display: false },
-                    ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }
-                };
-                
+                const chartData = WellTrackApp.utils.getPainChartData();
                 if (WellTrackApp.state.charts.pain) { WellTrackApp.state.charts.pain.destroy(); }
+
+                const datasets = [
+                    {
+                        label: 'Schmerz frei',
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.pain_0 })),
+                        backgroundColor: WellTrackApp.config.PAIN_LEVELS[0].color,
+                        borderColor: WellTrackApp.config.PAIN_LEVELS[0].color,
+                        borderWidth: 1,
+                        pointRadius: 0,
+                        fill: true,
+                        stack: 'painStack',
+                        tension: 0.1,
+                        type: 'line'
+                    },
+                    ...[1, 2, 3, 4, 5].map(level => ({
+                        label: WellTrackApp.config.PAIN_LEVELS[level].label,
+                        data: chartData.map(d => ({ x: d.timestamp, y: d[`pain_${level}`] })),
+                        backgroundColor: WellTrackApp.config.PAIN_LEVELS[level].color,
+                        borderColor: WellTrackApp.config.PAIN_LEVELS[level].color,
+                        borderWidth: 1,
+                        pointRadius: 0,
+                        fill: true,
+                        stack: 'painStack',
+                        tension: 0.1,
+                        type: 'line'
+                    })),
+                    {
+                        label: 'Gesamtschmerz',
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.total_pain })),
+                        borderColor: 'rgba(10, 10, 10, 1)',
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        fill: false,
+                        type: 'line',
+                        tension: 0.1,
+                        order: -2
+                    },
+                    {
+                        label: 'Durchschnitt',
+                        data: chartData.map(d => ({ x: d.timestamp, y: d.avg_over_time_pain })),
+                        borderColor: 'rgba(239, 68, 68, 0.8)',
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        fill: false,
+                        type: 'line',
+                        tension: 0.4,
+                        order: -1
+                    }
+                ];
+
                 WellTrackApp.state.charts.pain = new Chart(ctx, {
-                    type: 'bar', // Default type is bar
+                    type: 'line',
                     data: { datasets },
                     options: {
                         maintainAspectRatio: false,
                         animation: false,
-                        layout: {
-                            padding: 0
-                        },
                         plugins: {
                             legend: { position: 'bottom', labels: { ...WellTrackApp.config.CHART_FONT_OPTIONS } },
                             tooltip: { mode: 'index', intersect: false }
                         },
                         scales: {
-                            x: { type: 'time', time: { unit: 'day', displayFormats: { day: 'dd.MM' } }, grid: { display: false }, ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS }, stacked: true },
-                            y: yAxisOptions
+                            x: {
+                                type: 'time',
+                                time: { unit: 'day', displayFormats: { day: 'dd.MM' } },
+                                grid: { display: false },
+                                ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS }
+                            },
+                            y: {
+                                stacked: true,
+                                title: { display: false },
+                                ticks: { ...WellTrackApp.config.CHART_FONT_OPTIONS, maxTicksLimit: 8 }
+                            }
                         }
                     }
                 });
@@ -2892,6 +2916,103 @@ const WellTrackApp = {
 
             return { latestSlot: latestSlotValue, previousSlot: previousSlotValue };
         },
+        getPainChartData() {
+            const timeRangeDays = WellTrackApp.state.timeRange || 7;
+            const startDate = new Date();
+            startDate.setHours(0, 0, 0, 0);
+            startDate.setDate(startDate.getDate() - (timeRangeDays - 1));
+
+            const allMetrics = WellTrackApp.data.getMetrics();
+            const painMetrics = allMetrics.filter(entry => {
+                const entryDate = new Date(entry.timestamp);
+                return (entry.metric.startsWith('pain_') || entry.metric === 'pain_free_level') && entryDate >= startDate;
+            });
+
+            if (painMetrics.length === 0) {
+                return [];
+            }
+
+            const oldestTimestamp = painMetrics[0].timestamp;
+            const timeslots = {};
+            const tenMinutes = 10 * 60 * 1000;
+
+            painMetrics.forEach(entry => {
+                const timeDiff = entry.timestamp - oldestTimestamp;
+                const timeslotIndex = Math.floor(timeDiff / tenMinutes);
+                const timeslotTimestamp = oldestTimestamp + (timeslotIndex * tenMinutes);
+
+                if (!timeslots[timeslotTimestamp]) {
+                    timeslots[timeslotTimestamp] = {
+                        timestamp: timeslotTimestamp,
+                        pain_0: 0, pain_1: 0, pain_2: 0, pain_3: 0, pain_4: 0, pain_5: 0,
+                        total_pain: 0,
+                        avg_over_time_pain: 0
+                    };
+                }
+
+                const slot = timeslots[timeslotTimestamp];
+                const value = entry.value || 0;
+                slot.total_pain += value;
+
+                if (entry.metric === 'pain_free_level') {
+                    slot.pain_0 += 1; // Special case for pain_free
+                } else {
+                    if (value >= 0 && value <= 5) {
+                        slot[`pain_${value}`] += 1;
+                    }
+                }
+            });
+
+            const sortedTimeslots = Object.values(timeslots).sort((a, b) => a.timestamp - b.timestamp);
+
+            const totalPainData = sortedTimeslots.map(slot => ({ x: slot.timestamp, y: slot.total_pain }));
+            const avgData = this.calculateTimeWeightedAverage(totalPainData, timeRangeDays);
+
+            sortedTimeslots.forEach((slot, index) => {
+                const avgEntry = avgData.find(d => d.x === slot.timestamp);
+                slot.avg_over_time_pain = avgEntry ? avgEntry.y : 0;
+            });
+
+            return sortedTimeslots;
+        },
+        calculateTimeWeightedAverage(dataPoints, timeRangeDays) {
+            if (dataPoints.length === 0) return [];
+
+            const windowSizeDays = Math.max(1, Math.floor(timeRangeDays / 4)); // e.g. 7-day range -> ~1.75 -> 1 day window
+            const windowSizeMillis = windowSizeDays * 24 * 60 * 60 * 1000;
+
+            const movingAverages = [];
+
+            for (let i = 0; i < dataPoints.length; i++) {
+                const currentPoint = dataPoints[i];
+                const windowStart = currentPoint.x - windowSizeMillis;
+
+                const windowPoints = dataPoints.filter(p => p.x >= windowStart && p.x <= currentPoint.x);
+
+                if (windowPoints.length < 2) {
+                    movingAverages.push({ x: currentPoint.x, y: windowPoints.length === 1 ? windowPoints[0].y : 0 });
+                    continue;
+                }
+
+                let weightedSum = 0;
+                let totalDuration = 0;
+
+                for(let j = 0; j < windowPoints.length - 1; j++) {
+                    const p1 = windowPoints[j];
+                    const p2 = windowPoints[j+1];
+                    const duration = p2.x - p1.x;
+                    // Average value over the interval
+                    const avgValue = (p1.y + p2.y) / 2;
+                    weightedSum += avgValue * duration;
+                    totalDuration += duration;
+                }
+
+                const average = totalDuration > 0 ? weightedSum / totalDuration : 0;
+                movingAverages.push({ x: currentPoint.x, y: parseFloat(average.toFixed(2)) });
+            }
+
+            return movingAverages;
+        },
         getMoodChartData() {
             const timeRangeDays = WellTrackApp.state.timeRange || 7;
             const startDate = new Date();
@@ -2942,13 +3063,13 @@ const WellTrackApp = {
 
             const sortedTimeslots = Object.values(timeslots).sort((a, b) => a.timestamp - b.timestamp);
 
-            // Calculate moving average
-            const movingAverageWindowSize = Math.max(1, Math.floor(sortedTimeslots.length * 0.125)); // 1/8 window size
-            for (let i = 0; i < sortedTimeslots.length; i++) {
-                const window = sortedTimeslots.slice(Math.max(0, i - movingAverageWindowSize + 1), i + 1);
-                const sum = window.reduce((acc, val) => acc + val.total_sum, 0);
-                sortedTimeslots[i].avg_over_time_sum = sum / window.length;
-            }
+            const totalSumData = sortedTimeslots.map(slot => ({ x: slot.timestamp, y: slot.total_sum }));
+            const avgData = this.calculateTimeWeightedAverage(totalSumData, timeRangeDays);
+
+            sortedTimeslots.forEach((slot, index) => {
+                const avgEntry = avgData.find(d => d.x === slot.timestamp);
+                slot.avg_over_time_sum = avgEntry ? avgEntry.y : 0;
+            });
 
             return sortedTimeslots;
         },
