@@ -55,11 +55,11 @@ build/site/welltrack/welltrack.html: docs-mkdocs
 docs-welltrack-app: build/site/welltrack/welltrack.html
 	@echo "+++ $@"
 
-build/site/prototypes/audio-gps-logging.html: docs-mkdocs
-	mkdir -p build/site/prototypes
-	cp dev/prototypes/* build/site/prototypes
+build/site/prototype: docs-mkdocs
+	mkdir -p build/site/prototype
+	cp dev/prototype/* build/site/prototype
 
-docs-prototypes: build/site/prototypes/audio-gps-logging.html
+docs-prototype: build/site/prototype
 	@echo "+++ $@"
 
 build/wheel/welltrack_lab-0.1.0-py3-none-any.whl:
@@ -79,7 +79,7 @@ build/site/marimo/index.html: docs-wheel
 docs-marimo: build/site/marimo/index.html
 	@echo "+++ $@"
 
-docs: buildenv docs-mkdocs docs-welltrack-app docs-prototypes docs-wheel docs-marimo ## Make Onlinepage and WebApp
+docs: buildenv docs-mkdocs docs-welltrack-app docs-prototype docs-wheel docs-marimo ## Make Onlinepage and WebApp
 	@echo "+++ $@"
 
 dev-serve-ssl: docs ## HTTPS Serve Documentation on port 8443
