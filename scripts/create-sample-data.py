@@ -42,7 +42,19 @@ SAMPLE_EVENT_TYPES = [
 
 
 def extract_config_from_html(html_content):
-    """Extracts MOOD_GROUPS and BODY_PARTS from the HTML script."""
+    """Extracts MOOD_GROUPS and BODY_PARTS from the welltrack.html file.
+
+    This function uses regular expressions to find and parse the JavaScript
+    objects defining mood questions and the SVG elements defining body parts,
+    making the script independent of hardcoded configurations.
+
+    Args:
+        html_content (str): The string content of the welltrack.html file.
+
+    Returns:
+        dict: A dictionary containing the parsed 'MOOD_GROUPS' and 'BODY_PARTS'.
+              Returns empty structures if parsing fails.
+    """
     config = {}
 
     # 1. Extract MOOD_GROUPS
@@ -78,7 +90,14 @@ def extract_config_from_html(html_content):
 
 
 def get_event_labels(event_config):
-    """Extracts the correct label properties from an event configuration object."""
+    """Extracts the correct label properties from an event configuration object.
+
+    Args:
+        event_config (dict): The configuration object for a specific event type.
+
+    Returns:
+        dict: A dictionary containing the labels required for a metric entry.
+    """
     return {
         "name": event_config.get("name", ""),
         "activity": event_config.get("activity", ""),
@@ -88,7 +107,18 @@ def get_event_labels(event_config):
 
 
 def get_random_timestamp_in_slot(base_date, start_hour, end_hour):
-    """Generates a random millisecond timestamp within a given time slot for a base date."""
+    """Generates a random millisecond timestamp within a given time slot.
+
+    Handles overnight slots correctly (e.g., 21:00 to 04:00).
+
+    Args:
+        base_date (datetime): The base calendar day for the slot.
+        start_hour (int): The starting hour of the slot (0-23).
+        end_hour (int): The ending hour of the slot (0-23, where 0 means midnight).
+
+    Returns:
+        int: A random Unix timestamp in milliseconds.
+    """
     slot_date = base_date if start_hour >= 5 else base_date + timedelta(days=1)
     start_time = slot_date.replace(hour=start_hour, minute=0, second=0, microsecond=0)
 
@@ -107,7 +137,17 @@ def get_random_timestamp_in_slot(base_date, start_hour, end_hour):
 
 
 def get_random_timestamp_for_day(base_date):
-    """Generates a random millisecond timestamp within a WellTrack day (5 AM to 4:59 AM)."""
+    """Generates a random millisecond timestamp within a WellTrack day.
+
+    A WellTrack day is defined as the period from 5:00 AM on one calendar
+    day to 4:59 AM on the next.
+
+    Args:
+        base_date (datetime): The base calendar day.
+
+    Returns:
+        int: A random Unix timestamp in milliseconds within the WellTrack day.
+    """
     day_start = base_date.replace(hour=5, minute=0, second=0, microsecond=0)
     day_end = (base_date + timedelta(days=1)).replace(
         hour=4, minute=59, second=59, microsecond=999999
@@ -120,7 +160,23 @@ def get_random_timestamp_for_day(base_date):
 
 
 def generate_random_data(config, days_to_generate, settings={}):
-    """Generates random health metrics based on the provided config."""
+    """Generates a complete set of random health metrics for a specified period.
+
+    This function simulates realistic user behavior by generating mood, pain,
+    and event entries based on predefined rules, probabilities, and time slots.
+
+    Args:
+        config (dict): The application configuration containing MOOD_GROUPS
+                       and BODY_PARTS.
+        days_to_generate (int): The number of past days to generate data for.
+        settings (dict, optional): A dictionary of settings to be included in
+                                   the final export object. Defaults to {}.
+
+    Returns:
+        dict or None: A dictionary containing the generated 'metrics',
+                      'eventTypes', and 'settings', ready for JSON export.
+                      Returns None if the initial configuration is invalid.
+    """
     metrics = []
     now = datetime.now()
     # We generate data for days_to_generate up to today
@@ -353,7 +409,8 @@ def generate_random_data(config, days_to_generate, settings={}):
 
 
 def main():
-    """Main function to parse arguments and generate data."""
+    """Parses command-line arguments, generates sample data, and writes to a file.
+    """
     parser = argparse.ArgumentParser(
         description="Random Event/Mood/Pain Data Generator for WellTrack.",
         formatter_class=argparse.RawTextHelpFormatter,

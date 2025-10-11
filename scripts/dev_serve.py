@@ -35,7 +35,16 @@ logger = logging.getLogger(__name__)
 
 
 def generate_self_signed_certificate(hostname: str) -> Dict[str, str]:
-    """Generates a self-signed certificate and private key for the given hostname."""
+    """Generates a self-signed certificate and private key for the given hostname.
+
+    Args:
+        hostname (str): The hostname (e.g., 'localhost' or 'example.com') for
+                      which the certificate will be issued.
+
+    Returns:
+        Dict[str, str]: A dictionary containing the PEM-encoded private key
+                        and certificate as strings.
+    """
     logger.info(f"Generating self-signed certificate for: {hostname}")
 
     private_key = rsa.generate_private_key(
@@ -80,6 +89,12 @@ def generate_self_signed_certificate(hostname: str) -> Dict[str, str]:
 
 
 class CustomHTTPRequestHandler(server.SimpleHTTPRequestHandler):
+    """A custom request handler that serves files with correct MIME types.
+
+    This handler ensures that .wasm files are served with 'application/wasm'
+    and .js files with 'application/javascript'. It also handles directory
+    redirection and serving of 'index.html'.
+    """
     protocol_version = "HTTP/1.1"  # Explicitly set HTTP/1.1
 
     # Ensure .wasm and .js MIME types are correctly registered
@@ -96,21 +111,33 @@ class CustomHTTPRequestHandler(server.SimpleHTTPRequestHandler):
         *,
         directory: Optional[Union[str, Path]] = None,
     ) -> None:
+        """Initializes the request handler with a specified directory.
+
+        Args:
+            request: The client socket.
+            client_address: The client address tuple.
+            srv: The server instance.
+            directory: The root directory from which to serve files.
+        """
         super().__init__(
             request, client_address, srv, directory=str(directory) if directory else None
         )
 
     def end_headers(self) -> None:
-        """Send additional headers for WASM compatibility and security."""
+        """Sends the blank line indicating the end of the MIME headers."""
         # self.send_header("Cross-Origin-Opener-Policy", "same-origin")
         # self.send_header("Cross-Origin-Embedder-Policy", "credentialless")
         super().end_headers()
 
     def send_head(self) -> Optional[BinaryIO]:
-        """
-        Common header sending logic.
-        Handles correct MIME types. Redirect /dir to /dir/ and /dir/ to "index.html" if exists.
-        Returns a file-like object (BytesIO or original file) or None.
+        """Sends the response code and MIME headers.
+
+        This method handles path translation, directory redirection, 'index.html'
+        serving, and conditional GET requests based on 'If-Modified-Since'.
+
+        Returns:
+            A file-like object (BytesIO or a regular file) for the response body,
+            or None if no body is to be sent.
         """
         translated_path_str = self.translate_path(self.path)
         if translated_path_str is None:
@@ -202,21 +229,30 @@ class SSLThreadingHTTPServer(server.ThreadingHTTPServer):
         ssl_context: ssl.SSLContext,
         directory: Path,
     ) -> None:
+        """Initializes the SSL server.
+
+        Args:
+            server_address: The (host, port) tuple for the server.
+            HandlerClass: The request handler class to use.
+            ssl_context: The SSL context with the certificate and key loaded.
+            directory: The root directory to serve files from.
+        """
         super().__init__(server_address, HandlerClass)
         self.ssl_context: ssl.SSLContext = ssl_context
         self.directory: Path = directory
 
     def get_request(self) -> Tuple[ssl.SSLSocket, ServerAddress]:
-        """Gets the request and wraps the socket with SSL."""
+        """Accepts a new connection and wraps the socket with SSL."""
         conn, addr = self.socket.accept()
         return self.ssl_context.wrap_socket(conn, server_side=True), addr
 
     def finish_request(self, request: ssl.SSLSocket, client_address: ServerAddress) -> None:
-        """Finish one request by creating an instance of the RequestHandlerClass."""
+        """Instantiates the request handler to process the request."""
         self.RequestHandlerClass(request, client_address, self, directory=self.directory)
 
 
 def main() -> None:
+    """Parses arguments, generates a certificate, and starts the HTTPS server."""
     parser = argparse.ArgumentParser(
         description="A simple self-signed development (NON-PRODUCTION) HTTPS server (HTTP/1.1) for serving static files with WASM support."
     )
