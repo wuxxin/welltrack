@@ -16,7 +16,8 @@ import json
 import sys
 from datetime import datetime, timedelta
 
-def filter_misclicks(data):
+
+def filter_mood_misclicks(data, minimum_mood_items):
     """
     Filters mood entries that are likely misclicks.
 
@@ -26,12 +27,15 @@ def filter_misclicks(data):
     Returns:
         dict: The WellTrack data with misclicked mood entries removed.
     """
-    if 'metrics' not in data:
+    if "metrics" not in data:
         return data
 
-    all_metrics = data['metrics']
-    mood_metrics = sorted([m for m in all_metrics if m['metric'].startswith('mood_')], key=lambda x: x['timestamp'])
-    other_metrics = [m for m in all_metrics if not m['metric'].startswith('mood_')]
+    all_metrics = data["metrics"]
+    mood_metrics = sorted(
+        [m for m in all_metrics if m["metric"].startswith("mood_")],
+        key=lambda x: x["timestamp"],
+    )
+    other_metrics = [m for m in all_metrics if not m["metric"].startswith("mood_")]
 
     if not mood_metrics:
         return data
@@ -41,15 +45,15 @@ def filter_misclicks(data):
 
     i = 0
     while i < len(mood_metrics):
-        slot_start_time = mood_metrics[i]['timestamp']
+        slot_start_time = mood_metrics[i]["timestamp"]
         # 10 minutes in milliseconds
         slot_end_time = slot_start_time + 10 * 60 * 1000
 
         # Find all entries within the 10-minute slot
-        current_slot = [m for m in mood_metrics[i:] if m['timestamp'] <= slot_end_time]
+        current_slot = [m for m in mood_metrics[i:] if m["timestamp"] <= slot_end_time]
 
-        # Check if the slot contains 1 or 2 entries
-        if len(current_slot) <= 2:
+        # Check if the slot contains less than minimum entries
+        if len(current_slot) < minimum_mood_items:
             misclicked_metrics.extend(current_slot)
         else:
             filtered_mood_metrics.extend(current_slot)
@@ -62,24 +66,38 @@ def filter_misclicks(data):
         for metric in misclicked_metrics:
             print(json.dumps(metric), file=sys.stderr)
 
-    data['metrics'] = sorted(other_metrics + filtered_mood_metrics, key=lambda x: x['timestamp'])
+    data["metrics"] = sorted(
+        other_metrics + filtered_mood_metrics, key=lambda x: x["timestamp"]
+    )
     return data
+
 
 def main():
     """Main function to parse arguments and run the filter."""
     parser = argparse.ArgumentParser(
-        description="Filter misclicked mood entries from a WellTrack JSON export.",
+        description="Filter to cleanout misclicked data, eg. mood entries from a WellTrack JSON file. outputs to stdout, filtered items to stderr.",
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
-        "filename",
+        "--filename",
         type=str,
-        help="Path to the WellTrack JSON export file.",
+        help="Path for the WellTrack JSON input file.",
+        default=None,
+    )
+    parser.add_argument(
+        "--min-mood",
+        type=int,
+        default=3,
+        help="How many mood items in a timeslot must exist at minimum, before filtering it out",
     )
     args = parser.parse_args()
 
+    if not args.filename:
+        parser.print_help()
+        sys.exit(1)
+
     try:
-        with open(args.filename, 'r', encoding='utf-8') as f:
+        with open(args.filename, "r", encoding="utf-8") as f:
             welltrack_data = json.load(f)
     except FileNotFoundError:
         print(f"Error: File not found at {args.filename}", file=sys.stderr)
@@ -88,9 +106,10 @@ def main():
         print(f"Error: Could not decode JSON from {args.filename}", file=sys.stderr)
         sys.exit(1)
 
-    filtered_data = filter_misclicks(welltrack_data)
+    filtered_data = filter_mood_misclicks(welltrack_data, args.min_mood)
 
     print(json.dumps(filtered_data, ensure_ascii=False, indent=2))
+
 
 if __name__ == "__main__":
     main()
