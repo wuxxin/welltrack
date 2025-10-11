@@ -7,7 +7,7 @@ If you make edits to the notebook, only edit the contents inside the function de
 marimo will automatically handle adding the parameters and return statement of the function. For example,
  for each edit, just return:
 
-```
+```py
 @app.cell
 def _():
     <your code here>
@@ -37,8 +37,7 @@ Marimo is a reactive notebook that differs from traditional notebooks in key way
 9. Don't include comments in SQL cells
 10. Never define anything using `global`.
 11. if catching exceptions, ReRaise Exceptions for marimo
-12. use print() for debug and error messages, dont use mo.md() which does not work as expected if used within cell
-13. Always concat or otherwise connect the ui elements displayed in a cell, and output it as last mandatory command of the cell.
+12. use print() for debug and error messages.
 
 ## Reactivity
 
@@ -54,7 +53,7 @@ Marimo's reactivity means:
 
 <data_handling>
 
-- Use polars for data manipulation
+- Prefer narwhals over polars over panda for data manipulation
 - Implement proper data validation
 - Handle missing values appropriately
 - Use efficient data structures
@@ -62,6 +61,7 @@ Marimo's reactivity means:
 </data_handling>
 
 <visualization>
+
 - For matplotlib: use plt.gca() as the last expression instead of plt.show()
 - For plotly: return the figure object directly
 - For altair: return the chart object directly. Add tooltips where appropriate. You can pass polars dataframes directly to altair.
@@ -76,9 +76,11 @@ Marimo's reactivity means:
 - Create intuitive layouts with mo.hstack(), mo.vstack(), and mo.tabs()
 - Prefer reactive updates over callbacks (marimo handles reactivity automatically)
 - Group related UI elements for better organization
+- Connect UI elements in a cell (using mo.hstack or vstack, or mo.md(f"test {moguivar}" or similar), and output them as last expression of the cell.
 </ui_elements>
 
 <sql>
+
 - When writing duckdb, prefer using marimo's SQL cells, which start with df = mo.sql(f"""<your query>""") for DuckDB, or df = mo.sql(f"""<your query>""", engine=engine) for other SQL engines.
 - See the SQL with duckdb example for an example on how to do this
 - Don't add comments in cells that use mo.sql()
@@ -133,8 +135,9 @@ automatically resolve common formatting issues, and detect common pitfalls.
 
 ## Examples
 
-<example title="Markdown ccell">
-```
+<example title="Markdown cell">
+
+```py
 @app.cell
 def _():
     mo.md("""
@@ -143,10 +146,12 @@ def _():
     """)
     return
 ```
+
 </example>
 
 <example title="Basic UI with reactivity">
-```
+
+```py
 @app.cell
 def _():
     import marimo as mo
@@ -181,11 +186,12 @@ def _():
     return
 
 ```
+
 </example>
 
 <example title="Data explorer">
-```
 
+```py
 @app.cell
 def _():
     import marimo as mo
@@ -200,11 +206,12 @@ def _():
     return
 
 ```
+
 </example>
 
 <example title="Multiple UI elements">
-```
 
+```py
 @app.cell
 def _():
     import marimo as mo
@@ -255,11 +262,12 @@ def _():
     return
 
 ```
+
 </example>
 
 <example title="Conditional Outputs">
-```
 
+```py
 @app.cell
 def _():
     mo.stop(not data.value, mo.md("No data to display"))
@@ -271,11 +279,12 @@ def _():
     return
 
 ```
+
 </example>
 
 <example title="Interactive chart with Altair">
-```
 
+```py
 @app.cell
 def _():
     import marimo as mo
@@ -314,11 +323,12 @@ def _():
     return
 
 ```
+
 </example>
 
 <example title="Run Button Example">
-```
 
+```py
 @app.cell
 def _():
     import marimo as mo
@@ -342,11 +352,12 @@ def _():
     return
 
 ```
+
 </example>
 
 <example title="SQL with duckdb">
-```
 
+```py
 @app.cell
 def _():
     import marimo as mo
@@ -368,4 +379,5 @@ def _():
     return
 
 ```
+
 </example>

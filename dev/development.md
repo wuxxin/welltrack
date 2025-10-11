@@ -73,17 +73,17 @@ test                 Create Sample Data, run Tests
 - Python scripts related to welltrack data creation/parsing, should read configuration of mood types and body parts directly from src/welltrack/welltrack.html using regex to ensure they are in sync with the main application's settings.
 - A data 'slot' for mood or pain is defined as all entries of that type within a 10-minute window, calculated forwards from the first entry in a given subset
 
-### Testing and Verification of Welltrack Webapp with Playwright
+### Testing and Verification of Welltrack Webapp
 
 - The command to set up the development environment is `make clean-all buildenv`.
 - run `make sample-data` to create `build/tests/sample-data.json`. Always use this sample data if the user requests tests with sample data.
 - run `make docs` to create `build/site`, which is needed for testing.
 - a changed src/welltrack/welltrack.html (or any other file in that directory) that will be tested for a change needs to be build into `build/site/welltrack` which is done by `make docs` which generates the whole `build/site` directory.
-- run `make test` creates sample-data,  runs all integrated playwright tests in `tests/`
+- run `make test` creates sample-data,  runs all integrated tests in `tests/`
     - pytest runs with fixtures from `tests/conftest.py`, to start and stop the `dev_server.py` server serving `build/site` and configure the browser for mobile viewport and locale settings.
 - to serve the `build/site` files locally, execute `. .venv/bin/activate && python scripts/dev_serve.py -d build/site 8443 > dev_server.log 2>&1 &`. For this project, the built site is served from build/site on port 8443. do not run the dev server if running `pytest` (or make test, which calls pytest), stop a possible running dev_serv.py before, because the pytest tests use the server start/stop fixtures from `tests/testconf.py`.
-- for specific playwright gui testing run where every test screenshot is saved unconditionally: `mkdir -p build/tests/output; . .venv/bin/activate pytest --screenshot on --video retain-on-failure --output build/tests/output` and the testfilename.
-- create new playwright tests under `tests/`:
+- for a specific gui testing run, where every test screenshot is saved unconditionally: `mkdir -p build/tests/output; . .venv/bin/activate pytest --screenshot on --video retain-on-failure --output build/tests/output` and the testfilename.
+- create new tests under `tests/`:
     - include the pytest fixtures of `tests/conftest.py`.
     - always use `build/tests/sample-data.json` as sample data, if not requested otherwise.
     - use the default (`build/tests/output/`) path as screenshot and other output dir, unless good reason for other dir.
@@ -95,7 +95,7 @@ test                 Create Sample Data, run Tests
 - When using Playwright to test features that are not initially visible on the page (e.g., at the bottom of a long scroll), use page.screenshot({ full_page: True }) to capture the entire page content for verification.
 - When using Playwright's to_have_class assertion, the argument must be a string or a regular expression, not a lambda function. A regular expression like re.compile(r'\bactive\b') can be used to check for the presence of a class.
 
-## Jules Verification of Welltrack Webapp and Welltrack-Lab Marimo with Playwright
+## Jules Verification with Playwright
 
 - `jules-scratch/verification/*.py` gui playwright verification files should always include the following playwright browser context setup:
 
@@ -113,18 +113,20 @@ with sync_playwright() as p:
     )
 ```
 
-- `jules-scratch/verification/*.py` gui playwright verification files should always use the `build/tests/sample-data.json` data for testing
-- do not delete `jules-scratch` directory, before final acknowledge of the user, to let the user see any created files and screenshots for verification.
+- `jules-scratch/verification/*.py` gui playwright verification files should always use the `build/tests/sample-data.json` data for testing.
+- do not delete `jules-scratch/` directory, to let the user see any created files and screenshots for verification.
 
-## Python Style & Conventions
+## Python Style, Conventions and preferred libraries
 
 - **Use uv** (the virtual environment and package manager) whenever executing Python commands, including for unit tests.
-- **Use `pyproject.toml`** to add or modify dependencies installed during a task execution. as long as there is no version controlled uv.lock, dont add one to the repository
+- **Use `pyproject.toml`** to add or modify dependencies installed during a task execution. as long as there is no version controlled uv.lock, dont add one to the repository.
 - **Use python_dotenv and load_env()** for environment variables.
-- **Follow PEP8**, use type hints, and format with `black`.
 - **Use `pydantic` for data validation**.
-- **Use `pytest` for testing**, playwright and pytest-playwright for gui testing.
-- Use `FastAPI` for APIs and `SQLAlchemy` or `SQLModel` for ORM if applicable.
+- **Use `pytest` for testing**, `playwright` and `pytest-playwright` for gui testing.
+- **Use `FastAPI` for APIs**.
+- **Use `FastHTML` for HTML**.
+- **Use `SQLAlchemy` or `SQLModel` for ORM**.
+- **Follow PEP8**, use type hints, and format with `black` or equivalent.
 - Write **docstrings for every function** using the Google style:
 
   ```python
@@ -142,7 +144,7 @@ with sync_playwright() as p:
 ### Python Testing & Reliability
 
 - **Always create unit tests for new features** (functions, classes, routes, etc).
-- **After updating any logic**, check whether existing unit tests need to be updated. If so, do it.
+- **After updating any logic**, check whether existing unit tests need to be updated and update it.
 - **Tests should live in a `/tests` folder** mirroring the main app structure.
     - Include at least:
         - 1 test for expected use
