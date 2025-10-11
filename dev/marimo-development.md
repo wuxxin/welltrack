@@ -36,6 +36,9 @@ Marimo is a reactive notebook that differs from traditional notebooks in key way
 8. Don't include comments in markdown cells
 9. Don't include comments in SQL cells
 10. Never define anything using `global`.
+11. if catching exceptions, ReRaise Exceptions for marimo
+12. use print() for debug and error messages, dont use mo.md() which does not work as expected if used within cell
+13. Always concat or otherwise connect the ui elements displayed in a cell, and output it as last mandatory command of the cell.
 
 ## Reactivity
 
