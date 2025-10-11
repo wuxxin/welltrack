@@ -347,10 +347,38 @@
     </div>
 
 <script>
-// Main application object
+/**
+ * @file The main application logic for WellTrack, a single-page health diary application.
+ * @author Vibecoding
+ */
+
+/**
+ * The main application object, encapsulating all state, configuration, and functionality.
+ * It follows a modular pattern, organizing logic into namespaces like `state`, `config`,
+ * `data`, `render`, `events`, and `utils`.
+ * @namespace WellTrackApp
+ */
 const WellTrackApp = {
-    // --- STATE ---
-    // Holds the dynamic state of the application
+    /**
+     * Holds the dynamic state of the application.
+     * This includes the active page, user selections, chart instances, and other UI-related states.
+     * @namespace WellTrackApp.state
+     * @property {string} activePage - The currently visible page (e.g., 'today', 'mood').
+     * @property {?HTMLElement} currentPainPart - The DOM element of the currently selected body part for pain entry.
+     * @property {Object<string, Chart>} charts - Instances of Chart.js charts, keyed by their type (e.g., 'pain', 'mood').
+     * @property {number} currentPage - The current page number for paginated views (currently unused).
+     * @property {?Object} currentEditingEvent - The event type object being edited in the settings.
+     * @property {number} timeRange - The number of days for the history view (e.g., 7, 28, 84).
+     * @property {string} notificationPermission - The current browser notification permission status ('granted', 'denied', 'default').
+     * @property {string} activeMoodGroup - The key of the currently selected mood group (e.g., 'arousal_level').
+     * @property {?string} activeEventGroup - The key of the currently selected event group.
+     * @property {string} activeHistoryTab - The active tab in the history view (e.g., 'event', 'mood', 'pain').
+     * @property {string} activeSettingsTab - The active tab in the settings view.
+     * @property {boolean} isTodaysLogVisible - Whether the detailed log on the 'today' page is expanded.
+     * @property {?{x: number, y: number, scrollX: number, scrollY: number}} sliderClickStartPosition - Stores the initial position of a mousedown event on a mood slider to distinguish clicks from drags.
+     * @property {string} currentPainView - The current view of the pain diagram ('front' or 'back').
+     * @property {?Date} currentLogWeekStart - The start date of the week currently displayed in the full log view.
+     */
     state: {
         activePage: 'today', // today, event, mood, pain, history, log, settings
         currentPainPart: null,
@@ -369,8 +397,17 @@ const WellTrackApp = {
         currentLogWeekStart: null
     },
 
-    // --- CONFIGURATION ---
-    // Static configuration and UI strings
+    /**
+     * Holds static configuration, default data, and UI strings.
+     * This includes color definitions, pain levels, mood groups, and default event types.
+     * @namespace WellTrackApp.config
+     * @property {string} DEFAULT_BODY_COLOR - The default fill color for unselected body parts in the pain diagram.
+     * @property {Object<number, {label: string, short: string, color: string}>} PAIN_LEVELS - Defines the labels, abbreviations, and colors for each pain level.
+     * @property {Object} CHART_FONT_OPTIONS - Default font options for Chart.js instances.
+     * @property {string} DEFAULT_EVENTS_JSON - A JSON string containing the default event types for new users.
+     * @property {Object<string, {name: string, questions: Array<{id: string, name: string, negative: string, positive: string}>}>} MOOD_GROUPS - Defines the structure of mood entry pages, grouped by category.
+     * @property {number[]} MOOD_VALUE_MAP - Maps the 0-5 slider index to the actual mood values (-3 to +3, excluding 0).
+     */
     config: {
         DEFAULT_BODY_COLOR: '#E6E0E9',
         PAIN_LEVELS: {
@@ -416,7 +453,12 @@ const WellTrackApp = {
         MOOD_VALUE_MAP: [-3, -2, -1, 1, 2, 3]
     },
 
-    // --- INITIALIZATION ---
+    /**
+     * Initializes the application.
+     * This function performs one-time data migrations, initializes state from localStorage,
+     * and sets up the main DOMContentLoaded event listener to launch the app.
+     * @memberof WellTrackApp
+     */
     init() {
         let settings = this.data.getSettings();
         let settingsUpdated = false;
@@ -445,8 +487,18 @@ const WellTrackApp = {
         });
     },
 
-    // --- DATA MANAGEMENT ---
+    /**
+     * Manages all data interactions with localStorage.
+     * This includes getting and setting metrics, event types, and application settings.
+     * It also handles data import/export logic.
+     * @namespace WellTrackApp.data
+     */
     data: {
+        /**
+         * Retrieves application settings from localStorage, merging with defaults.
+         * @memberof WellTrackApp.data
+         * @returns {Object} The complete settings object.
+         */
         getSettings() {
             let settings = JSON.parse(localStorage.getItem('wellTrackSettings')) || {};
             const defaults = {
@@ -460,9 +512,21 @@ const WellTrackApp = {
             };
             return { ...defaults, ...settings };
         },
+
+        /**
+         * Saves the settings object to localStorage.
+         * @memberof WellTrackApp.data
+         * @param {Object} settings - The settings object to save.
+         */
         saveSettings(settings) {
             localStorage.setItem('wellTrackSettings', JSON.stringify(settings));
         },
+
+        /**
+         * Gathers all user data for export.
+         * @memberof WellTrackApp.data
+         * @returns {{metrics: Array, eventTypes: Array, settings: Object}} An object containing all data.
+         */
         getExportableData() {
             return {
                 metrics: this.getMetrics(),
@@ -470,6 +534,17 @@ const WellTrackApp = {
                 settings: this.getSettings()
             };
         },
+
+        /**
+         * Adds or updates a metric in the database.
+         * This function contains the core logic for handling different metric types:
+         * - Cumulative events are summed up for the current WellTrack day.
+         * - Mood and pain entries replace any existing entry for the same item within the last 10 minutes.
+         * - Timestamp events are simply added.
+         * Entries with a value of 0 are removed, except for timestamp events.
+         * @memberof WellTrackApp.data
+         * @param {Object} entry - The metric entry to add.
+         */
         addMetric(entry) {
             let metrics = this.getMetrics();
             const now = Date.now();
@@ -519,15 +594,35 @@ const WellTrackApp = {
 
             this.saveMetrics(metrics);
         },
+
+        /**
+         * Retrieves all metric entries from localStorage, sorted by timestamp.
+         * @memberof WellTrackApp.data
+         * @returns {Array<Object>} An array of metric objects.
+         */
         getMetrics() {
             // Sort metrics by timestamp on load to ensure index is always correct
             const metrics = JSON.parse(localStorage.getItem('wellTrackMetrics')) || [];
             return metrics.sort((a, b) => a.timestamp - b.timestamp);
         },
+
+        /**
+         * Saves the entire metrics array to localStorage and re-renders the today page if visible.
+         * @memberof WellTrackApp.data
+         * @param {Array<Object>} metrics - The array of metrics to save.
+         */
         saveMetrics(metrics) {
             localStorage.setItem('wellTrackMetrics', JSON.stringify(metrics));
             if(WellTrackApp.state.activePage === 'today') WellTrackApp.render.todayPage();
         },
+
+        /**
+         * Retrieves event type definitions from localStorage.
+         * If none exist, it loads and saves the default event types.
+         * It also handles a one-time migration from an older data structure.
+         * @memberof WellTrackApp.data
+         * @returns {Array<Object>} An array of event type definition objects.
+         */
         getEventTypes() {
             const eventTypes = localStorage.getItem('wellTrackEventTypes');
             const processEvents = (eventArray) => {
@@ -563,9 +658,22 @@ const WellTrackApp = {
                 return defaultEvents;
             }
         },
+
+        /**
+         * Saves the event types array to localStorage.
+         * @memberof WellTrackApp.data
+         * @param {Array<Object>} eventTypes - The array of event type definitions to save.
+         */
         saveEventTypes(eventTypes) {
             localStorage.setItem('wellTrackEventTypes', JSON.stringify(eventTypes));
         },
+
+        /**
+         * Loads and applies the current state for the mood or pain pages.
+         * It checks for recent entries (within the last 10 minutes) and updates
+         * the UI (sliders, body part colors) to reflect the most recent data.
+         * @memberof WellTrackApp.data
+         */
         loadTodaysState() {
             const page = WellTrackApp.state.activePage;
             const metrics = this.getMetrics();
@@ -625,6 +733,11 @@ const WellTrackApp = {
                 }
             }
         },
+
+        /**
+         * Exports all user data to a JSON file and triggers a download.
+         * @memberof WellTrackApp.data
+         */
         exportData() {
             const dataToExport = this.getExportableData();
             const dataStr = JSON.stringify(dataToExport, null, 2);
@@ -635,6 +748,14 @@ const WellTrackApp = {
             a.click(); URL.revokeObjectURL(url);
             console.log("Daten exportiert", "Die Daten wurden exportiert", "download");
         },
+
+        /**
+         * Handles the file import process.
+         * It reads the selected JSON file, validates its structure, and then presents the user
+         * with a choice to either overwrite existing data or merge (append) the new data.
+         * @memberof WellTrackApp.data
+         * @param {Event} event - The file input change event.
+         */
         importData(event) {
             const file = event.target.files[0]; if (!file) return;
             const reader = new FileReader();
@@ -756,8 +877,19 @@ const WellTrackApp = {
         },
     },
 
-    // --- UI RENDERING ---
+    /**
+     * Manages all UI rendering and component generation.
+     * This namespace contains functions to build and update the HTML for each page,
+     * render charts, and manage modal dialogs.
+     * @namespace WellTrackApp.render
+     */
     render: {
+        /**
+         * Renders the main 'Today' page.
+         * It constructs the summary cards for mood and pain, event group cards,
+         * and the collapsible log of the day's entries.
+         * @memberof WellTrackApp.render
+         */
         todayPage() {
             const container = document.getElementById('app-container');
             container.innerHTML = this.components.todaySection();
@@ -950,22 +1082,42 @@ const WellTrackApp = {
             }
             if(logSection) logSection.innerHTML = logHtml;
         },
+
+        /**
+         * Renders the 'Event' page for logging activities.
+         * @memberof WellTrackApp.render
+         */
         eventPage() {
             const container = document.getElementById('app-container');
             container.innerHTML = this.components.eventSection();
             this.eventListByGroup(WellTrackApp.state.activeEventGroup);
         },
+
+        /**
+         * Renders the 'Mood' page for logging mood states.
+         * @memberof WellTrackApp.render
+         */
         moodPage() {
             const container = document.getElementById('app-container');
             container.innerHTML = this.components.moodSection();
             WellTrackApp.data.loadTodaysState();
         },
+
+        /**
+         * Renders the 'Pain' page with the interactive body diagram.
+         * @memberof WellTrackApp.render
+         */
         painPage() {
             const container = document.getElementById('app-container');
             container.innerHTML = this.components.painSection();
             document.querySelectorAll('.body-part').forEach(part => part.addEventListener('click', (e) => WellTrackApp.events.handleBodyPartClick(e)));
             WellTrackApp.data.loadTodaysState();
         },
+
+        /**
+         * Renders the 'Settings' page and its various tabs.
+         * @memberof WellTrackApp.render
+         */
         settingsPage() {
             const container = document.getElementById('app-container');
             container.innerHTML = this.components.settingsSection();
@@ -996,6 +1148,12 @@ const WellTrackApp = {
                 }
             }
         },
+
+        /**
+         * Renders the 'History' page, including charts.
+         * It first destroys any existing chart instances to prevent memory leaks.
+         * @memberof WellTrackApp.render
+         */
         historyPage() {
             const container = document.getElementById('app-container');
             container.innerHTML = this.components.historySection();
@@ -1008,6 +1166,11 @@ const WellTrackApp = {
             this.charts.renderAll();
             WellTrackApp.events.handleHistoryTabClick(WellTrackApp.state.activeHistoryTab, false);
         },
+
+        /**
+         * Renders the 'Full Log' page, which displays a paginated, week-by-week history of all entries.
+         * @memberof WellTrackApp.render
+         */
         fullLogPage() {
             const container = document.getElementById('app-container');
             container.innerHTML = this.components.fullLogSection();
@@ -1078,6 +1241,12 @@ const WellTrackApp = {
             document.getElementById('log-week-prev').disabled = isEarliestWeek;
             document.getElementById('log-week-first').disabled = isEarliestWeek;
         },
+
+        /**
+         * Renders the list of events on the 'Event' page, filtered by the selected group.
+         * @memberof WellTrackApp.render
+         * @param {string} groupType - The event group to display.
+         */
         eventListByGroup(groupType) {
             const eventContainer = document.getElementById('todays-event-container');
             if (!eventContainer) return;
@@ -1124,6 +1293,12 @@ const WellTrackApp = {
                 eventContainer.appendChild(div);
             });
         },
+
+        /**
+         * Renders the summary and detailed log for the 'Today' page.
+         * @deprecated This function's logic has been integrated into `render.todayPage` and is no longer called directly.
+         * @memberof WellTrackApp.render
+         */
         todaysLog(){
             const container = document.getElementById('todays-log-container');
             if (!container) return;
@@ -1205,10 +1380,22 @@ const WellTrackApp = {
 
             container.innerHTML = summaryHtml + listHtml;
         },
+
+        /**
+         * Renders pagination controls.
+         * @deprecated This function is no longer used as pagination is handled by week in the full log.
+         * @memberof WellTrackApp.render
+         * @param {number} totalItems - The total number of items to paginate.
+         */
         pagination(totalItems) {
             // This function is no longer used as pagination is handled by week.
             // Kept to avoid breaking any potential calls, but it does nothing.
         },
+
+        /**
+         * Renders the list of editable event types in the settings page.
+         * @memberof WellTrackApp.render
+         */
         manageEventList() {
             const container = document.getElementById('manage-event-list');
             if (!container) return;
@@ -1221,12 +1408,28 @@ const WellTrackApp = {
                 container.appendChild(div);
             });
         },
+
+        /**
+         * Contains functions for rendering all Chart.js charts.
+         * @namespace WellTrackApp.render.charts
+         */
         charts: {
+            /**
+             * A convenience function to render all charts on the history page.
+             * @memberof WellTrackApp.render.charts
+             */
             renderAll() {
                 this.pain();
                 this.event();
                 this.mood();
             },
+
+            /**
+             * Renders the pain history chart.
+             * It displays a stacked bar chart where each segment represents a body part,
+             * and a line chart overlaying the total pain score per day.
+             * @memberof WellTrackApp.render.charts
+             */
             pain() {
                 const ctx = document.getElementById('painChart')?.getContext('2d');
                 if (!ctx) return;
@@ -1285,6 +1488,13 @@ const WellTrackApp = {
                     }
                 });
             },
+
+            /**
+             * Renders the event history charts.
+             * It dynamically creates a separate line chart for each event group or individual event
+             * that is not part of a cumulative group. Each chart also includes a moving average line.
+             * @memberof WellTrackApp.render.charts
+             */
             event() {
                 const eventChartContainer = document.getElementById('chart-container-event');
                 if (!eventChartContainer) return;
@@ -1416,6 +1626,13 @@ const WellTrackApp = {
                     });
                 });
             },
+
+            /**
+             * Renders the mood history chart.
+             * This is a complex chart that shows positive and negative mood scores as stacked areas,
+             * with a line for the total sum and another line for the moving average.
+             * @memberof WellTrackApp.render.charts
+             */
             mood() {
                 const ctx = document.getElementById('moodChart')?.getContext('2d');
                 if (!ctx) return;
@@ -1545,7 +1762,19 @@ const WellTrackApp = {
                 });
             }
         },
+
+        /**
+         * Contains functions for showing and hiding modal dialogs.
+         * @namespace WellTrackApp.render.modal
+         */
         modal: {
+            /**
+             * Displays a modal with the given HTML content.
+             * @memberof WellTrackApp.render.modal
+             * @param {string} content - The HTML content to display in the modal.
+             * @param {Object} [options={}] - Optional parameters.
+             * @param {string} [options.modalClass='max-w-md'] - Tailwind CSS classes to control the modal's width.
+             */
             show(content, options = {}) {
                 const modalContent = document.getElementById('modal-content');
                 // Reset to default classes, except for the base ones
@@ -1556,11 +1785,23 @@ const WellTrackApp = {
                 modalContent.innerHTML = content;
                 document.getElementById('modal-container').classList.remove('hidden');
             },
+
+            /**
+             * Hides the currently active modal.
+             * @memberof WellTrackApp.render.modal
+             */
             hide() {
                 document.getElementById('modal-container').classList.add('hidden');
                 document.getElementById('modal-content').innerHTML = '';
                 WellTrackApp.state.currentEditingEvent = null;
             },
+
+            /**
+             * Shows the pain level selector modal for a specific body part.
+             * @memberof WellTrackApp.render.modal
+             * @param {HTMLElement} part - The SVG element of the body part.
+             * @param {string} view - The current view ('front' or 'back').
+             */
             showPainSelector(part, view) {
                 WellTrackApp.state.currentPainPart = part;
                 const viewName = view === 'front' ? 'Vorderseite' : 'Rückseite';
@@ -1584,10 +1825,26 @@ const WellTrackApp = {
                 };
                 window.addEventListener('keydown', handleKeyPress);
             },
+
+            /**
+             * Shows a simple alert modal with a title, message, and an 'OK' button.
+             * @memberof WellTrackApp.render.modal
+             * @param {string} title - The title of the alert.
+             * @param {string} message - The message body of the alert.
+             */
             showAlert(title, message) {
                 const content = `<h3 class="text-xl font-medium mb-4">${title}</h3><p class="mb-6">${message}</p><div class="flex justify-end"><button onclick="WellTrackApp.render.modal.hide()" class="btn btn-primary">OK</button></div>`;
                 this.show(content);
             },
+
+            /**
+             * Shows a confirmation modal with customizable text and a callback for the confirm action.
+             * @memberof WellTrackApp.render.modal
+             * @param {string} title - The title of the confirmation dialog.
+             * @param {string} message - The message body.
+             * @param {function} onConfirm - The function to execute when the confirm button is clicked.
+             * @param {Object} [options={}] - Optional parameters for button text and styling.
+             */
             showConfirmation(title, message, onConfirm, options = {}) {
                 const {
                     confirmText = 'Bestätigen',
@@ -1600,7 +1857,18 @@ const WellTrackApp = {
                 document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); this.hide(); };
             }
         },
+
+        /**
+         * A collection of functions that generate HTML strings for various UI components.
+         * These are used by the main render functions to build the pages.
+         * @namespace WellTrackApp.render.components
+         */
         components: {
+            /**
+             * Generates the HTML structure for the 'Today' page.
+             * @memberof WellTrackApp.render.components
+             * @returns {string} The HTML string for the page skeleton.
+             */
             todaySection: () => {
                 const now = new Date();
                 const settings = WellTrackApp.data.getSettings();
@@ -1638,6 +1906,12 @@ const WellTrackApp = {
                 </div>
                 `;
             },
+
+            /**
+             * Generates the HTML structure for the 'Event' page.
+             * @memberof WellTrackApp.render.components
+             * @returns {string} The HTML string for the page skeleton.
+             */
             eventSection: () => {
                 const events = WellTrackApp.data.getEventTypes();
                 const hasNoGroup = events.some(e => !e.groupType);
@@ -1666,6 +1940,12 @@ const WellTrackApp = {
                     <div id="todays-event-container" class="space-y-2"></div>
                 </div>`;
             },
+
+            /**
+             * Generates the HTML structure for the 'Mood' page.
+             * @memberof WellTrackApp.render.components
+             * @returns {string} The HTML string for the page skeleton.
+             */
             moodSection: () => {
                 const moodGroups = WellTrackApp.config.MOOD_GROUPS;
                 const activeGroupKey = WellTrackApp.state.activeMoodGroup;
@@ -1685,6 +1965,12 @@ const WellTrackApp = {
                     <div id="mood-container" class="space-y-4">${activeGroup.questions.map(q => WellTrackApp.render.components.moodSlider(q)).join('')}</div>
                 </div>`;
             },
+
+            /**
+             * Generates the HTML structure for the 'Pain' page, including the SVG body diagram.
+             * @memberof WellTrackApp.render.components
+             * @returns {string} The HTML string for the page skeleton.
+             */
             painSection: () => {
                 const currentView = WellTrackApp.state.currentPainView;
                 return `
@@ -1767,6 +2053,12 @@ const WellTrackApp = {
                     </div>
                 </div>`;
             },
+
+            /**
+             * Generates the HTML structure for the 'History' page.
+             * @memberof WellTrackApp.render.components
+             * @returns {string} The HTML string for the page skeleton.
+             */
             historySection: () => {
                 const activeTab = WellTrackApp.state.activeHistoryTab;
                 return `
@@ -1795,6 +2087,12 @@ const WellTrackApp = {
                     <div id="chart-container-pain" class="chart-container hidden" style="position: relative; height: 700px;"><canvas id="painChart"></canvas></div>
                 </div>`;
             },
+
+            /**
+             * Generates the HTML structure for the 'Full Log' page.
+             * @memberof WellTrackApp.render.components
+             * @returns {string} The HTML string for the page skeleton.
+             */
             fullLogSection: () => `
                 <div class="sticky top-[73px] z-10 bg-white/80 backdrop-blur-md py-2 mb-2">
                     <div class="flex flex-nowrap justify-between items-center gap-4">
@@ -1820,6 +2118,12 @@ const WellTrackApp = {
                     <div id="log-entries-container" class="card"></div>
                 </div>
             `,
+
+            /**
+             * Generates the HTML structure for the 'Settings' page.
+             * @memberof WellTrackApp.render.components
+             * @returns {string} The HTML string for the page skeleton.
+             */
             settingsSection: () => {
                 const settings = WellTrackApp.data.getSettings();
                 const perm = WellTrackApp.state.notificationPermission;
@@ -1908,6 +2212,14 @@ const WellTrackApp = {
                 </div>
                 `;
             },
+
+            /**
+             * Generates the HTML for a single cumulative event item on the 'Event' page.
+             * @memberof WellTrackApp.render.components
+             * @param {Object} event - The event type definition object.
+             * @param {number} value - The current accumulated value for the day.
+             * @returns {string} The HTML string for the event item.
+             */
             eventItemIncrement: (event, value) => `
                 <span class="text-base sm:text-lg font-medium text-gray-800 flex-1">${event.name}</span>
                 <div class="flex items-center gap-2">
@@ -1919,6 +2231,15 @@ const WellTrackApp = {
                         <span class="material-symbols-outlined">add</span>
                     </button>
                 </div>`,
+
+            /**
+             * Generates the HTML for a single timestamp-based event item on the 'Event' page.
+             * @memberof WellTrackApp.render.components
+             * @param {Object} event - The event type definition object.
+             * @param {boolean} isDoneToday - Whether this event has been logged today.
+             * @param {Array<Object>} entries - The array of log entries for this event today.
+             * @returns {string} The HTML string for the event item.
+             */
             eventItemTimestamp: (event, isDoneToday, entries) => {
                 const count = entries.length;
                 const lastEntry = count > 0 ? entries.sort((a, b) => b.timestamp - a.timestamp)[0] : null;
@@ -1961,6 +2282,13 @@ const WellTrackApp = {
                     </div>
                 `;
             },
+
+            /**
+             * Generates the HTML for a single log entry on the 'Today' page's detailed view.
+             * @memberof WellTrackApp.render.components
+             * @param {Object} metric - The metric object to render.
+             * @returns {string} The HTML string for the log entry.
+             */
             todaysLogEntry: (metric) => {
                 const time = new Date(metric.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 if (metric.metric === 'pain_free_level') {
@@ -1985,6 +2313,14 @@ const WellTrackApp = {
                 }
                 return `(${time}) Unbekannter Eintrag`;
             },
+
+            /**
+             * Generates the HTML for a full day's entry in the 'Full Log' view.
+             * @memberof WellTrackApp.render.components
+             * @param {string} formattedDate - The formatted date string for the day.
+             * @param {Array<Object>} metrics - The metrics recorded on that day.
+             * @returns {string} The HTML string for the day's log section.
+             */
             logEntry: (formattedDate, metrics) => {
                 const createSlots = (data, dayStartTime) => {
                     if (!data || data.length === 0) return [];
@@ -2116,7 +2452,24 @@ const WellTrackApp = {
 
                 return html;
             },
+
+            /**
+             * Generates HTML for pagination controls.
+             * @deprecated No longer used.
+             * @memberof WellTrackApp.render.components
+             * @param {number} currentPage - The current active page.
+             * @param {number} totalPages - The total number of pages.
+             * @returns {string} The HTML string for the pagination controls.
+             */
             paginationControls: (currentPage, totalPages) => { /* No longer used */ },
+
+            /**
+             * Generates the HTML for a single editable event item in the settings.
+             * @memberof WellTrackApp.render.components
+             * @param {Object} event - The event type definition object.
+             * @param {number} index - The index of the event in the array.
+             * @returns {string} The HTML string for the management item.
+             */
             manageEventItem: (event, index) => {
                 const isTimestampEvent = event.increment === 0;
                 const unitText = event.unitType || '';
@@ -2149,6 +2502,14 @@ const WellTrackApp = {
                     </div>
                 `;
             },
+
+            /**
+             * Generates the HTML content for the pain selection modal.
+             * @memberof WellTrackApp.render.components
+             * @param {string} partName - The name of the selected body part.
+             * @param {string} viewName - The name of the current view ('Vorderseite' or 'Rückseite').
+             * @returns {string} The HTML string for the modal content.
+             */
             painModalContent: (partName, viewName) => {
                 let buttons = '';
                 for (const [level, props] of Object.entries(WellTrackApp.config.PAIN_LEVELS)) {
@@ -2163,6 +2524,13 @@ const WellTrackApp = {
                 const title = `Schmerz (${viewName}): <br class="sm:hidden"/> <span class="font-bold">${partName}</span>`;
                 return `<h3 class="text-xl font-semibold mb-6 text-center">${title}</h3><div class="grid grid-cols-1 gap-4">${buttons}</div><button onclick="WellTrackApp.render.modal.hide()" class="btn btn-tertiary w-full mt-8">Abbrechen</button>`;
             },
+
+            /**
+             * Generates the HTML for the event type creation/editing form.
+             * @memberof WellTrackApp.render.components
+             * @param {?Object} event - The event object to edit, or null to create a new one.
+             * @returns {string} The HTML string for the form.
+             */
             eventTypeForm: (event = null) => {
                 const isEditing = event !== null;
                 const name = isEditing ? event.name : '';
@@ -2204,6 +2572,13 @@ const WellTrackApp = {
                     </div>
                 `;
             },
+
+            /**
+             * Generates the HTML for a single mood slider component.
+             * @memberof WellTrackApp.render.components
+             * @param {Object} question - The mood question definition object.
+             * @returns {string} The HTML string for the mood slider.
+             */
             moodSlider: (question) => `
                 <div>
                     <div class="flex justify-between items-center text-center mb-2">
@@ -2227,8 +2602,16 @@ const WellTrackApp = {
         }
     },
 
-    // --- EVENT HANDLING ---
+    /**
+     * Handles all user interactions and application events.
+     * This includes navigation, button clicks, form submissions, and other UI events.
+     * @namespace WellTrackApp.events
+     */
     events: {
+        /**
+         * Registers the service worker for PWA functionality.
+         * @memberof WellTrackApp.events
+         */
         registerServiceWorker() {
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
@@ -2240,6 +2623,12 @@ const WellTrackApp = {
                 });
             }
         },
+
+        /**
+         * Switches the visible page in the application.
+         * @memberof WellTrackApp.events
+         * @param {string} pageName - The name of the page to show.
+         */
         showPage(pageName) {
             WellTrackApp.state.activePage = pageName;
 
@@ -2264,6 +2653,12 @@ const WellTrackApp = {
                 case 'log': WellTrackApp.render.fullLogPage(); break;
             }
         },
+
+        /**
+         * Initializes global event listeners.
+         * Currently, this only sets up an IntersectionObserver for a scroll-to-top button, which is not implemented.
+         * @memberof WellTrackApp.events
+         */
         initEventListeners() {
             const observer = new IntersectionObserver((entries) => {
                 const btn = document.getElementById('scroll-to-top');
@@ -2274,11 +2669,22 @@ const WellTrackApp = {
             observer.observe(document.querySelector('header'));
 
         },
+
+        /**
+         * Handles a click on a body part in the pain diagram.
+         * @memberof WellTrackApp.events
+         * @param {Event} event - The click event from the SVG element.
+         */
         handleBodyPartClick(event) {
             const frontView = document.getElementById('body-front');
             const view = frontView.classList.contains('hidden') ? 'back' : 'front';
             WellTrackApp.render.modal.showPainSelector(event.target, view);
         },
+
+        /**
+         * Handles a click on the 'Pain Free' button. Toggles the pain-free state.
+         * @memberof WellTrackApp.events
+         */
         handlePainFreeClick() {
             let metrics = WellTrackApp.data.getMetrics();
             const now = Date.now();
@@ -2310,6 +2716,12 @@ const WellTrackApp = {
             WellTrackApp.data.saveMetrics(metrics);
             WellTrackApp.data.loadTodaysState();
         },
+
+        /**
+         * Sets the pain level for the currently selected body part.
+         * @memberof WellTrackApp.events
+         * @param {number} level - The pain level (0-5).
+         */
         handleSetPainLevel(level) {
             const part = WellTrackApp.state.currentPainPart; if (!part) return;
             
@@ -2345,6 +2757,13 @@ const WellTrackApp = {
             WellTrackApp.data.loadTodaysState(); // to update timestamp
             WellTrackApp.render.modal.hide();
         },
+
+        /**
+         * Handles incrementing or decrementing a cumulative event.
+         * @memberof WellTrackApp.events
+         * @param {string} activity - The activity ID of the event.
+         * @param {number} increment - The value to add (can be negative).
+         */
         handleEventIncrement(activity, increment) {
             const eventType = WellTrackApp.data.getEventTypes().find(t => t.activity === activity);
             if (!eventType) return;
@@ -2366,6 +2785,12 @@ const WellTrackApp = {
             // Re-render the list to update the value
             WellTrackApp.render.eventListByGroup(WellTrackApp.state.activeEventGroup);
         },
+
+        /**
+         * Handles logging a timestamp-based event.
+         * @memberof WellTrackApp.events
+         * @param {string} activity - The activity ID of the event.
+         */
         handleTimestampEvent(activity) {
             const eventType = WellTrackApp.data.getEventTypes().find(e => e.activity === activity);
             if (!eventType) return;
@@ -2388,6 +2813,12 @@ const WellTrackApp = {
                 }
             }, 0);
         },
+
+        /**
+         * Handles undoing the last logged timestamp-based event for the current day.
+         * @memberof WellTrackApp.events
+         * @param {string} activity - The activity ID of the event to undo.
+         */
         handleUndoTimestamp(activity) {
             let metrics = WellTrackApp.data.getMetrics();
 
@@ -2418,6 +2849,12 @@ const WellTrackApp = {
                 }, 0);
             }
         },
+
+        /**
+         * Handles navigation between weeks in the full log view.
+         * @memberof WellTrackApp.events
+         * @param {string} direction - The direction to navigate ('next', 'prev', 'today', 'first').
+         */
         handleWeekChange(direction) {
             let newWeekStart;
             const currentStart = WellTrackApp.state.currentLogWeekStart;
@@ -2443,6 +2880,12 @@ const WellTrackApp = {
                 WellTrackApp.render.fullLogPage();
             }
         },
+
+        /**
+         * Handles toggling between the front and back views of the pain diagram.
+         * @memberof WellTrackApp.events
+         * @param {string} view - The view to switch to ('front' or 'back').
+         */
         handleViewToggle(view) {
             WellTrackApp.state.currentPainView = view;
             const settings = WellTrackApp.data.getSettings();
@@ -2453,10 +2896,22 @@ const WellTrackApp = {
             document.getElementById('btn-view-front').classList.toggle('active', view === 'front');
             document.getElementById('btn-view-back').classList.toggle('active', view !== 'front');
         },
+
+        /**
+         * Handles changing the time range in the history view.
+         * @memberof WellTrackApp.events
+         * @param {Event} event - The change event from the select element.
+         */
         handleTimeRangeChange(event) {
             WellTrackApp.state.timeRange = parseInt(event.target.value, 10);
             WellTrackApp.render.historyPage();
         },
+
+        /**
+         * Handles the removal of an event type from the settings.
+         * @memberof WellTrackApp.events
+         * @param {number} index - The index of the event type to remove.
+         */
         handleRemoveEventType(index) {
             const eventTypes = WellTrackApp.data.getEventTypes();
             const eventTypeToDelete = eventTypes[index];
@@ -2493,12 +2948,24 @@ const WellTrackApp = {
                 }
             }, { confirmText: 'Löschen', abortText: 'Abbrechen', modalClass: 'max-w-lg' });
         },
+
+        /**
+         * Handles toggling the selected state of a day button.
+         * @deprecated This function is related to a deprecated feature for event scheduling.
+         * @memberof WellTrackApp.events
+         * @param {Event} event - The click event.
+         */
         handleToggleDay(event) {
             const button = event.target.closest('.day-btn');
             if (button) {
                 button.classList.toggle('selected');
             }
         },
+
+        /**
+         * Handles saving a new or edited event type from the settings form.
+         * @memberof WellTrackApp.events
+         */
         handleSaveEventType() {
             const errorContainer = document.getElementById('event-type-form-error');
             errorContainer.classList.add('hidden'); // Hide on new attempt
@@ -2547,15 +3014,32 @@ const WellTrackApp = {
             WellTrackApp.render.manageEventList();
             if(WellTrackApp.state.activePage === 'event') WellTrackApp.render.eventPage();
         },
+
+        /**
+         * Shows the event type form in a modal for creation or editing.
+         * @memberof WellTrackApp.events
+         * @param {?number} index - The index of the event to edit, or null to create a new one.
+         */
         handleShowEventTypeForm(index = null) {
             const eventType = index !== null ? WellTrackApp.data.getEventTypes()[index] : null;
             WellTrackApp.state.currentEditingEvent = eventType;
             const formContent = WellTrackApp.render.components.eventTypeForm(eventType);
             WellTrackApp.render.modal.show(formContent, { modalClass: 'w-full max-w-2xl' });
         },
+
+        /**
+         * Hides the event type form modal.
+         * @memberof WellTrackApp.events
+         */
         handleHideEventTypeForm() {
             WellTrackApp.render.modal.hide();
         },
+
+        /**
+         * Stores the starting position of a mouse down event on a mood slider.
+         * @memberof WellTrackApp.events
+         * @param {MouseEvent} event - The mousedown event.
+         */
         handleMoodRulerMouseDown(event) {
             WellTrackApp.state.sliderClickStartPosition = {
                 x: event.clientX,
@@ -2564,6 +3048,14 @@ const WellTrackApp = {
                 scrollY: window.scrollY
             };
         },
+
+        /**
+         * Handles a mouse up event on a mood slider to distinguish between a click and a drag.
+         * If it's a click, it sets the slider value directly.
+         * @memberof WellTrackApp.events
+         * @param {MouseEvent} event - The mouseup event.
+         * @param {string} moodId - The ID of the mood being changed.
+         */
         handleMoodRulerMouseUp(event, moodId) {
             const startPos = WellTrackApp.state.sliderClickStartPosition;
             if (!startPos) return;
@@ -2596,6 +3088,12 @@ const WellTrackApp = {
             const changeEvent = new Event('change');
             slider.dispatchEvent(changeEvent);
         },
+
+        /**
+         * Handles the change event from a mood slider, saving the new value.
+         * @memberof WellTrackApp.events
+         * @param {string} moodId - The ID of the mood being changed.
+         */
         handleMoodChange(moodId) {
             const startPos = WellTrackApp.state.sliderClickStartPosition;
             if (startPos) {
@@ -2631,18 +3129,42 @@ const WellTrackApp = {
             WellTrackApp.data.addMetric(newEntry);
             WellTrackApp.data.loadTodaysState(); // to update timestamp
         },
+
+        /**
+         * Handles toggling between mood groups on the 'Mood' page.
+         * @memberof WellTrackApp.events
+         * @param {string} groupId - The ID of the mood group to display.
+         */
         handleMoodGroupToggle(groupId) {
             WellTrackApp.state.activeMoodGroup = groupId;
             WellTrackApp.render.moodPage();
         },
+
+        /**
+         * Handles toggling between event groups on the 'Event' page.
+         * @memberof WellTrackApp.events
+         * @param {string} groupType - The group type to display.
+         */
         handleEventGroupToggle(groupType) {
             WellTrackApp.state.activeEventGroup = groupType;
             WellTrackApp.render.eventPage();
         },
+
+        /**
+         * Navigates to the 'Event' page and filters by a specific group.
+         * @memberof WellTrackApp.events
+         * @param {string} groupKey - The event group key to filter by.
+         */
         showEventPageForGroup(groupKey) {
             WellTrackApp.state.activeEventGroup = groupKey;
             this.showPage('event');
         },
+
+        /**
+         * Navigates to the 'History' page and switches to a specific tab.
+         * @memberof WellTrackApp.events
+         * @param {string} tabName - The name of the history tab to show ('event', 'mood', 'pain').
+         */
         showHistoryFor(tabName) {
             this.showPage('history');
             // Use a timeout to ensure the page is rendered before clicking the tab
@@ -2653,6 +3175,12 @@ const WellTrackApp = {
                 }
             }, 0);
         },
+
+        /**
+         * Navigates to the 'History' page, shows the 'event' tab, and scrolls to a specific chart.
+         * @memberof WellTrackApp.events
+         * @param {string} chartKey - The key of the chart to scroll to.
+         */
         showHistoryForEvent(chartKey) {
             this.showPage('history');
             setTimeout(() => {
@@ -2666,6 +3194,13 @@ const WellTrackApp = {
                 }
             }, 100);
         },
+
+        /**
+         * Handles switching between tabs on the 'History' page.
+         * @memberof WellTrackApp.events
+         * @param {string} tabName - The name of the tab to activate.
+         * @param {boolean} [shouldAnimate=true] - Whether to animate the transition (not currently used).
+         */
         handleHistoryTabClick(tabName, shouldAnimate = true) {
             WellTrackApp.state.activeHistoryTab = tabName;
             
@@ -2677,6 +3212,12 @@ const WellTrackApp = {
                 container.classList.toggle('hidden', container.id !== `chart-container-${tabName}`);
             });
         },
+
+        /**
+         * Handles switching between tabs on the 'Settings' page.
+         * @memberof WellTrackApp.events
+         * @param {string} tabName - The name of the tab to activate.
+         */
         handleSettingsTabClick(tabName) {
             WellTrackApp.state.activeSettingsTab = tabName;
             const settings = WellTrackApp.data.getSettings();
@@ -2684,12 +3225,23 @@ const WellTrackApp = {
             WellTrackApp.data.saveSettings(settings);
             WellTrackApp.render.settingsPage();
         },
+
+        /**
+         * Saves the user-defined start time of a "WellTrack day".
+         * @memberof WellTrackApp.events
+         * @param {string} timeString - The time in "HH:mm" format.
+         */
         saveDayStartTime(timeString) {
             const settings = WellTrackApp.data.getSettings();
             settings.dayStartTime = timeString.trim();
             WellTrackApp.data.saveSettings(settings);
             WellTrackApp.utils.showMessageAndReload(`Neuer Tag beginnt jetzt um ${timeString}.`, "schedule");
         },
+
+        /**
+         * Toggles the visibility of the detailed log on the 'Today' page.
+         * @memberof WellTrackApp.events
+         */
         toggleTodaysLog() {
             WellTrackApp.state.isTodaysLogVisible = !WellTrackApp.state.isTodaysLogVisible;
             const settings = WellTrackApp.data.getSettings();
@@ -2697,28 +3249,54 @@ const WellTrackApp = {
             WellTrackApp.data.saveSettings(settings);
             WellTrackApp.render.todayPage();
         },
+
+        /**
+         * Requests browser notification permission from the user.
+         * @memberof WellTrackApp.events
+         */
         async requestNotificationPermission() {
             const permission = await Notification.requestPermission();
             WellTrackApp.state.notificationPermission = permission;
             WellTrackApp.render.settingsPage(); // Re-render page to show new state
         },
+
+        /**
+         * Saves the user-defined reminder times.
+         * @memberof WellTrackApp.events
+         * @param {string} timesString - A comma-separated string of times (e.g., "12:00, 18:00").
+         */
         saveReminderTimes(timesString) {
             const settings = WellTrackApp.data.getSettings();
             settings.reminderTimes = timesString.trim();
             WellTrackApp.data.saveSettings(settings);
         },
+
+        /**
+         * Activates reminders in the settings.
+         * @memberof WellTrackApp.events
+         */
         handleActivateReminders() {
             const settings = WellTrackApp.data.getSettings();
             settings.reminders_active = true;
             WellTrackApp.data.saveSettings(settings);
             WellTrackApp.render.settingsPage();
         },
+
+        /**
+         * Deactivates reminders in the settings.
+         * @memberof WellTrackApp.events
+         */
         handleDeactivateReminders() {
             const settings = WellTrackApp.data.getSettings();
             settings.reminders_active = false;
             WellTrackApp.data.saveSettings(settings);
             WellTrackApp.render.settingsPage();
         },
+
+        /**
+         * Shows a test notification to the user.
+         * @memberof WellTrackApp.events
+         */
         showTestNotification() {
             if (WellTrackApp.state.notificationPermission === 'granted') {
                 navigator.serviceWorker.getRegistration().then(reg => {
@@ -2735,6 +3313,11 @@ const WellTrackApp = {
                  WellTrackApp.render.modal.showAlert('Fehler', 'Die Berechtigung für Benachrichtigungen wurde nicht erteilt.')
             }
         },
+
+        /**
+         * Handles the "Delete All Data" button click, showing a confirmation modal first.
+         * @memberof WellTrackApp.events
+         */
         handleDeleteAllData() {
             WellTrackApp.render.modal.showConfirmation(
                 'Alle Daten löschen',
@@ -2748,6 +3331,11 @@ const WellTrackApp = {
                 { confirmText: 'Löschen', abortText: 'Abbrechen' }
             );
         },
+
+        /**
+         * Checks if the application file has been updated since the last visit and shows a notification.
+         * @memberof WellTrackApp.events
+         */
         checkLastModified() {
             const lastModified = document.lastModified;
             let settings = WellTrackApp.data.getSettings();
@@ -2779,6 +3367,11 @@ const WellTrackApp = {
                 WellTrackApp.data.saveSettings(settings);
             }
         },
+
+        /**
+         * Checks for and displays a one-time message after an action like data import.
+         * @memberof WellTrackApp.events
+         */
         checkRebirthMessage() {
             let settings = WellTrackApp.data.getSettings();
             if (settings.hide_modal_overlays) return;
@@ -2808,8 +3401,18 @@ const WellTrackApp = {
         }
     },
 
-    // --- UTILITIES ---
+    /**
+     * A collection of utility functions for data manipulation, calculations, and formatting.
+     * @namespace WellTrackApp.utils
+     */
     utils: {
+        /**
+         * Determines the start of a "WellTrack day" for a given date.
+         * A WellTrack day runs from a user-defined time (e.g., 5:00 AM) to the same time the next day.
+         * @memberof WellTrackApp.utils
+         * @param {Date} date - The date to check.
+         * @returns {Date} A new Date object set to the start of the corresponding WellTrack day.
+         */
         getWellTrackDay(date) {
             const settings = WellTrackApp.data.getSettings();
             const timeParts = settings.dayStartTime.split(':');
@@ -2823,6 +3426,14 @@ const WellTrackApp = {
             day.setHours(startHour, startMinute, 0, 0);
             return day;
         },
+
+        /**
+         * Checks if two dates fall on the same WellTrack day.
+         * @memberof WellTrackApp.utils
+         * @param {Date} d1 - The first date.
+         * @param {Date} d2 - The second date.
+         * @returns {boolean} True if they are on the same WellTrack day.
+         */
         isSameDay(d1, d2) {
             const wtDay1 = this.getWellTrackDay(d1);
             const wtDay2 = this.getWellTrackDay(d2);
@@ -2830,12 +3441,33 @@ const WellTrackApp = {
                    wtDay1.getMonth() === wtDay2.getMonth() &&
                    wtDay1.getDate() === wtDay2.getDate();
         },
+
+        /**
+         * Checks if a date is part of the current WellTrack day.
+         * @memberof WellTrackApp.utils
+         * @param {Date} date - The date to check.
+         * @returns {boolean} True if the date is today.
+         */
         isToday(date) {
             return this.isSameDay(date, new Date());
         },
+
+        /**
+         * Gets the start of the week (Monday) for a given date.
+         * @memberof WellTrackApp.utils
+         * @param {Date} date - The date.
+         * @returns {Date} The start of the week.
+         */
         getStartOfWeek(date) {
             return dateFns.startOfWeek(date, { weekStartsOn: 1 });
         },
+
+        /**
+         * Formats a date range for a week display.
+         * @memberof WellTrackApp.utils
+         * @param {Date} startDate - The start date of the week.
+         * @returns {string} The formatted week range (e.g., "13.05-19.05").
+         */
         formatWeekRange(startDate) {
             if (!startDate) return '';
             const endDate = dateFns.endOfWeek(startDate, { weekStartsOn: 1 });
@@ -2843,6 +3475,13 @@ const WellTrackApp = {
             const endFormat = 'dd.MM';
             return `${dateFns.format(startDate, startFormat)}-${dateFns.format(endDate, endFormat)}`;
         },
+
+        /**
+         * Converts a string into a URL-friendly slug.
+         * @memberof WellTrackApp.utils
+         * @param {string} text - The text to convert.
+         * @returns {string} The slugified text.
+         */
         slugify(text) {
             return text.toString().toLowerCase()
                 .replace(/\s+/g, '_')       // Replace spaces with _
@@ -2851,16 +3490,38 @@ const WellTrackApp = {
                 .replace(/^_+/, '')         // Trim _ from start of text
                 .replace(/_+$/, '');        // Trim _ from end of text
         },
+
+        /**
+         * Creates a simple, non-cryptographic hash from a string.
+         * @memberof WellTrackApp.utils
+         * @param {string} str - The input string.
+         * @returns {number} The resulting hash code.
+         */
         simpleHash(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) { const char = str.charCodeAt(i); hash = (hash << 5) - hash + char; hash |= 0; }
             return Math.abs(hash);
         },
+
+        /**
+         * Generates a deterministic color from a string hash.
+         * @memberof WellTrackApp.utils
+         * @param {string} str - The input string.
+         * @param {number} [opacity=1] - The desired opacity of the color.
+         * @returns {string} The generated rgba color string.
+         */
         generateColorFromHash(str, opacity = 1) {
             const hash = this.simpleHash(str);
             const r = (hash & 0xFF0000) >> 16; const g = (hash & 0x00FF00) >> 8; const b = hash & 0x0000FF;
             return `rgba(${r}, ${g}, ${b}, ${opacity})`;
         },
+
+        /**
+         * Calculates the total value for the latest 10-minute slot and the slot immediately preceding it.
+         * @memberof WellTrackApp.utils
+         * @param {string} metricPrefix - The prefix of the metric to analyze (e.g., 'pain_').
+         * @returns {{latestSlot: ?number, previousSlot: ?number}} An object with the total values for the two slots.
+         */
         getMetricSlots(metricPrefix) {
             const metrics = WellTrackApp.data.getMetrics().filter(m => m.metric.startsWith(metricPrefix));
             if (metrics.length === 0) {
@@ -2892,6 +3553,12 @@ const WellTrackApp = {
 
             return { latestSlot: latestSlotValue, previousSlot: previousSlotValue };
         },
+
+        /**
+         * Prepares data for the mood chart by grouping entries into 10-minute timeslots.
+         * @memberof WellTrackApp.utils
+         * @returns {Array<Object>} Data formatted for the mood chart.
+         */
         getMoodChartData() {
             const timeRangeDays = WellTrackApp.state.timeRange || 7;
             const startDate = new Date();
@@ -2952,6 +3619,14 @@ const WellTrackApp = {
 
             return sortedTimeslots;
         },
+
+        /**
+         * Summarizes metrics by combining cumulative event values.
+         * Other metric types are passed through unchanged.
+         * @memberof WellTrackApp.utils
+         * @param {Array<Object>} metrics - The array of metrics to summarize.
+         * @returns {Array<Object>} The summarized array of metrics.
+         */
         summarizeMetrics(metrics) {
             const summarized = {};
             // Create a copy to sort without mutating the original
@@ -2972,6 +3647,14 @@ const WellTrackApp = {
             });
             return Object.values(summarized);
         },
+
+        /**
+         * Prepares data for history charts by grouping entries by day or timeslot.
+         * @memberof WellTrackApp.utils
+         * @param {string} metricPrefix - The prefix of the metric to analyze.
+         * @param {function} [filterFunc=()=>true] - An optional function to further filter metrics.
+         * @returns {{dailyData: Array, allLabels: Array}} An object with data formatted for charts.
+         */
         getDailyChartData(metricPrefix, filterFunc = () => true) {
             const data = WellTrackApp.data.getMetrics();
             const timeRangeDays = WellTrackApp.state.timeRange || 7;
@@ -3035,6 +3718,15 @@ const WellTrackApp = {
 
             return { dailyData, allLabels };
         },
+
+        /**
+         * Calculates the simple moving average for a dataset.
+         * @memberof WellTrackApp.utils
+         * @param {Array<Object>} data - The input data, expected to have `x` (timestamp) and `y` (value) properties.
+         * @param {string} metricPrefix - The metric prefix to fetch historical data for calculation.
+         * @param {function} [filterFunc=()=>true] - An optional function to filter historical metrics.
+         * @returns {Array<Object>} The calculated moving average data.
+         */
         calculateMovingAverage(data, metricPrefix, filterFunc = () => true) {
             const timeRange = WellTrackApp.state.timeRange;
             let windowSize;
@@ -3115,6 +3807,15 @@ const WellTrackApp = {
             }
             return movingAverages;
         },
+
+        /**
+         * Calculates the simple moving average for mood data.
+         * @deprecated This specific function is less generic than `calculateMovingAverage` and may be removed.
+         * @memberof WellTrackApp.utils
+         * @param {Array<Object>} data - The input data.
+         * @param {number} windowSize - The size of the moving average window.
+         * @returns {Array<Object>} The calculated moving average data.
+         */
         calculateMovingAverageForMood(data, windowSize) {
             if (!data || data.length < windowSize) {
                 return [];
@@ -3131,6 +3832,13 @@ const WellTrackApp = {
             }
             return movingAverages;
         },
+
+        /**
+         * Stores a message in settings and reloads the page to display it.
+         * @memberof WellTrackApp.utils
+         * @param {string} text - The message text to display.
+         * @param {string} icon - The Material Symbols icon name to display.
+         */
         showMessageAndReload(text, icon) {
             let settings = WellTrackApp.data.getSettings();
             settings.rebirth_message = { text, icon };

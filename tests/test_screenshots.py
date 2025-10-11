@@ -5,20 +5,37 @@ from playwright.sync_api import Page, expect
 
 @pytest.fixture(scope="session")
 def sample_data():
-    """Fixture to load sample data from file."""
+    """Loads sample data from the generated JSON file for the test session.
+
+    Returns:
+        dict: The parsed JSON object containing sample data.
+    """
     with open("build/tests/sample-data.json", "r") as f:
         return json.load(f)
 
 
 @pytest.fixture
 def page(page: Page, live_server):
-    """Fixture to configure the browser page and navigate to the app."""
+    """Navigates the Playwright page to the live server URL for each test.
+
+    Args:
+        page (Page): The Playwright Page object.
+        live_server (str): The base URL of the live server.
+
+    Returns:
+        Page: The configured and navigated Playwright Page object.
+    """
     page.goto(f"{live_server}/welltrack/welltrack.html", wait_until="networkidle")
     return page
 
 
 def test_take_heute_screenshot_(page: Page, sample_data):
-    """Test to take a screenshot of the 'Heute' page with sample data."""
+    """Takes a screenshot of the 'Heute' (Today) page with sample data.
+
+    Args:
+        page (Page): The Playwright Page object.
+        sample_data (dict): The sample data to populate the application.
+    """
     # Load sample data into localStorage
     page.evaluate(
         f"() => {{ \
@@ -38,7 +55,12 @@ def test_take_heute_screenshot_(page: Page, sample_data):
 
 
 def test_take_protokoll_screenshot_(page: Page, sample_data):
-    """Test to take a screenshot of the 'Protokoll' page with sample data."""
+    """Takes a screenshot of the 'Protokoll' (Log) page with sample data.
+
+    Args:
+        page (Page): The Playwright Page object.
+        sample_data (dict): The sample data to populate the application.
+    """
     # Load sample data into localStorage
     page.evaluate(
         f"() => {{ \
@@ -59,7 +81,12 @@ def test_take_protokoll_screenshot_(page: Page, sample_data):
 
 
 def test_take_settings_screenshot_(page: Page, sample_data):
-    """Test to take a screenshot of the 'Settings' page with sample data."""
+    """Takes a screenshot of the 'Settings' page with sample data.
+
+    Args:
+        page (Page): The Playwright Page object.
+        sample_data (dict): The sample data to populate the application.
+    """
     # Load sample data into localStorage
     page.evaluate(
         f"() => {{ \

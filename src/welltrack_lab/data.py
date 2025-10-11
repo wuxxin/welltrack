@@ -4,15 +4,18 @@ from datetime import timedelta
 
 
 def load_from_json(file_content):
-    """
-    Loads WellTrack data from a JSON file content.
+    """Loads WellTrack data from the content of a JSON file.
+
+    This function parses the byte content of a JSON file, extracts the 'metrics',
+    'eventTypes', and 'settings' data, and loads them into pandas DataFrames.
 
     Args:
-        file_content (bytes): The content of the uploaded JSON file.
+        file_content (bytes): The byte string content of the uploaded JSON file.
 
     Returns:
         tuple: A tuple containing three pandas DataFrames:
-               metrics, event_types, and settings.
+               (metrics_df, event_types_df, settings_df).
+               Returns (None, None, None) if the JSON is invalid.
     """
     try:
         data = json.loads(file_content)
@@ -28,16 +31,19 @@ def load_from_json(file_content):
 
 
 def calc_welltrack_day(series, start_time_str="05:00"):
-    """
-    Calculates the 'WellTrack Day' for a pandas Series of timestamps.
-    A WellTrack day starts at a custom time (e.g., 5:00 AM).
+    """Calculates the 'WellTrack Day' for a pandas Series of timestamps.
+
+    A WellTrack day is defined as the period from a custom start time (e.g.,
+    5:00 AM) on one calendar day to the same time on the next. This function
+    adjusts timestamps accordingly before flooring them to the day.
 
     Args:
-        series (pd.Series): A pandas Series of timestamps.
+        series (pd.Series): A pandas Series of timestamps to be converted.
         start_time_str (str): The start time of the day in 'HH:MM' format.
 
     Returns:
-        pd.Series: A pandas Series with the calculated WellTrack day for each timestamp.
+        pd.Series: A pandas Series containing the calculated WellTrack day for
+                   each timestamp.
     """
     start_time = pd.to_datetime(start_time_str).time()
     offset = pd.to_timedelta(f"{start_time.hour}h {start_time.minute}m")
@@ -45,16 +51,20 @@ def calc_welltrack_day(series, start_time_str="05:00"):
 
 
 def process_metrics(metrics_df, event_types_df, settings_df):
-    """
-    Processes the raw metrics DataFrame to make it analysis-ready.
+    """Processes the raw metrics DataFrame to make it analysis-ready.
+
+    This involves converting Unix timestamps to datetime objects, calculating
+    the WellTrack day for each entry, extracting the metric type, and normalizing
+    the nested 'labels' dictionary into separate columns.
 
     Args:
-        metrics_df (pd.DataFrame): The raw metrics DataFrame.
-        event_types_df (pd.DataFrame): The raw event_types DataFrame.
-        settings_df (pd.DataFrame): The settings DataFrame.
+        metrics_df (pd.DataFrame): The raw metrics DataFrame from the JSON file.
+        event_types_df (pd.DataFrame): The DataFrame of event type definitions.
+        settings_df (pd.DataFrame): The DataFrame containing application settings.
 
     Returns:
-        pd.DataFrame: The processed metrics DataFrame.
+        pd.DataFrame: The processed and enriched metrics DataFrame. Returns an
+                      empty DataFrame if the input is empty.
     """
     if metrics_df.empty:
         return metrics_df
@@ -81,15 +91,22 @@ def process_metrics(metrics_df, event_types_df, settings_df):
 
 
 def create_timeslot_sums(metrics_df, metric_type="pain"):
-    """
-    Aggregates pain or mood metrics into 10-minute timeslots.
+    """Aggregates pain or mood metrics into 10-minute timeslots.
+
+    This function filters the data for a specific metric type (pain or mood),
+    groups the entries into 10-minute intervals based on their timestamp, and
+    calculates the sum of values for each specific item (e.g., each body part
+    or mood type) within each timeslot.
 
     Args:
         metrics_df (pd.DataFrame): The processed metrics DataFrame.
-        metric_type (str): The type of metric to aggregate ('pain' or 'mood').
+        metric_type (str): The type of metric to aggregate, either 'pain'
+                           or 'mood'. Defaults to "pain".
 
     Returns:
-        pd.DataFrame: A DataFrame with summed values per timeslot.
+        pd.DataFrame: A DataFrame with the summed values per item within each
+                      10-minute timeslot. Returns an empty DataFrame if no
+                      data for the given metric_type exists.
     """
     if metrics_df.empty:
         return pd.DataFrame()

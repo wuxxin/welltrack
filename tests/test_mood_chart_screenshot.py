@@ -5,8 +5,16 @@ import time
 
 
 def test_mood_chart_screenshots(page: Page, live_server):
-    """
-    Test to take screenshots of the mood chart for 7, 28, and 84 day views.
+    """Takes screenshots of the mood chart for different time ranges.
+
+    This test loads sample data, navigates to the history page, selects the
+    mood chart, and then captures a full-page screenshot for each available
+    time range (7, 28, and 84 days). This is useful for visual regression
+    testing and documentation.
+
+    Args:
+        page (Page): The Playwright Page object.
+        live_server (str): The base URL of the live server.
     """
     # Use a larger sample data file for better chart visualization
     with open("build/tests/sample-data.json", "r") as f:

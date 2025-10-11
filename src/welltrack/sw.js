@@ -1,13 +1,18 @@
-// This is a basic service worker for caching the app shell for offline use.
+/**
+ * @file This service worker handles caching for the WellTrack application,
+ * enabling offline functionality and ensuring users have the latest version.
+ */
 
 const CACHE_NAME = 'welltrack-cache-v2';
-// We only need to cache the main HTML file.
-// Other assets are loaded from CDNs and will be handled by the browser's cache.
 const urlsToCache = [
   './welltrack.html'
 ];
 
-// Install event: open cache and add the main app file.
+/**
+ * Handles the 'install' event of the service worker.
+ * This is where the core application shell is cached for offline use.
+ * @param {ExtendableEvent} event The install event.
+ */
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -18,9 +23,12 @@ self.addEventListener('install', event => {
   );
 });
 
-// Fetch event: Network-first strategy for navigation, cache-first for others.
-// This ensures the user gets the latest version of the app when online,
-// but still allows the app to work offline by serving from the cache.
+/**
+ * Handles the 'fetch' event.
+ * It implements a network-first strategy for the main application page to ensure
+ * users get updates, and a cache-first strategy for other assets.
+ * @param {FetchEvent} event The fetch event.
+ */
 self.addEventListener('fetch', event => {
   // For navigation requests (the HTML file), use a network-first strategy.
   if (event.request.mode === 'navigate') {
@@ -41,17 +49,17 @@ self.addEventListener('fetch', event => {
         })
     );
   } else {
-    // For non-navigation requests (like CDN scripts), use a cache-first strategy.
-    event.respondWith(
-      caches.match(event.request)
-        .then(response => {
-          return response || fetch(event.request);
-        })
-    );
+    // For non-navigation requests (like CDN scripts), let the browser handle it.
+    // This relies on the browser's standard HTTP caching.
+    // No specific caching strategy is implemented here for third-party resources.
   }
 });
 
-// Activate event: clean up old, unused caches.
+/**
+ * Handles the 'activate' event.
+ * This is where old, unused caches are cleaned up to free up storage space.
+ * @param {ExtendableEvent} event The activate event.
+ */
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
@@ -59,6 +67,7 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
