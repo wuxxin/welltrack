@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WellTrack Pain Entry Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <style>
+        :root {
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005D;
+            --md-sys-color-surface-container-highest: #E6E0E9;
+            --md-sys-color-outline: #79747E;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: bottom;
+        }
+        .nav-btn {
+            padding: 8px;
+            border-radius: 99px;
+            transition: all 0.2s;
+        }
+        .nav-btn.active {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+        .body-part, .other-pain-item {
+            fill: var(--md-sys-color-surface-container-highest);
+            stroke: var(--md-sys-color-outline);
+            stroke-width: 0.5;
+            cursor: pointer;
+            transition: fill 0.2s ease-in-out, background-color 0.2s ease-in-out;
+        }
+        .view-toggle-btn.active {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+        .svg-label {
+            font-size: 8px;
+            font-family: 'Roboto', sans-serif;
+            fill: var(--md-sys-color-on-surface-variant);
+            pointer-events: none;
+            text-anchor: middle;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200">
+        <div class="container mx-auto max-w-4xl px-4 py-3 flex justify-between items-center">
+            <div id="header-left">
+                <button id="nav-today" onclick="PainApp.toggleMetrics()" class="nav-btn">
+                    <span class="material-symbols-outlined text-3xl">home</span>
+                </button>
+            </div>
+            <div id="header-right">
+                 <nav id="main-nav" class="flex items-center gap-2">
+                     <button id="nav-pain" class="nav-btn rounded-full active" title="Schmerzen eintragen">
+                        <span class="material-symbols-outlined">personal_injury</span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="app-container" class="container mx-auto max-w-4xl px-1 pb-4 md:pb-6">
+        <div class="card pt-2">
+            <div class="flex md:flex-row md:justify-between md:items-center gap-3">
+                <h2 id="pain-section-title" class="text-xl font-bold flex-shrink-0">Schmerzen</h2>
+                <div class="submenu-container" role="group">
+                    <button type="button" onclick="PainApp.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100 active">Vorderseite</button>
+                    <button type="button" onclick="PainApp.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100">Rückseite</button>
+                    <button type="button" onclick="PainApp.handleViewToggle('head_hands_feets')" id="btn-view-head_hands_feets" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100">Kopf/Hände/Füße</button>
+                    <button type="button" onclick="PainApp.handleViewToggle('other')" id="btn-view-other" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100">Weitere</button>
+                </div>
+            </div>
+            <div id="pain-entry-container" class="flex justify-center">
+                <!-- Pain entry content will be dynamically inserted here -->
+            </div>
+        </div>
+        <div id="metrics-list" class="hidden mt-4">
+            <h2 class="text-xl font-bold">Metrics</h2>
+            <ul id="metrics-ul" class="list-disc list-inside">
+                <!-- Metrics will be listed here -->
+            </ul>
+        </div>
+    </main>
+
+    <!-- Modal Structure -->
+    <div id="modal-container" onclick="if (event.target === this) { PainApp.render.modal.hide() }" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
+        <div id="modal-content" class="bg-white rounded-3xl p-6 shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <!-- Modal content will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <script>
+        const PainApp = {
+            state: {
+                metrics: [],
+                currentPainView: 'front',
+                currentPainPart: null,
+                lastPainEntryTimestamp: 0,
+                painTypes: [
+                    { id: 'pain_free', name: 'Schmerz Frei', icon: 'sentiment_very_satisfied' },
+                    { id: 'tinitus', name: 'Tinitus', icon: 'earbuds' },
+                    { id: 'sodbrennen', name: 'Sodbrennen', icon: 'local_fire_department' },
+                ]
+            },
+            config: {
+                PAIN_LEVELS: {
+                    0: { label: "Kein Schmerz", short: "-", color: "#E6E0E9" },
+                    1: { label: "Leicht", short: "L", color: "#bfdbfe" },
+                    2: { label: "Unangenehm", short: "U", color: "#fde047" },
+                    3: { label: "Stark", short: "S", color: "#fb923c" },
+                    4: { label: "Fürchterlich", short: "F", color: "#ef4444" },
+                    5: { label: "Vernichtend", short: "X", color: "#9333ea" },
+                },
+                RESET_INTERVAL: 600000, // 10 minutes
+            },
+            init() {
+                this.render.painsSection();
+                setInterval(this.events.checkAndResetPainChart, 10000); // Check every 10 seconds
+            },
+            toggleMetrics() {
+                const metricsList = document.getElementById('metrics-list');
+                metricsList.classList.toggle('hidden');
+                this.render.metricsList();
+            },
+            handleViewToggle(view) {
+                this.state.currentPainView = view;
+                document.querySelectorAll('.view-toggle-btn').forEach(btn => btn.classList.remove('active'));
+                document.getElementById(`btn-view-${view}`).classList.add('active');
+                this.render.painsSection();
+            },
+            render: {
+                painsSection() {
+                    const container = document.getElementById('pain-entry-container');
+                    let content = '';
+                    if (PainApp.state.currentPainView === 'front' || PainApp.state.currentPainView === 'back' || PainApp.state.currentPainView === 'head_hands_feets') {
+                        content = `<svg width="400" height="650" viewBox="0 0 400 650" id="pain-svg-container"></svg>`;
+                    } else if (PainApp.state.currentPainView === 'other') {
+                        content = `<div id="other-pain-container" class="grid grid-cols-2 gap-4 p-4 w-full"></div>`;
+                    }
+                    container.innerHTML = content;
+                    this.updatePainView();
+                },
+                updatePainView() {
+                    if (PainApp.state.currentPainView === 'other') {
+                        this.renderOtherPainItems();
+                    } else {
+                        this.renderSvgPainItems();
+                    }
+                },
+                renderSvgPainItems() {
+                    const svgContainer = document.getElementById('pain-svg-container');
+                    if (!svgContainer) return;
+                    let svgContent = '';
+                    if (PainApp.state.currentPainView === 'front') {
+                        svgContent = `<g id="body-front">
+                                        <rect id="front_chest_left" data-name="Brust (L)" class="body-part" x="125" y="148" width="75" height="80" rx="10"><title>Brust (L)</title></rect>
+                                        <rect id="front_chest_right" data-name="Brust (R)" class="body-part" x="200" y="148" width="75" height="80" rx="10"><title>Brust (R)</title></rect>
+                                        <rect id="front_abdomen_left" data-name="Bauch (L)" class="body-part" x="128" y="232" width="72" height="60" rx="10"><title>Bauch (L)</title></rect>
+                                        <rect id="front_abdomen_right" data-name="Bauch (R)" class="body-part" x="200" y="232" width="72" height="60" rx="10"><title>Bauch (R)</title></rect>
+                                    </g>`;
+                    } else if (PainApp.state.currentPainView === 'back') {
+                        svgContent = `<g id="body-back">
+                                        <rect id="back_lower_back_middle" data-name="Untere Wirbelsäule" class="body-part" x="182" y="232" width="36" height="62" rx="10"><title>Untere Wirbelsäule</title></rect>
+                                        <text class="svg-label" x="200" y="263">LWS</text>
+                                        <rect id="back_sacrum" data-name="Kreuz & Steißbein" class="body-part" x="182" y="294" width="36" height="62" rx="10"><title>Kreuz & Steißbein</title></rect>
+                                        <text class="svg-label" x="200" y="325">KSB</text>
+                                    </g>`;
+                    } else if (PainApp.state.currentPainView === 'head_hands_feets') {
+                        svgContent = `<g id="head_hands_feets">
+                                        <!-- Head -->
+                                        <circle id="head_face" data-name="Gesicht" class="body-part" cx="200" cy="100" r="80" fill="transparent" stroke-width="2"></circle>
+                                        <circle id="head_eye_left" data-name="Auge (L)" class="body-part" cx="170" cy="80" r="10"><title>Auge (L)</title></circle>
+                                        <circle id="head_eye_right" data-name="Auge (R)" class="body-part" cx="230" cy="80" r="10"><title>Auge (R)</title></circle>
+                                        <circle id="head_ear_left" data-name="Ohr (L)" class="body-part" cx="120" cy="100" r="10"><title>Ohr (L)</title></circle>
+                                        <circle id="head_ear_right" data-name="Ohr (R)" class="body-part" cx="280" cy="100" r="10"><title>Ohr (R)</title></circle>
+                                        <rect id="head_nose" data-name="Nase" class="body-part" x="190" y="90" width="20" height="30" rx="5"><title>Nase</title></rect>
+                                        <rect id="head_mouth" data-name="Mund" class="body-part" x="170" y="130" width="60" height="20" rx="5"><title>Mund</title></rect>
+                                        <!-- Hands -->
+                                        <g id="hand_left" transform="translate(50, 250)">
+                                            <rect id="hand_left_thumb" data-name="Daumen (L)" class="body-part" x="0" y="0" width="20" height="40" rx="5"><title>Daumen (L)</title></rect>
+                                            <rect id="hand_left_index" data-name="Zeigefinger (L)" class="body-part" x="25" y="0" width="20" height="50" rx="5"><title>Zeigefinger (L)</title></rect>
+                                            <rect id="hand_left_middle" data-name="Mittelfinger (L)" class="body-part" x="50" y="0" width="20" height="55" rx="5"><title>Mittelfinger (L)</title></rect>
+                                            <rect id="hand_left_ring" data-name="Ringfinger (L)" class="body-part" x="75" y="0" width="20" height="50" rx="5"><title>Ringfinger (L)</title></rect>
+                                            <rect id="hand_left_pinky" data-name="Kleiner Finger (L)" class="body-part" x="100" y="0" width="20" height="40" rx="5"><title>Kleiner Finger (L)</title></rect>
+                                        </g>
+                                        <g id="hand_right" transform="translate(230, 250)">
+                                            <rect id="hand_right_thumb" data-name="Daumen (R)" class="body-part" x="100" y="0" width="20" height="40" rx="5"><title>Daumen (R)</title></rect>
+                                            <rect id="hand_right_index" data-name="Zeigefinger (R)" class="body-part" x="75" y="0" width="20" height="50" rx="5"><title>Zeigefinger (R)</title></rect>
+                                            <rect id="hand_right_middle" data-name="Mittelfinger (R)" class="body-part" x="50" y="0" width="20" height="55" rx="5"><title>Mittelfinger (R)</title></rect>
+                                            <rect id="hand_right_ring" data-name="Ringfinger (R)" class="body-part" x="25" y="0" width="20" height="50" rx="5"><title>Ringfinger (R)</title></rect>
+                                            <rect id="hand_right_pinky" data-name="Kleiner Finger (R)" class="body-part" x="0" y="0" width="20" height="40" rx="5"><title>Kleiner Finger (R)</title></rect>
+                                        </g>
+                                        <!-- Feet -->
+                                        <g id="foot_left" transform="translate(50, 450)">
+                                            <rect id="foot_left_big_toe" data-name="Großer Zeh (L)" class="body-part" x="80" y="0" width="30" height="40" rx="5"><title>Großer Zeh (L)</title></rect>
+                                            <rect id="foot_left_toe_2" data-name="Zeh 2 (L)" class="body-part" x="60" y="0" width="20" height="35" rx="5"><title>Zeh 2 (L)</title></rect>
+                                            <rect id="foot_left_toe_3" data-name="Zeh 3 (L)" class="body-part" x="40" y="0" width="20" height="35" rx="5"><title>Zeh 3 (L)</title></rect>
+                                            <rect id="foot_left_toe_4" data-name="Zeh 4 (L)" class="body-part" x="20" y="0" width="20" height="35" rx="5"><title>Zeh 4 (L)</title></rect>
+                                            <rect id="foot_left_pinky_toe" data-name="Kleiner Zeh (L)" class="body-part" x="0" y="0" width="20" height="30" rx="5"><title>Kleiner Zeh (L)</title></rect>
+                                        </g>
+                                        <g id="foot_right" transform="translate(240, 450)">
+                                            <rect id="foot_right_big_toe" data-name="Großer Zeh (R)" class="body-part" x="0" y="0" width="30" height="40" rx="5"><title>Großer Zeh (R)</title></rect>
+                                            <rect id="foot_right_toe_2" data-name="Zeh 2 (R)" class="body-part" x="30" y="0" width="20" height="35" rx="5"><title>Zeh 2 (R)</title></rect>
+                                            <rect id="foot_right_toe_3" data-name="Zeh 3 (R)" class="body-part" x="50" y="0" width="20" height="35" rx="5"><title>Zeh 3 (R)</title></rect>
+                                            <rect id="foot_right_toe_4" data-name="Zeh 4 (R)" class="body-part" x="70" y="0" width="20" height="35" rx="5"><title>Zeh 4 (R)</title></rect>
+                                            <rect id="foot_right_pinky_toe" data-name="Kleiner Zeh (R)" class="body-part" x="90" y="0" width="20" height="30" rx="5"><title>Kleiner Zeh (R)</title></rect>
+                                        </g>
+                                    </g>`;
+                    }
+                    svgContainer.innerHTML = svgContent;
+                    document.querySelectorAll('.body-part').forEach(part => {
+                        part.addEventListener('click', (e) => PainApp.events.handleBodyPartClick(e));
+                    });
+                    this.updateBodyPartColors();
+                },
+                renderOtherPainItems() {
+                    const container = document.getElementById('other-pain-container');
+                    if (!container) return;
+                    container.innerHTML = PainApp.state.painTypes.map(painType => {
+                        return `<div id="${painType.id}" data-name="${painType.name}" class="other-pain-item p-4 rounded-lg flex flex-col items-center justify-center text-center" style="background-color: var(--md-sys-color-surface-container-highest);">
+                                    <span class="material-symbols-outlined text-4xl">${painType.icon}</span>
+                                    <span class="mt-2 font-semibold">${painType.name}</span>
+                                </div>`;
+                    }).join('');
+                    document.querySelectorAll('.other-pain-item').forEach(item => {
+                        item.addEventListener('click', (e) => PainApp.events.handleBodyPartClick(e));
+                    });
+                    this.updateBodyPartColors();
+                },
+                metricsList() {
+                    const metricsUl = document.getElementById('metrics-ul');
+                    metricsUl.innerHTML = PainApp.state.metrics.map(metric => `<li>${new Date(metric.timestamp).toLocaleTimeString()}: ${metric.labels.name} - ${metric.value}</li>`).join('');
+                },
+                updateBodyPartColors() {
+                    const now = Date.now();
+                    const tenMinutesAgo = now - PainApp.config.RESET_INTERVAL;
+                    const painFreeMetric = PainApp.state.metrics.find(m => m.metric === 'pain_pain_free_level' && m.timestamp >= tenMinutesAgo);
+
+                    if (painFreeMetric) {
+                        document.querySelectorAll('.body-part, .other-pain-item').forEach(part => {
+                            const color = PainApp.config.PAIN_LEVELS[0].color;
+                            if (part.tagName.toLowerCase() === 'div') {
+                                part.style.backgroundColor = color;
+                            } else {
+                                part.setAttribute('fill', color);
+                            }
+                        });
+                        return;
+                    }
+
+                    document.querySelectorAll('.body-part, .other-pain-item').forEach(part => {
+                        const latestEntry = PainApp.state.metrics
+                            .filter(m => m.labels.body_part === part.id && m.timestamp >= tenMinutesAgo)
+                            .pop();
+
+                        const color = latestEntry ? PainApp.config.PAIN_LEVELS[latestEntry.value].color : PainApp.config.PAIN_LEVELS[0].color;
+
+                        if (part.tagName.toLowerCase() === 'div') {
+                            part.style.backgroundColor = color;
+                        } else {
+                            part.setAttribute('fill', color);
+                        }
+                    });
+                },
+                modal: {
+                    show(content) {
+                        const modalContent = document.getElementById('modal-content');
+                        modalContent.innerHTML = content;
+                        document.getElementById('modal-container').classList.remove('hidden');
+                    },
+                    hide() {
+                        document.getElementById('modal-container').classList.add('hidden');
+                        document.getElementById('modal-content').innerHTML = '';
+                        PainApp.state.currentPainPart = null;
+                    },
+                    showPainSelector() {
+                        const part = PainApp.state.currentPainPart;
+                        const partName = part.dataset.name;
+                        const viewName = PainApp.state.currentPainView;
+
+                        let buttons = '';
+                        for (const [level, props] of Object.entries(PainApp.config.PAIN_LEVELS)) {
+                             buttons += `<button
+                                onclick="PainApp.events.handleSetPainLevel(${level})"
+                                class="btn w-full text-lg font-bold py-4 px-4 rounded-xl transition-all"
+                                style="background-color:${props.color}; color: ${parseInt(level) > 2 && parseInt(level) < 6 ? 'white' : 'black'}"
+                                >${props.short} (${props.label})</button>`;
+                        }
+                        const title = `Schmerz (${viewName}): <br class="sm:hidden"/> <span class="font-bold">${partName}</span>`;
+                        const content = `<h3 class="text-xl font-semibold mb-6 text-center">${title}</h3><div class="grid grid-cols-1 gap-4">${buttons}</div><button onclick="PainApp.render.modal.hide()" class="btn btn-tertiary w-full mt-8">Abbrechen</button>`;
+                        this.show(content);
+                    },
+                    showConfirmation(title, message, onConfirm) {
+                        const content = `<h3 class="text-xl font-medium mb-4">${title}</h3><p class="mb-6">${message}</p><div class="flex justify-end gap-4"><button onclick="PainApp.render.modal.hide()" class="btn btn-tertiary">Nein</button><button id="confirm-action-btn" class="btn btn-primary">Ja</button></div>`;
+                        this.show(content);
+                        document.getElementById('confirm-action-btn').onclick = () => { onConfirm(); this.hide(); };
+                    }
+                }
+            },
+            events: {
+                handleBodyPartClick(event) {
+                    PainApp.state.currentPainPart = event.currentTarget;
+                    if (event.currentTarget.id === 'pain_free') {
+                        PainApp.events.handlePainFreeClick();
+                    } else {
+                        PainApp.render.modal.showPainSelector();
+                    }
+                },
+                handlePainFreeClick() {
+                    const now = Date.now();
+                    const tenMinutesAgo = now - PainApp.config.RESET_INTERVAL;
+                    const recentPainMetrics = PainApp.state.metrics.filter(m => m.metric !== 'pain_pain_free_level' && m.timestamp >= tenMinutesAgo);
+
+                    const setPainFree = () => {
+                        PainApp.state.metrics = PainApp.state.metrics.filter(m => m.timestamp < tenMinutesAgo);
+                        PainApp.state.metrics.push({
+                            metric: 'pain_pain_free_level',
+                            timestamp: now,
+                            labels: { body_part: 'pain_free', name: 'Schmerz Frei' },
+                            value: 0
+                        });
+                        PainApp.state.lastPainEntryTimestamp = now;
+                        PainApp.render.updateBodyPartColors();
+                    };
+
+                    if (recentPainMetrics.length > 0) {
+                        PainApp.render.modal.showConfirmation('wieder Schmerzfrei ?', 'Sollen alle Schmerzeinträge der letzten 10 Minuten gelöscht werden?', setPainFree);
+                    } else {
+                        setPainFree();
+                    }
+                },
+                handleSetPainLevel(level) {
+                    const part = PainApp.state.currentPainPart;
+                    if (!part) return;
+
+                    const now = Date.now();
+                    const tenMinutesAgo = now - PainApp.config.RESET_INTERVAL;
+
+                    // Remove any pain_free metric from the last 10 minutes
+                    const painFreeIndex = PainApp.state.metrics.findIndex(m => m.metric === 'pain_pain_free_level' && m.timestamp >= tenMinutesAgo);
+                    if (painFreeIndex > -1) {
+                        PainApp.state.metrics.splice(painFreeIndex, 1);
+                    }
+
+                    // Remove existing entry for the same part within the last 10 minutes
+                    const existingIndex = PainApp.state.metrics.findIndex(m =>
+                        m.labels.body_part === part.id && m.timestamp >= tenMinutesAgo
+                    );
+
+                    if (existingIndex > -1) {
+                        PainApp.state.metrics.splice(existingIndex, 1);
+                    }
+
+                    const newEntry = {
+                        metric: `pain_${part.id}_level`,
+                        timestamp: now,
+                        labels: { body_part: part.id, name: part.dataset.name },
+                        value: parseInt(level, 10)
+                    };
+
+                    if (newEntry.value > 0) {
+                        PainApp.state.metrics.push(newEntry);
+                    }
+
+                    PainApp.state.lastPainEntryTimestamp = now;
+                    PainApp.render.updateBodyPartColors();
+                    PainApp.render.modal.hide();
+                },
+                checkAndResetPainChart() {
+                    const now = Date.now();
+                    if (PainApp.state.lastPainEntryTimestamp > 0 && (now - PainApp.state.lastPainEntryTimestamp > PainApp.config.RESET_INTERVAL)) {
+                        PainApp.state.lastPainEntryTimestamp = 0;
+                        PainApp.render.updateBodyPartColors();
+                    }
+                }
+            }
+        };
+
+        PainApp.init();
+    </script>
+
+</body>
+</html>
