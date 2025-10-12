@@ -177,6 +177,16 @@
             font-size: 0.875em;
         }
 
+        .theme-bg-surface { background-color: var(--md-sys-color-surface); }
+        .theme-text-on-surface { color: var(--md-sys-color-on-surface); }
+        .theme-bg-surface-container-low { background-color: var(--md-sys-color-surface-container-low); }
+        .theme-bg-surface-container-high { background-color: var(--md-sys-color-surface-container-high); }
+        .theme-bg-surface-container-highest { background-color: var(--md-sys-color-surface-container-highest); }
+        .theme-text-on-surface-variant { color: var(--md-sys-color-on-surface-variant); }
+        .theme-border-outline { border-color: var(--md-sys-color-outline); }
+        .theme-hover-bg-surface-variant:hover { background-color: var(--md-sys-color-surface-variant); }
+
+
         .h2-style {
             font-size: 1.25rem; /* 20px */
             font-weight: 600;
@@ -333,7 +343,7 @@
 <body class="antialiased">
 
     <!-- Header -->
-    <header class="sticky top-0 z-20 backdrop-blur-md border-b" style="background-color: var(--md-sys-color-surface-container-low); border-color: var(--md-sys-color-surface-variant);">
+    <header class="sticky top-0 z-20 backdrop-blur-md border-b theme-border-outline" style="background-color: var(--header-bg);">
         <div class="container mx-auto max-w-4xl px-4 py-3 flex justify-between items-center">
             <div id="header-left">
                 <button id="nav-today" onclick="WellTrackApp.events.showPage('today')" class="nav-btn">
@@ -386,7 +396,7 @@
 
     <!-- Modal Structure -->
     <div id="modal-container" onclick="if (event.target === this) { WellTrackApp.render.modal.hide() }" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-        <div id="modal-content" class="rounded-3xl p-6 shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" style="background-color: var(--md-sys-color-surface); color: var(--md-sys-color-on-surface);">
+        <div id="modal-content" class="rounded-3xl p-6 shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto theme-bg-surface theme-text-on-surface">
             <!-- Modal content will be dynamically inserted here -->
         </div>
     </div>
@@ -981,16 +991,16 @@ const WellTrackApp = {
                 let listHtml = '';
                 if (isVisible) {
                     summarizedToday.sort((a,b) => b.timestamp - a.timestamp).forEach((metric, index) => {
-                        const bgColorStyle = index % 2 === 0
-                            ? `background-color: var(--md-sys-color-surface-container-highest)`
-                            : `background-color: var(--md-sys-color-surface-container-low)`;
-                        listHtml += `<li class="p-2 rounded-lg" style="${bgColorStyle}">${this.components.todaysLogEntry(metric)}</li>`;
+                        const bgClass = index % 2 === 0
+                            ? 'theme-bg-surface-container-highest'
+                            : 'theme-bg-surface-container-low';
+                        listHtml += `<li class="p-2 rounded-lg ${bgClass}">${this.components.todaysLogEntry(metric)}</li>`;
                     });
                 }
 
                 logHtml = `
                     <div class="card">
-                        <button onclick="WellTrackApp.events.toggleTodaysLog()" class="w-full flex justify-center items-center font-semibold p-2 rounded-lg hover:bg-gray-200/50" style="color: var(--md-sys-color-on-surface-variant);">
+                        <button onclick="WellTrackApp.events.toggleTodaysLog()" class="w-full flex justify-center items-center font-semibold p-2 rounded-lg theme-hover-bg-surface-variant theme-text-on-surface-variant">
                             <span>${buttonText}</span>
                             <span class="material-symbols-outlined">${icon}</span>
                         </button>
@@ -1167,8 +1177,7 @@ const WellTrackApp = {
             eventItems.forEach(item => {
                 const div = document.createElement('div');
                 div.id = `event-item-${item.data.activity}`;
-                div.className = `p-4 rounded-xl flex flex-row flex-wrap items-center justify-between gap-y-2 gap-x-4`;
-                div.style.backgroundColor = 'var(--md-sys-color-surface-container-high)';
+                div.className = `p-4 rounded-xl flex flex-row flex-wrap items-center justify-between gap-y-2 gap-x-4 theme-bg-surface-container-high`;
                 if(item.data.increment === 0) {
                      div.innerHTML = WellTrackApp.render.components.eventItemTimestamp(item.data, item.value > 0, item.entries);
                 } else {
@@ -1879,10 +1888,10 @@ const WellTrackApp = {
                 </div>`;
             },
             fullLogSection: () => `
-                <div class="sticky top-[73px] z-10 backdrop-blur-md py-2 mb-2" style="background-color: var(--header-bg);">
+                <div class="sticky top-[73px] z-10 backdrop-blur-md py-2 mb-2 theme-bg-surface" style="background-color: var(--header-bg);">
                     <div class="flex flex-nowrap justify-between items-center gap-4">
                         <h2 class="h2-style">Protokoll</h2>
-                        <div id="log-pagination" class="flex items-center justify-end gap-1 p-1 rounded-full" style="background-color: var(--md-sys-color-surface-container-high);">
+                        <div id="log-pagination" class="flex items-center justify-end gap-1 p-1 rounded-full theme-bg-surface-container-high">
                             <button id="log-week-first" onclick="WellTrackApp.events.handleWeekChange('first')" class="btn btn-secondary !rounded-full !p-2" title="Erste Woche">
                                 <span class="material-symbols-outlined">keyboard_double_arrow_left</span>
                             </button>
@@ -2173,10 +2182,10 @@ const WellTrackApp = {
 
                         const detailsMatrix = slot.items.map(([name, item]) => {
                             const valueColorClass = item.value > 0 ? 'text-green-600' : 'text-red-600';
-                            return `<div class="flex justify-between items-center p-2 rounded-lg" style="background-color: var(--md-sys-color-surface-container-high);"><span class="text-gray-800">${name}</span><span class="font-bold text-lg ${valueColorClass}">${item.value > 0 ? '+' : ''}${item.value}</span></div>`;
+                            return `<div class="flex justify-between items-center p-2 rounded-lg theme-bg-surface-container-high theme-text-on-surface"><span>${name}</span><span class="font-bold text-lg ${valueColorClass}">${item.value > 0 ? '+' : ''}${item.value}</span></div>`;
                         }).join('');
 
-                        return `<div class="mt-2"><h5 class="font-semibold text-lg">${timeHtml}: <span class="font-normal" style="color: var(--md-sys-color-on-surface-variant);"> Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
+                        return `<div class="mt-2"><h5 class="font-semibold text-lg">${timeHtml}: <span class="font-normal theme-text-on-surface-variant"> Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
                     }).join('');
                 }
 
