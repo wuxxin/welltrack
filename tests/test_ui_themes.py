@@ -38,3 +38,15 @@ def test_ui_screenshots(page: Page, live_server):
         page.click(f"#nav-{tab}")
         page.wait_for_timeout(500) # Wait for page to render
         page.screenshot(path=f"build/tests/output/screenshot_{tab}_dark.png", full_page=True)
+
+    # --- Sub-page Screenshots ---
+    # Settings sub-pages
+    page.click("#nav-settings")
+    page.wait_for_timeout(500)
+    settings_tabs = ["eventTypes", "data", "reminders", "about", "display"]
+    for stab in settings_tabs:
+        page.click(f"button[data-tab='{stab}']")
+        page.wait_for_timeout(500)
+        page.screenshot(path=f"build/tests/output/screenshot_settings_{stab}_dark.png", full_page=True)
+        page.click(f"button[data-tab='{stab}']") # Click again to close
+        page.wait_for_timeout(500)

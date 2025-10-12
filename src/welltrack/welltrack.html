@@ -55,6 +55,8 @@
             --md-sys-color-surface-container-highest: #E6E0E9;
             --md-sys-color-surface-container-low: #F7F2FA;
             --md-sys-color-warning: #FFC107;
+            --header-bg: rgba(255, 251, 254, 0.85);
+            --mood-gradient: linear-gradient(to right, #ef4444, #f97316, #fbbf24 49%, #bfdbfe 51%, #60a5fa, #22c55e);
         }
 
         html[data-theme='dark'] {
@@ -84,6 +86,8 @@
             --md-sys-color-surface-container-highest: #36343B;
             --md-sys-color-surface-container-low: #1d1b20;
             --md-sys-color-warning: #FFC107;
+            --header-bg: rgba(28, 27, 31, 0.85);
+            --mood-gradient: linear-gradient(to right, #f87171, #fb923c, #fde047 49%, #93c5fd 51%, #60a5fa, #4ade80);
         }
 
         html { scroll-behavior: smooth; }
@@ -92,6 +96,9 @@
             background-color: var(--md-sys-color-background);
             color: var(--md-sys-color-on-background);
             /* font-size: 125%; */
+        }
+        header {
+            background-color: var(--header-bg);
         }
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -165,25 +172,34 @@
         .btn-error:hover:not(:disabled) { background-color: #f8c8c6; }
         .btn-error-primary { background-color: var(--md-sys-color-error); color: var(--md-sys-color-on-error); }
         .btn-error-primary:hover:not(:disabled) { background-color: #f87e78; }
-        .btn-sm { 
+        .btn-sm {
             padding: 0.25rem 0.75rem !important;
-            font-size: 0.875rem;
+            font-size: 0.875em;
         }
 
         .h2-style {
             font-size: 1.25rem; /* 20px */
             font-weight: 600;
-            color: #4A5568; /* gray-700 */
+            color: var(--md-sys-color-on-background);
         }
 
         .day-btn.selected { background-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); border-color: var(--md-sys-color-primary); }
+
+        .view-toggle-btn {
+            background-color: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+            border: 1px solid var(--md-sys-color-outline);
+        }
+        .view-toggle-btn:hover {
+            background-color: var(--md-sys-color-surface-variant);
+        }
         .view-toggle-btn.active { background-color: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); border-color: var(--md-sys-color-primary-container); z-index: 10; }
         
         .body-part { fill: var(--md-sys-color-surface-container-highest); stroke: var(--md-sys-color-outline); stroke-width: 0.5; cursor: pointer; transition: fill 0.2s ease-in-out; }
         .body-part:hover { fill: var(--md-sys-color-primary-container); }
-        .svg-label { font-size: 8px; font-family: 'Roboto', sans-serif; fill: var(--md-sys-color-on-surface-variant); pointer-events: none; text-anchor: middle; }
-        .label { font-family: 'Roboto', sans-serif; font-size: 16px; font-weight: 500; fill: #5F6368; pointer-events: none; text-anchor: middle; dominant-baseline: central; transition: fill 0.2s ease-in-out; }
-        .body-part.selected + .label { fill: #FFFFFF; }
+        .svg-label { font-size: 0.5rem; font-family: 'Roboto', sans-serif; fill: var(--md-sys-color-on-surface-variant); pointer-events: none; text-anchor: middle; }
+        .label { font-family: 'Roboto', sans-serif; font-size: 1rem; font-weight: 500; fill: var(--md-sys-color-on-surface-variant); pointer-events: none; text-anchor: middle; dominant-baseline: central; transition: fill 0.2s ease-in-out; }
+        .body-part.selected + .label { fill: #000; /* Black for better contrast on colored backgrounds */ }
         
         .nav-btn {
             padding: 8px;
@@ -210,7 +226,7 @@
             width: 100%;
             top: 50%;
             transform: translateY(-50%);
-            background-image: linear-gradient(to right, #ef4444, #f97316, #fbbf24 49%, #bfdbfe 51%, #60a5fa, #22c55e);
+            background-image: var(--mood-gradient);
             border-radius: 4px;
         }
         .mood-slider-tick-container {
@@ -841,7 +857,7 @@ const WellTrackApp = {
                         <p class="text-lg font-bold">Stimmung</p>
                     </div>
                     <div onclick="WellTrackApp.events.showHistoryFor('mood')" class="w-1/2 h-full flex items-baseline justify-end gap-1 pr-6 pl-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
-                        <p class="text-4xl font-bold">${displayMoodValue}</p>
+                        <p class="font-bold text-4xl">${displayMoodValue}</p>
                         ${renderArrowDelta(moodDelta, true)}
                     </div>
                 </div>
@@ -850,7 +866,7 @@ const WellTrackApp = {
                         <p class="text-lg font-bold">Schmerz</p>
                     </div>
                     <div onclick="WellTrackApp.events.showHistoryFor('pain')" class="w-1/2 h-full flex items-baseline justify-end gap-1 pr-6 pl-2 py-4 cursor-pointer hover:bg-gray-200/50 transition-colors">
-                       <p class="text-4xl font-bold">${displayPainValue}</p>
+                       <p class="font-bold text-4xl">${displayPainValue}</p>
                        ${renderArrowDelta(painDelta, false)}
                     </div>
                 </div>
@@ -933,7 +949,7 @@ const WellTrackApp = {
                             </div>
                             <div onclick="WellTrackApp.events.showHistoryForEvent('${chartKey}')" class="p-2 cursor-pointer hover:bg-gray-200/50 transition-colors flex items-center justify-center flex-shrink-0">
                                 <div class="flex items-baseline justify-center flex-wrap gap-x-1">
-                                    <p class="text-3xl font-bold">${totalValue}</p>
+                                    <p class="font-bold text-3xl">${totalValue}</p>
                                     ${unitHtml}
                                 </div>
                             </div>
@@ -1205,21 +1221,21 @@ const WellTrackApp = {
                     <div onclick="WellTrackApp.events.showPage('event')" class="bg-white p-4 rounded-xl cursor-pointer hover:shadow-lg transition-shadow flex justify-between items-center">
                         <p class="text-lg font-semibold">Zeit Ereignisse</p>
                         <div class="text-right">
-                           <p class="text-3xl font-bold">${todaysTotalEvent}<span class="text-base font-medium ml-1">min</span></p>
+                           <p class="font-bold text-3xl">${todaysTotalEvent}<span class="text-base font-medium ml-1">min</span></p>
                            ${renderDelta(eventDelta, ' min', false)}
                         </div>
                     </div>
                     <div onclick="WellTrackApp.events.showPage('mood')" class="bg-white p-4 rounded-xl cursor-pointer hover:shadow-lg transition-shadow flex justify-between items-center">
                         <p class="text-lg font-semibold">Stimmung</p>
                         <div class="text-right">
-                           <p class="text-3xl font-bold">${todaysTotalMood}</p>
+                           <p class="font-bold text-3xl">${todaysTotalMood}</p>
                            ${renderDelta(moodDelta, '', false)}
                         </div>
                     </div>
                     <div onclick="WellTrackApp.events.showPage('pain')" class="bg-white p-4 rounded-xl cursor-pointer hover:shadow-lg transition-shadow flex justify-between items-center">
                         <p class="text-lg font-semibold">Schmerzen</p>
                         <div class="text-right">
-                           <p class="text-3xl font-bold">${todaysTotalPain}</p>
+                           <p class="font-bold text-3xl">${todaysTotalPain}</p>
                            ${renderDelta(painDelta, '', true)}
                         </div>
                     </div>
@@ -2035,8 +2051,8 @@ const WellTrackApp = {
 
                 return `
                     <div class="flex items-baseline">
-                         <span class="text-base sm:text-lg font-medium text-gray-800">${event.name}</span>
-                         <span id="timestamp-info-${event.activity}" class="text-sm sm:text-sm text-gray-800 font-normal ml-2 p-1 rounded-md">${lastTimestampInfo}</span>
+                         <span class="text-base sm:text-lg font-medium">${event.name}</span>
+                         <span id="timestamp-info-${event.activity}" class="text-sm sm:text-sm font-normal ml-2 p-1 rounded-md">${lastTimestampInfo}</span>
                     </div>
                     <div class="flex items-center gap-2 ml-auto">
                         ${buttonsHtml}
