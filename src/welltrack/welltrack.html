@@ -981,14 +981,16 @@ const WellTrackApp = {
                 let listHtml = '';
                 if (isVisible) {
                     summarizedToday.sort((a,b) => b.timestamp - a.timestamp).forEach((metric, index) => {
-                        const bgColorClass = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
-                        listHtml += `<li class="text-gray-800 p-2 rounded-lg ${bgColorClass}">${this.components.todaysLogEntry(metric)}</li>`;
+                        const bgColorStyle = index % 2 === 0
+                            ? `background-color: var(--md-sys-color-surface-container-highest)`
+                            : `background-color: var(--md-sys-color-surface-container-low)`;
+                        listHtml += `<li class="p-2 rounded-lg" style="${bgColorStyle}">${this.components.todaysLogEntry(metric)}</li>`;
                     });
                 }
 
                 logHtml = `
                     <div class="card">
-                        <button onclick="WellTrackApp.events.toggleTodaysLog()" class="w-full flex justify-center items-center font-semibold text-gray-800 p-2 rounded-lg hover:bg-gray-200/50">
+                        <button onclick="WellTrackApp.events.toggleTodaysLog()" class="w-full flex justify-center items-center font-semibold p-2 rounded-lg hover:bg-gray-200/50" style="color: var(--md-sys-color-on-surface-variant);">
                             <span>${buttonText}</span>
                             <span class="material-symbols-outlined">${icon}</span>
                         </button>
@@ -1165,7 +1167,8 @@ const WellTrackApp = {
             eventItems.forEach(item => {
                 const div = document.createElement('div');
                 div.id = `event-item-${item.data.activity}`;
-                div.className = `p-4 rounded-xl flex flex-row flex-wrap items-center justify-between gap-y-2 gap-x-4 bg-gray-100`;
+                div.className = `p-4 rounded-xl flex flex-row flex-wrap items-center justify-between gap-y-2 gap-x-4`;
+                div.style.backgroundColor = 'var(--md-sys-color-surface-container-high)';
                 if(item.data.increment === 0) {
                      div.innerHTML = WellTrackApp.render.components.eventItemTimestamp(item.data, item.value > 0, item.entries);
                 } else {
@@ -1732,7 +1735,7 @@ const WellTrackApp = {
                 let groupButtons = groups.map((group) => {
                     const groupName = group === '*' ? 'Allgemein' : group;
                     const activeClass = WellTrackApp.state.activeEventGroup === group ? 'active' : '';
-                    return `<button type="button" onclick="WellTrackApp.events.handleEventGroupToggle('${group}')" id="btn-event-group-${group}" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full ${activeClass}">${groupName}</button>`
+                    return `<button type="button" onclick="WellTrackApp.events.handleEventGroupToggle('${group}')" id="btn-event-group-${group}" class="view-toggle-btn px-4 py-2 text-sm font-medium rounded-full ${activeClass}">${groupName}</button>`
                 }).join('');
 
                 return `
@@ -1876,10 +1879,10 @@ const WellTrackApp = {
                 </div>`;
             },
             fullLogSection: () => `
-                <div class="sticky top-[73px] z-10 bg-white/80 backdrop-blur-md py-2 mb-2">
+                <div class="sticky top-[73px] z-10 backdrop-blur-md py-2 mb-2" style="background-color: var(--header-bg);">
                     <div class="flex flex-nowrap justify-between items-center gap-4">
                         <h2 class="h2-style">Protokoll</h2>
-                        <div id="log-pagination" class="flex items-center justify-end gap-1 bg-gray-100 p-1 rounded-full">
+                        <div id="log-pagination" class="flex items-center justify-end gap-1 p-1 rounded-full" style="background-color: var(--md-sys-color-surface-container-high);">
                             <button id="log-week-first" onclick="WellTrackApp.events.handleWeekChange('first')" class="btn btn-secondary !rounded-full !p-2" title="Erste Woche">
                                 <span class="material-symbols-outlined">keyboard_double_arrow_left</span>
                             </button>
@@ -2170,10 +2173,10 @@ const WellTrackApp = {
 
                         const detailsMatrix = slot.items.map(([name, item]) => {
                             const valueColorClass = item.value > 0 ? 'text-green-600' : 'text-red-600';
-                            return `<div class="flex justify-between items-center p-2 rounded-lg bg-gray-50"><span class="text-gray-800">${name}</span><span class="font-bold text-lg ${valueColorClass}">${item.value > 0 ? '+' : ''}${item.value}</span></div>`;
+                            return `<div class="flex justify-between items-center p-2 rounded-lg" style="background-color: var(--md-sys-color-surface-container-high);"><span class="text-gray-800">${name}</span><span class="font-bold text-lg ${valueColorClass}">${item.value > 0 ? '+' : ''}${item.value}</span></div>`;
                         }).join('');
 
-                        return `<div class="mt-2"><h5 class="font-semibold text-lg">${timeHtml}: <span class="font-normal text-gray-600"> Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
+                        return `<div class="mt-2"><h5 class="font-semibold text-lg">${timeHtml}: <span class="font-normal" style="color: var(--md-sys-color-on-surface-variant);"> Gesamt: <span class="font-bold ${totalColorClass}">${totalSign}${totalScore}</span></span></h5><div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">${detailsMatrix}</div></div>`;
                     }).join('');
                 }
 
