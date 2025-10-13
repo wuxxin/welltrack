@@ -57,6 +57,35 @@
             --md-sys-color-warning: #FFC107;
         }
 
+        html[data-theme='dark'] {
+            --md-sys-color-primary: #D0BCFF;
+            --md-sys-color-on-primary: #381E72;
+            --md-sys-color-primary-container: #4F378B;
+            --md-sys-color-on-primary-container: #EADDFF;
+            --md-sys-color-secondary: #CCC2DC;
+            --md-sys-color-on-secondary: #332D41;
+            --md-sys-color-secondary-container: #4A4458;
+            --md-sys-color-on-secondary-container: #E8DEF8;
+            --md-sys-color-tertiary: #EFB8C8;
+            --md-sys-color-on-tertiary: #492532;
+            --md-sys-color-tertiary-container: #633B48;
+            --md-sys-color-on-tertiary-container: #FFD8E4;
+            --md-sys-color-error: #F2B8B5;
+            --md-sys-color-on-error: #601410;
+            --md-sys-color-error-container: #8C1D18;
+            --md-sys-color-on-error-container: #F9DEDC;
+            --md-sys-color-background: #1C1B1F;
+            --md-sys-color-on-background: #E6E1E5;
+            --md-sys-color-surface: #1C1B1F;
+            --md-sys-color-on-surface: #E6E1E5;
+            --md-sys-color-surface-variant: #49454F;
+            --md-sys-color-on-surface-variant: #CAC4D0;
+            --md-sys-color-outline: #938F99;
+            --md-sys-color-surface-container-highest: #36343B;
+            --md-sys-color-surface-container-low: #25232A;
+            --md-sys-color-warning: #FFC107;
+        }
+
         html { scroll-behavior: smooth; }
         body {
             font-family: 'Roboto', sans-serif;
@@ -148,12 +177,6 @@
         .btn-sm { 
             padding: 0.25rem 0.75rem !important;
             font-size: 0.875rem;
-        }
-
-        .h2-style {
-            font-size: 1.25rem; /* 20px */
-            font-weight: 600;
-            color: #4A5568; /* gray-700 */
         }
 
         .day-btn.selected { background-color: var(--md-sys-color-primary); color: var(--md-sys-color-on-primary); border-color: var(--md-sys-color-primary); }
@@ -266,12 +289,6 @@
             opacity: 0;
             pointer-events: none;
         }
-        .history-tab-group .history-tab.active {
-            background-color: var(--md-sys-color-primary-container);
-            color: var(--md-sys-color-on-primary-container);
-            border-color: var(--md-sys-color-primary-container);
-            z-index: 10;
-        }
         .settings-tab-content {
             display: none;
         }
@@ -285,6 +302,9 @@
             justify-content: flex-end;
             gap: 0.25rem;
         }
+        .event-timestamp-buttons .btn-secondary {
+            border: 1px solid transparent;
+        }
         @keyframes flash-bg {
             0% { background-color: var(--md-sys-color-primary-container); }
             100% { background-color: transparent; }
@@ -297,7 +317,7 @@
 <body class="antialiased">
 
     <!-- Header -->
-    <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200">
+    <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200 dark:bg-gray-900/80 dark:border-gray-700">
         <div class="container mx-auto max-w-4xl px-4 py-3 flex justify-between items-center">
             <div id="header-left">
                 <button id="nav-today" onclick="WellTrackApp.events.showPage('today')" class="nav-btn">
@@ -371,7 +391,8 @@ const WellTrackApp = {
         activeMoodGroup: 'arousal_level',
         activeEventGroup: null, // Set to null initially, will be set to first group on page load
         activeHistoryTab: 'event',
-        activeSettingsTab: 'eventTypes', // eventTypes, data, reminders, about, display
+        activeSettingsTab: 'eventTypes',
+        theme: 'auto', // auto, light, dark
         isTodaysLogVisible: false,
         sliderClickStartPosition: null,
         currentPainView: 'back',
@@ -444,6 +465,8 @@ const WellTrackApp = {
         this.state.currentPainView = settings.painView;
         this.state.isTodaysLogVisible = settings.logVisibility;
         this.state.activeSettingsTab = settings.activeSettingsTab;
+        this.state.theme = settings.theme;
+        this.events.applyTheme(settings.theme);
 
         document.addEventListener('DOMContentLoaded', () => {
             this.events.showPage(this.state.activePage);
@@ -464,6 +487,7 @@ const WellTrackApp = {
                 painView: 'back',
                 logVisibility: false,
                 activeSettingsTab: 'eventTypes',
+                theme: 'auto',
                 welltrack_latest: '',
                 dayStartTime: '05:00'
             };
@@ -1663,7 +1687,7 @@ const WellTrackApp = {
 
                 return `
                 <div class="flex justify-between items-center pt-2 px-4 mb-4">
-                    <h2 class="h2-style">Heute</h2>
+                    <h2 class="text-xl font-semibold text-gray-700">Heute</h2>
                     <span class="text-lg font-semibold text-gray-600">${dateString}</span>
                 </div>
                 <div id="today-summary-cards" class="grid grid-cols-2 gap-4 mb-6">
@@ -1696,7 +1720,7 @@ const WellTrackApp = {
 
                 return `
                 <div class="card pt-2">
-                    <h2 class="h2-style flex-shrink-0 mb-2">Ereignisse</h2>
+                    <h2 class="text-xl font-semibold text-gray-700 flex-shrink-0 mb-2">Ereignisse</h2>
                     <div class="submenu-container" role="group">
                         ${groupButtons}
                     </div>
@@ -1715,7 +1739,7 @@ const WellTrackApp = {
 
                 return `
                 <div class="card pt-2">
-                    <h2 id="mood-section-title" class="h2-style flex-shrink-0 mb-2">Stimmung</h2>
+                    <h2 id="mood-section-title" class="text-xl font-semibold text-gray-700 flex-shrink-0 mb-2">Stimmung</h2>
                     <div class="submenu-container" role="group">
                         ${groupButtons}
                     </div>
@@ -1728,7 +1752,7 @@ const WellTrackApp = {
                 const currentView = WellTrackApp.state.currentPainView;
                 return `
                 <div class="card pt-2">
-                    <h2 id="pain-section-title" class="h2-style flex-shrink-0 mb-2">Schmerzen</h2>
+                    <h2 id="pain-section-title" class="text-xl font-semibold text-gray-700 flex-shrink-0 mb-2">Schmerzen</h2>
                     <div class="submenu-container" role="group">
                         <button type="button" onclick="WellTrackApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100 ${currentView === 'front' ? 'active' : ''}">Vorderseite</button>
                         <button type="button" onclick="WellTrackApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100 ${currentView === 'back' ? 'active' : ''}">Rückseite</button>
@@ -1812,7 +1836,7 @@ const WellTrackApp = {
                 <div class="container mx-auto max-w-4xl">
                     <div class="card pt-2 mb-6">
                         <div class="flex items-center gap-2 mb-2">
-                            <h2 id="log-title" class="h2-style flex-shrink-0">Verlauf</h2>
+                            <h2 id="log-title" class="text-xl font-semibold text-gray-700 flex-shrink-0">Verlauf</h2>
                             <select id="time-range-selector" onchange="WellTrackApp.events.handleTimeRangeChange(event)" class="border border-gray-300 rounded-full text-sm focus:ring-blue-500 focus:border-blue-500 block w-auto p-2.5">
                                 <option value="7" ${WellTrackApp.state.timeRange === 7 ? 'selected' : ''}>Letzte 7 Tage</option>
                                 <option value="28" ${WellTrackApp.state.timeRange === 28 ? 'selected' : ''}>Letzte 4 Wochen</option>
@@ -1834,7 +1858,7 @@ const WellTrackApp = {
             },
             fullLogSection: () => `
                 <div class="sticky top-[73px] z-10 bg-white/80 backdrop-blur-md py-2 mb-2">
-                    <h2 class="h2-style mb-2">Protokoll</h2>
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2">Protokoll</h2>
                     <div id="log-pagination" class="flex items-center justify-end gap-1 bg-gray-100 p-1 rounded-full">
                         <button id="log-week-first" onclick="WellTrackApp.events.handleWeekChange('first')" class="btn btn-secondary !rounded-full !p-2" title="Erste Woche">
                             <span class="material-symbols-outlined">keyboard_double_arrow_left</span>
@@ -1888,7 +1912,7 @@ const WellTrackApp = {
 
                 return `
                 <div class="card pt-2">
-                    <h2 class="h2-style flex-shrink-0 mb-2">Einstellungen</h2>
+                    <h2 class="text-xl font-semibold text-gray-700 flex-shrink-0 mb-2">Einstellungen</h2>
                     <div class="submenu-container mb-2" role="group">
                         <button onclick="WellTrackApp.events.handleSettingsTabClick('about')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="about">Über</button>
                         <button onclick="WellTrackApp.events.handleSettingsTabClick('display')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="display">Darstellung</button>
@@ -1901,8 +1925,16 @@ const WellTrackApp = {
                     <div id="settings-tab-display" class="settings-tab-content">
                         <div class="space-y-4">
                             <div>
-                                <label for="day-start-time" class="block mb-1 font-medium text-gray-900">Neuer Tag beginnt um:</label>
-                                <input type="time" id="day-start-time" value="${settings.dayStartTime}" onchange="WellTrackApp.events.saveDayStartTime(this.value)" class="w-full p-2 border border-gray-300 rounded-lg">
+                                <label for="theme-selector" class="block mb-1 font-medium text-gray-900 dark:text-gray-100">Design</label>
+                                <select id="theme-selector" onchange="WellTrackApp.events.handleThemeChange(this.value)" class="w-full p-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                    <option value="auto" ${settings.theme === 'auto' ? 'selected' : ''}>Automatisch</option>
+                                    <option value="light" ${settings.theme === 'light' ? 'selected' : ''}>Hell</option>
+                                    <option value="dark" ${settings.theme === 'dark' ? 'selected' : ''}>Dunkel</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="day-start-time" class="block mb-1 font-medium text-gray-900 dark:text-gray-100">Neuer Tag beginnt um:</label>
+                                <input type="time" id="day-start-time" value="${settings.dayStartTime}" onchange="WellTrackApp.events.saveDayStartTime(this.value)" class="w-full p-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                             </div>
                         </div>
                     </div>
@@ -1973,15 +2005,15 @@ const WellTrackApp = {
                             <span class="text-base sm:text-lg font-medium text-gray-800">${event.name}</span>
                             <span id="timestamp-info-${event.activity}" class="text-sm sm:text-sm text-gray-800 font-normal ml-2 p-1 rounded-md">${lastTimestampInfo}</span>
                         </div>
-                        <div class="flex items-center justify-end">
-                            <button onclick="WellTrackApp.events.handleTimestampEvent('${event.activity}')" class="btn btn-secondary btn-sm sm:btn-md min-w-[120px] sm:min-w-[150px] ${buttonClass}">
-                                <span class="material-symbols-outlined mr-1 sm:mr-2">add</span>${buttonText}
+                        <div class="flex items-center justify-end event-timestamp-buttons">
+                            <button onclick="WellTrackApp.events.handleTimestampEvent('${event.activity}')" class="btn btn-secondary btn-sm ${buttonClass}">
+                                <span class="material-symbols-outlined mr-1">add</span>${buttonText}
                             </button>
                             <button onclick="WellTrackApp.events.handleUndoTimestamp('${event.activity}')" class="btn btn-tertiary btn-sm ${undoButtonClass}">
-                                <span class="material-symbols-outlined mr-1 sm:mr-2">undo</span>Rückgängig
+                                <span class="material-symbols-outlined mr-1">undo</span>Rückgängig
                             </button>
                             <button onclick="WellTrackApp.events.handleTimestampEvent('${event.activity}')" class="btn btn-secondary btn-sm ${undoButtonClass}">
-                                <span class="material-symbols-outlined mr-1 sm:mr-2">refresh</span>Erneut/e ${buttonText}
+                                <span class="material-symbols-outlined mr-1">refresh</span>Erneut/e ${buttonText}
                             </button>
                         </div>
                     </div>
@@ -2709,6 +2741,20 @@ const WellTrackApp = {
             settings.activeSettingsTab = tabName;
             WellTrackApp.data.saveSettings(settings);
             WellTrackApp.render.settingsPage();
+        },
+        handleThemeChange(theme) {
+            this.applyTheme(theme);
+            const settings = WellTrackApp.data.getSettings();
+            settings.theme = theme;
+            WellTrackApp.data.saveSettings(settings);
+            WellTrackApp.state.theme = theme;
+        },
+        applyTheme(theme) {
+            if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
         },
         saveDayStartTime(timeString) {
             const settings = WellTrackApp.data.getSettings();
