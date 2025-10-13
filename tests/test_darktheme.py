@@ -8,9 +8,27 @@ output_dir = "build/tests/darktheme"
 os.makedirs(output_dir, exist_ok=True)
 
 def set_theme(page: Page, theme: str):
-    """Helper function to set the theme in localStorage."""
-    page.evaluate(f"WellTrackApp.events.handleThemeChange('{theme}')")
-    # Wait for the theme to be applied, you might need a better wait mechanism
+    """Helper function to set the theme directly and avoid navigation issues."""
+    script = f"""
+    () => {{
+        let settings = JSON.parse(localStorage.getItem('wellTrackSettings')) || {{}};
+        settings.theme = '{theme}';
+        localStorage.setItem('wellTrackSettings', JSON.stringify(settings));
+
+        if ('{theme}' === 'auto') {{
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+        }} else {{
+            document.documentElement.setAttribute('data-theme', '{theme}');
+        }}
+
+        // Re-render charts if on history page, as they don't auto-update
+        if (WellTrackApp.state.activePage === 'history') {{
+            WellTrackApp.render.historyPage();
+        }}
+    }}
+    """
+    page.evaluate(script)
     page.wait_for_timeout(500)
 
 def test_dark_theme_screenshots(page: Page, live_server):
