@@ -18,22 +18,32 @@ create a skeleton welltrack gui mainbar, tailwind css, mimicking the welltrack a
 
 - pain entry back svg: split "LWS" vertically, upper part remains LWS, lower part becomes "KSB" with long german text "Kreuz & Steißbein", remove pain_free.
 - pain entry front svg: split "brust" und "bauch" to left and right part. remove pain_free.
-- new subselector (additional to back and front) head_hands_feets "Icon-For-Head Icon-For-Hand Icon-For-Foot": is a svg like front and back, but with selected bodyparts that are grouped for detailed not covered on front and back parts. There is no front or back on this head-hand-foot svg. its a symbolized, easy to click and highlight collections: first collection: a head, with left and right ears, left and right eyes, nose, mouth. the head itself is not clickable, front and back have option for it. second collection: hands, with index finger pointing inwards, so left hand then right hand, make all finger but not the hand itself (is on front and back) selectable. 3rd: feets with toes, big toe is facing inward so left foot, then right foot. make all toes clickable but not the foot.
+- new subselector: other named "Weitere". A list in two cols, of user created special pain entry possibilities, but the first item on the list is alway the new "pain free" item. use the `dev/prototype/pain-free-selector.html` "Body Icon" for "'BodyIcon Schmerz Frei" as title of first item. other items are generated from the list of extra painTypes a new array similar to eventTypes, but for custom pain entries: eg. '{"pain_id": "english_clear_name", name="German Common Name"}'. for this demo assume two custom Entries, "Tinitus" and "Sodbrennen", give tinitus title a fitting icon in the title, equal for sodbrennen, so its displayed "icon titlename" . if pressed they behave like other body pain parts, they become filled with the pain value color, and a welltrack metric is generated.
 
-- new subselector: other "Weitere". A list of user created special pain entry possibilities, but the first item on the list is alway the new "pain free" item. use the `dev/prototype/pain-free-selector.html` "Body Icon" for "Icon Schmerz Frei" as title of first item. other items are generated from the list of extra painTypes a new array similar to eventTypes, but for custom pain entries: for this demo assume two custom Entries, "Tinitus" and "Sodbrennen", give tinitus title a fitting icon in the title, equal for sodbrennen, so its displayed "icon titlename" . if pressed they behave like other body pain parts, they become filled with the pain value color, and a welltrack metric is generated.
+- on init, any body/pain part that should be colored, look metrics latest to earlier within the last 10 minutes for pain entries add each color value found with the level. if any pain_free_level or 10 min is encountered further processing is stopped.
 
-- on init, any body/pain part that should be colored, look metrics latest to earlier within the last 10 minutes for pain entries add each color value found with the level. if any pain_free_level is encountered further processing is aborted.
+- if any pain that is clicked, it looks within the last 10 minutes (latest to earlier) of pain entries if there is a pain_free_level or another pain_bodypart metric of the same type that would be replaced with the new value, then delete the old entry (pain_free_level, or the old pain_bodypart metric), attach a new entry with the new pain metric.
 
-- if any pain that is selected, looks within the last 10 minutes of pain entries if there is a pain_free_level or another pain_bodypart metric of the same type that would be replaced with the new value, then delete the old entry (pain_free_level, or the old pain_bodypart metric), attach a new entry with the new pain metric.
+- if "pain free" button is selected, it looks if there are set pain parts in the last 10 minutes, and if so it asks with a modal, "wieder Schmerzfrei ?" "Nein" und "Ja", if "ja" it goes back 10 minutes, and removes all pain entries from their to now. it then adds the pain_free metric, and colors the button if there was no question or the question was answered with ja.
 
-- if "pain free" button is selected, it looks if there are set pain parts in the last 10 minutes, and if so it asks with a modal, "wieder Schmerzfrei ?" "Nein" und "Ja", only on "ja" it goes back 10 minutes, and removes all pain entries from their to now. it then adds the pain_free metric, and colors the button.
-
-- create a test in tests that uses this prototype to take screenshots from back, front and other.
+- create a test in tests that uses this prototype to take screenshots from painentry: back, front and other tab.
 
 
-- refactor pain charts: create getPainChartData(pain_mod="linear") in analog to getMoodChartData(), but with the following differences: buckets are pain_0 to pain_5 (as pain values can be), total_pain, avg_over_time_pain)
-    - refactor both getmoodchardata and getpainchartdata that the avg_over_time from total_pain/total_mood is equally to avg_over_time in prometheus. if this is to complicated, think of a thirdparty library available over cdn to include.
-    - refactor pain chart: first chart will be similar to moodchart: pain_0 to pain_5 are stacked area, total_pain and avg_over_time_pain are lines on top of areas, and are not stacked or interacting. because of the getpainchartdata time normalizing to 10min slots, we can use similar tooltip settings.  Label the pain_0 to pain_5 like the pain selection text, except pain_0, please label it "Schmerz frei", use the same colors for pain_1 to pain_5, for pain_0 use green.
+---
+Read `dev/system-workflow.md`, `dev/development.md`,  `README.md`, and `src/welltrack/welltrack.html`.
+Read the following required changes, considering which parts of the tasks should be combined and which should be separate, and in what order they should be performed.
+Update `dev/tasks.md` under Section "Planned Tasks" with the detailed description of that tasks.
+Then, do each of the described tasks one by one, and update `dev/tasks.md` accordingly.
+
+required changes:
+
+- fix: gui:on a evententry pushbutton the layout still flickers around a pixel for unselected and selected pushbutton.
+
+- Gui Dark Theme:
+    - make an additional dark theme, add switch to settings after Erinnerungen, "Darstellung", "Design", "Automatisch | Hell | Dunkel" , default automatic, automatic selects depending user browser preference, if that fails "hell".
+    - while making the theme, look for any css that is not used or could be cleaned out before implementing it in dark mode. go over any css and think if it needs to change for dark mode. correlate background (blackish) with foreground whiteish, maintain a good contrast like in the bright theme. make sure most backgrounds in dark mode are blackish or darkish, but not bright. adjust the content inside of these containers.
+    - to be sure that all of the theme is correct a number of screenshots must be made and visualy analyzed.
+        - make this a test in `tests/test_darktheme.py` that screenshots to (mkdir) `build/tests/darktheme` with of all main screen tabs with sample data, both in dark mode and in bright mode, and then looks at each output and looks if it is correct for the theme.
 
 
 ## nice to have
@@ -51,8 +61,6 @@ create a skeleton welltrack gui mainbar, tailwind css, mimicking the welltrack a
 - Gui Translation
     make translations that are inside welltrack.html and are selected automatically on browser agent preferences, and switchable in settings "Darstellung" "Sprache", "Default", "Deutsch", "English", defaulting to "default" which uses the browser preferred language, if available, or English if not available.
 
-- Gui Dark Theme
-    +make an additional dark theme, add switch to settings after Erinnerungen, "Darstellung", "Design", "Hell | Dunkel" , default hell
 
 - Gui browser Forward/Back Utilization
     make browser forward and browser back work as go through recorded selected subtabs, eg. clicked on today, mood, go to mood entry, click browser back, return to today.

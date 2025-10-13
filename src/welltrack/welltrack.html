@@ -77,6 +77,15 @@
             padding-top: 1rem;
             padding-bottom: 1rem;
         }
+        .maincard {
+            background-color: var(--md-sys-color-surface);
+            border: 0;
+            border-radius: 2px;
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
         .pill-card {
             background-color: var(--md-sys-color-surface-container-low);
             border: 1px solid var(--md-sys-color-surface-variant);
@@ -942,7 +951,7 @@ const WellTrackApp = {
                             <span>${buttonText}</span>
                             <span class="material-symbols-outlined">${icon}</span>
                         </button>
-                        <ul id="todays-log-container" class="space-y-1 mt-2 px-2 ${listVisibilityClass}">
+                        <ul id="todays-log-container" class="space-y-1 mt-2  ${listVisibilityClass}">
                             ${listHtml}
                         </ul>
                     </div>
@@ -1115,7 +1124,7 @@ const WellTrackApp = {
             eventItems.forEach(item => {
                 const div = document.createElement('div');
                 div.id = `event-item-${item.data.activity}`;
-                div.className = `p-4 rounded-xl flex flex-row flex-wrap items-center justify-between gap-y-2 gap-x-4 bg-gray-100`;
+                div.className = `p-1 rounded-xl flex flex-row flex-wrap items-center justify-between gap-y-2 gap-x-4 bg-gray-100`;
                 if(item.data.increment === 0) {
                      div.innerHTML = WellTrackApp.render.components.eventItemTimestamp(item.data, item.value > 0, item.entries);
                 } else {
@@ -1653,9 +1662,9 @@ const WellTrackApp = {
                 }
 
                 return `
-                <div class="flex justify-between items-center pt-2 px-2 mb-4">
+                <div class="flex justify-between items-center pt-2 px-4 mb-4">
                     <h2 class="h2-style">Heute</h2>
-                    <span class="text-lg text-gray-800">${dateString}</span>
+                    <span class="text-lg font-semibold text-gray-600">${dateString}</span>
                 </div>
                 <div id="today-summary-cards" class="grid grid-cols-2 gap-4 mb-6">
                     <!-- Mood and Pain cards will be rendered here -->
@@ -1691,6 +1700,8 @@ const WellTrackApp = {
                     <div class="submenu-container" role="group">
                         ${groupButtons}
                     </div>
+                </div>
+                <div class="maincard">
                     <div id="todays-event-container" class="space-y-2 mt-4"></div>
                 </div>`;
             },
@@ -1708,6 +1719,8 @@ const WellTrackApp = {
                     <div class="submenu-container" role="group">
                         ${groupButtons}
                     </div>
+                </div>
+                <div class="maincard">
                     <div id="mood-container" class="space-y-4 mt-6">${activeGroup.questions.map(q => WellTrackApp.render.components.moodSlider(q)).join('')}</div>
                 </div>`;
             },
@@ -1720,6 +1733,8 @@ const WellTrackApp = {
                         <button type="button" onclick="WellTrackApp.events.handleViewToggle('front')" id="btn-view-front" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100 ${currentView === 'front' ? 'active' : ''}">Vorderseite</button>
                         <button type="button" onclick="WellTrackApp.events.handleViewToggle('back')" id="btn-view-back" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 rounded-full hover:bg-gray-100 ${currentView === 'back' ? 'active' : ''}">Rückseite</button>
                     </div>
+                </div>
+                <div class="maincard">
                     <div class="flex justify-center mt-2">
                         <svg width="400" height="650" viewBox="0 0 400 650">
                             <g id="body-front" class="${currentView === 'front' ? '' : 'hidden'}">
@@ -1874,14 +1889,15 @@ const WellTrackApp = {
                 return `
                 <div class="card pt-2">
                     <h2 class="h2-style flex-shrink-0 mb-2">Einstellungen</h2>
-                    <div class="submenu-container" role="group">
+                    <div class="submenu-container mb-2" role="group">
                         <button onclick="WellTrackApp.events.handleSettingsTabClick('about')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="about">Über</button>
                         <button onclick="WellTrackApp.events.handleSettingsTabClick('display')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="display">Darstellung</button>
                         <button onclick="WellTrackApp.events.handleSettingsTabClick('reminders')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="reminders">Erinnerungen</button>
                         <button onclick="WellTrackApp.events.handleSettingsTabClick('data')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="data">Import/Export</button>
                         <button onclick="WellTrackApp.events.handleSettingsTabClick('eventTypes')" class="view-toggle-btn px-4 py-2 text-sm font-medium bg-white border border-gray-200 hover:bg-gray-100 rounded-full" data-tab="eventTypes">Ereignisarten</button>
                     </div>
-
+                </div>
+                <div class="maincard">
                     <div id="settings-tab-display" class="settings-tab-content">
                         <div class="space-y-4">
                             <div>
@@ -1908,7 +1924,7 @@ const WellTrackApp = {
                         </div>
                     </div>
                     <div id="settings-tab-about" class="settings-tab-content">
-                        <div class="text-base text-gray-800 space-y-6 p-4">
+                        <div class="text-base text-gray-800 space-y-4 p-2">
                             <p class="text-lg">WellTrack ist ein persönliches und 100% privates Gesundheitstagebuch. Alle Daten bleiben ausschließlich auf dem eigenen Gerät.</p>
                             <div>
                                 <h4 class="text-lg font-semibold mb-2">Ressourcen</h4>
@@ -1918,7 +1934,7 @@ const WellTrackApp = {
                                     <li><a href="https://github.com/wuxxin/welltrack/blob/main/LICENSE" target="_blank" class="text-blue-600 hover:underline">Lizenz (BSD 3-Clause License)</a></li>
                                 </ul>
                             </div>
-                            <div id="version-info-container" class="pt-6 mt-6 border-t border-gray-300">
+                            <div id="version-info-container" class="pt-6 mt-6 border-t text-center border-gray-300">
                                 <!-- Version info will be injected here -->
                             </div>
                         </div>
@@ -1953,11 +1969,11 @@ const WellTrackApp = {
 
                 return `
                     <div class="w-full">
-                        <div class="flex items-baseline mb-2">
+                        <div class="flex items-baseline">
                             <span class="text-base sm:text-lg font-medium text-gray-800">${event.name}</span>
                             <span id="timestamp-info-${event.activity}" class="text-sm sm:text-sm text-gray-800 font-normal ml-2 p-1 rounded-md">${lastTimestampInfo}</span>
                         </div>
-                        <div class="flex items-center justify-end gap-2">
+                        <div class="flex items-center justify-end">
                             <button onclick="WellTrackApp.events.handleTimestampEvent('${event.activity}')" class="btn btn-secondary btn-sm sm:btn-md min-w-[120px] sm:min-w-[150px] ${buttonClass}">
                                 <span class="material-symbols-outlined mr-1 sm:mr-2">add</span>${buttonText}
                             </button>
