@@ -127,6 +127,7 @@
             font-weight: 500;
             transition: all 0.2s;
             cursor: pointer;
+            border: 1px solid transparent;
         }
         .btn:disabled {
             background-color: var(--md-sys-color-surface-variant) !important;
@@ -1960,7 +1961,7 @@ const WellTrackApp = {
                 let lastTimestampInfo = '';
                 if (lastEntry) {
                     const time = new Date(lastEntry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    lastTimestampInfo = `(${count}x, zuletzt um ${time})`;
+                    lastTimestampInfo = `${count}x, zuletzt um ${time}`;
                 }
 
                 const buttonText = event.unitType || 'Einnahme';
@@ -1969,9 +1970,9 @@ const WellTrackApp = {
 
                 return `
                     <div class="w-full">
-                        <div class="flex items-baseline">
+                        <div class="flex items-baseline justify-between">
                             <span class="text-base sm:text-lg font-medium text-gray-800">${event.name}</span>
-                            <span id="timestamp-info-${event.activity}" class="text-sm sm:text-sm text-gray-800 font-normal ml-2 p-1 rounded-md">${lastTimestampInfo}</span>
+                            <span id="timestamp-info-${event.activity}" class="text-sm sm:text-sm text-gray-800 font-semibold ml-2 p-1 rounded-md">${lastTimestampInfo}</span>
                         </div>
                         <div class="flex items-center justify-end">
                             <button onclick="WellTrackApp.events.handleTimestampEvent('${event.activity}')" class="btn btn-secondary btn-sm sm:btn-md min-w-[120px] sm:min-w-[150px] ${buttonClass}">
