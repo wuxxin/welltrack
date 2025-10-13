@@ -51,6 +51,10 @@ def test_start_with_empty_data(page: Page):
 
 def test_start_with_sample_data(page: Page, sample_data):
     """Test the application's state with sample data loaded from a file."""
+    # Mock the current date to the last timestamp in the sample data
+    last_timestamp = sample_data["metrics"][-1]["timestamp"]
+    page.add_init_script(f"Date.now = () => {last_timestamp};")
+
     page.evaluate(
         f"() => {{ \
         localStorage.setItem('wellTrackMetrics', JSON.stringify({json.dumps(sample_data['metrics'])})); \
@@ -59,9 +63,11 @@ def test_start_with_sample_data(page: Page, sample_data):
     }}"
     )
     page.reload()
+    page.wait_for_load_state("networkidle")
 
-    # Navigate to the log page to see all entries
-    page.locator("#nav-log").click()
+    # Navigate to the today page to see all entries
+    page.locator("#nav-today").click()
+    page.wait_for_load_state("networkidle")
 
     # Check for a known entry from the sample data
     expect(page.locator("text=Kaffee Tassen").first).to_be_visible()

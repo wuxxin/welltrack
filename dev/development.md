@@ -79,8 +79,10 @@ test                 Create Sample Data, run Tests
 - run `make sample-data` to create `build/tests/sample-data.json`. Always use this sample data if the user requests tests with sample data.
 - run `make docs` to create `build/site`, which is needed for testing.
 - a changed src/welltrack/welltrack.html (or any other file in that directory) that will be tested for a change needs to be build into `build/site/welltrack` which is done by `make docs` which generates the whole `build/site` directory.
-- run `make test` creates sample-data,  runs all integrated tests in `tests/`
+- run `make test` to execute all integrated tests in `tests/`
     - pytest runs with fixtures from `tests/conftest.py`, to start and stop the `dev_server.py` server serving `build/site` and configure the browser for mobile viewport and locale settings.
+- run `make docs && . .venv/bin/activate && pytest` to run pytest.
+- dont start the dev_server for `make test` or  `pytest`, in both cases pytest will start it.
 - to serve the `build/site` files locally, execute `. .venv/bin/activate && python scripts/dev_serve.py -d build/site 8443 > dev_server.log 2>&1 &`. For this project, the built site is served from build/site on port 8443. do not run the dev server if running `pytest` (or make test, which calls pytest), stop a possible running dev_serv.py before, because the pytest tests use the server start/stop fixtures from `tests/testconf.py`.
 - for a specific gui testing run, where every test screenshot is saved unconditionally: `mkdir -p build/tests/output; . .venv/bin/activate pytest --screenshot on --video retain-on-failure --output build/tests/output` and the testfilename.
 - create new tests under `tests/`:

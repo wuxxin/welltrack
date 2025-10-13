@@ -26,8 +26,18 @@ create a skeleton welltrack gui mainbar, tailwind css, mimicking the welltrack a
 
 - if "pain free" button is selected, it looks if there are set pain parts in the last 10 minutes, and if so it asks with a modal, "wieder Schmerzfrei ?" "Nein" und "Ja", if "ja" it goes back 10 minutes, and removes all pain entries from their to now. it then adds the pain_free metric, and colors the button if there was no question or the question was answered with ja.
 
-- create a test in tests that uses this prototype to take screenshots from painentry: back, front and other tab.
+- create a test in tests that uses this prototype to take screenshots from painentry: back, front and other tab. verify those screenshots. assure correct screenshot path, either `build/tests/*` or `jules-scratch/`
 
+
+---
+
+- fix: gui:on a evententry pushbutton the layout still flickers around a pixel more is selected to unselected pushbutton.
+
+- change pushbutton event entrys: align the "(1x, zuletzt um hh:mm)" to the right, remove "()", make it semibold.
+
+
+
+## nice to have
 
 ---
 Read `dev/system-workflow.md`, `dev/development.md`,  `README.md`, and `src/welltrack/welltrack.html`.
@@ -37,16 +47,15 @@ Then, do each of the described tasks one by one, and update `dev/tasks.md` accor
 
 required changes:
 
-- fix: gui:on a evententry pushbutton the layout still flickers around a pixel for unselected and selected pushbutton.
 
 - Gui Dark Theme:
     - make an additional dark theme, add switch to settings after Erinnerungen, "Darstellung", "Design", "Automatisch | Hell | Dunkel" , default automatic, automatic selects depending user browser preference, if that fails "hell".
-    - while making the theme, look for any css that is not used or could be cleaned out before implementing it in dark mode. go over any css and think if it needs to change for dark mode. correlate background (blackish) with foreground whiteish, maintain a good contrast like in the bright theme. make sure most backgrounds in dark mode are blackish or darkish, but not bright. adjust the content inside of these containers.
+    - while making the theme, look for any css that is not used or could be cleaned out before implementing it in dark mode. go over any css and think if it needs to change for dark mode. correlate background (blackish) with foreground whiteish, maintain a good contrast like in the bright theme. make sure most backgrounds in dark mode are blackish or darkish, but not bright. adjust the content inside of these containers. explain every color in welltrack and if its subjected to theme change for dark theme.
     - to be sure that all of the theme is correct a number of screenshots must be made and visualy analyzed.
-        - make this a test in `tests/test_darktheme.py` that screenshots to (mkdir) `build/tests/darktheme` with of all main screen tabs with sample data, both in dark mode and in bright mode, and then looks at each output and looks if it is correct for the theme.
+        - make this a test in `tests/test_darktheme.py` that screenshots to (mkdir) `build/tests/darktheme` with of all main screen tabs with sample data, both in dark mode and in bright mode, and then looks at each output and looks if it is correct for the theme. use these tests and look at the output pictures to verify correct behavior.
+---
 
 
-## nice to have
 
 - settings: edit event type: add Button (after subtab selector, right aligned just before eventtype list starts) with only an Icon (no text, but hovering reveals "Sortierung verändern", Representing "Loosing Chains" for reorder, and "closed Chains" as the other icon once in reorder mode to freeze changes. clicking "Reorder" Icon blurs everything except the event type list, that gets grab icons on the left, and disables/greysout (modal type) all other user interface, so only the list and the icon "Closed Chains" are clickable, the user can reorder the event types, and either abort (clicked outside) aborts the reordering, or the click on "closed Chain" freezes the new reordering, after the metrictype array gets resorted from the dom order. testcase: add sample data, make screenshot of settings:eventtypes original order, press reorder, take screenshot, reorder third to first, fifth to second, take screenshot, press lock, screenshot.
 

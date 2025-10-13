@@ -29,7 +29,7 @@ lab: buildenv ## Edit welltrack-lab.py in marimo
 	@echo "+++ $@"
 	. .venv/bin/activate && marimo edit scripts/welltrack-lab.py --no-token
 
-test: docs build/tests/sample-data.json ## Create Sample Data, run Tests
+test: docs ## Run Tests
 	@echo "+++ $@"
 	mkdir -p build/tests/output
 	. .venv/bin/activate && pytest --screenshot on --video retain-on-failure --output build/tests/output tests/
@@ -48,9 +48,10 @@ build/site/index.html:
 docs-mkdocs: build/site/index.html
 	@echo "+++ $@"
 
-build/site/welltrack/welltrack.html: docs-mkdocs
+build/site/welltrack/welltrack.html: docs-mkdocs sample-data
 	mkdir -p build/site/welltrack
 	cp src/welltrack/* build/site/welltrack
+	cp build/tests/sample-data.json build/site/welltrack
 
 docs-welltrack-app: build/site/welltrack/welltrack.html
 	@echo "+++ $@"
