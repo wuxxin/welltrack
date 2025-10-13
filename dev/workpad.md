@@ -31,22 +31,10 @@ create a skeleton welltrack gui mainbar, tailwind css, mimicking the welltrack a
 
 ---
 
-- fix: gui:on a evententry pushbutton the layout still flickers around a pixel more is selected to unselected pushbutton.
-
-- change pushbutton event entrys: align the "(1x, zuletzt um hh:mm)" to the right, remove "()", make it semibold.
-
-
 
 ## nice to have
 
 ---
-Read `dev/system-workflow.md`, `dev/development.md`,  `README.md`, and `src/welltrack/welltrack.html`.
-Read the following required changes, considering which parts of the tasks should be combined and which should be separate, and in what order they should be performed.
-Update `dev/tasks.md` under Section "Planned Tasks" with the detailed description of that tasks.
-Then, do each of the described tasks one by one, and update `dev/tasks.md` accordingly.
-
-required changes:
-
 
 - Gui Dark Theme:
     - make an additional dark theme, add switch to settings after Erinnerungen, "Darstellung", "Design", "Automatisch | Hell | Dunkel" , default automatic, automatic selects depending user browser preference, if that fails "hell".
@@ -54,8 +42,6 @@ required changes:
     - to be sure that all of the theme is correct a number of screenshots must be made and visualy analyzed.
         - make this a test in `tests/test_darktheme.py` that screenshots to (mkdir) `build/tests/darktheme` with of all main screen tabs with sample data, both in dark mode and in bright mode, and then looks at each output and looks if it is correct for the theme. use these tests and look at the output pictures to verify correct behavior.
 ---
-
-
 
 - settings: edit event type: add Button (after subtab selector, right aligned just before eventtype list starts) with only an Icon (no text, but hovering reveals "Sortierung verändern", Representing "Loosing Chains" for reorder, and "closed Chains" as the other icon once in reorder mode to freeze changes. clicking "Reorder" Icon blurs everything except the event type list, that gets grab icons on the left, and disables/greysout (modal type) all other user interface, so only the list and the icon "Closed Chains" are clickable, the user can reorder the event types, and either abort (clicked outside) aborts the reordering, or the click on "closed Chain" freezes the new reordering, after the metrictype array gets resorted from the dom order. testcase: add sample data, make screenshot of settings:eventtypes original order, press reorder, take screenshot, reorder third to first, fifth to second, take screenshot, press lock, screenshot.
 
@@ -69,7 +55,6 @@ required changes:
 
 - Gui Translation
     make translations that are inside welltrack.html and are selected automatically on browser agent preferences, and switchable in settings "Darstellung" "Sprache", "Default", "Deutsch", "English", defaulting to "default" which uses the browser preferred language, if available, or English if not available.
-
 
 - Gui browser Forward/Back Utilization
     make browser forward and browser back work as go through recorded selected subtabs, eg. clicked on today, mood, go to mood entry, click browser back, return to today.
