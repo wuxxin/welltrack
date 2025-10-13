@@ -65,8 +65,12 @@ def test_start_with_sample_data(page: Page, sample_data):
     page.reload()
     page.wait_for_load_state("networkidle")
 
-    # Navigate to the today page to see all entries
-    page.locator("#nav-today").click()
+    # Navigate to the event page
+    page.locator("#nav-event").click()
+    page.wait_for_load_state("networkidle")
+
+    # Click the correct event group to make the item visible
+    page.locator("button:has-text('Ernährung')").click()
     page.wait_for_load_state("networkidle")
 
     # Check for a known entry from the sample data
