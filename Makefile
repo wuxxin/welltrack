@@ -58,7 +58,7 @@ docs-welltrack-app: build/site/welltrack/welltrack.html
 
 build/site/prototype: docs-mkdocs
 	mkdir -p build/site/prototype
-	cp dev/prototype/* build/site/prototype
+	cp src/prototype/* build/site/prototype
 
 docs-prototype: build/site/prototype
 	@echo "+++ $@"
