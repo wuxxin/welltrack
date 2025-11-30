@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WellTrack Prototype - New Pain Entry</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
+    <style>
+        :root {
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005D;
+            --md-sys-color-secondary: #625B71;
+            --md-sys-color-on-secondary: #FFFFFF;
+            --md-sys-color-secondary-container: #E8DEF8;
+            --md-sys-color-on-secondary-container: #1D192B;
+            --md-sys-color-surface: #FFFBFE;
+            --md-sys-color-on-surface: #1C1B1F;
+            --md-sys-color-surface-variant: #E7E0EC;
+            --md-sys-color-on-surface-variant: #49454F;
+            --md-sys-color-outline: #79747E;
+            --md-sys-color-surface-container-highest: #E6E0E9;
+            --md-sys-color-surface-container-low: #F7F2FA;
+            --md-sys-color-error: #B3261E;
+            --md-sys-color-on-error: #FFFFFF;
+            --md-sys-color-error-container: #F9DEDC;
+            --md-sys-color-on-error-container: #410E0B;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--md-sys-color-surface);
+            color: var(--md-sys-color-on-surface);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .nav-btn {
+            padding: 8px;
+            border-radius: 99px;
+            transition: all 0.2s;
+        }
+        .nav-btn.active {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+        }
+        .card {
+            background-color: var(--md-sys-color-surface-container-low);
+            border: 1px solid var(--md-sys-color-surface-variant);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .view-toggle-btn {
+            border: 1px solid var(--md-sys-color-outline);
+            color: var(--md-sys-color-on-surface);
+            background-color: transparent;
+        }
+        .view-toggle-btn.active {
+            background-color: var(--md-sys-color-primary-container);
+            color: var(--md-sys-color-on-primary-container);
+            border-color: var(--md-sys-color-primary-container);
+        }
+        .body-part { fill: var(--md-sys-color-surface-container-highest); stroke: var(--md-sys-color-outline); stroke-width: 0.5; cursor: pointer; transition: fill 0.2s ease-in-out; }
+        .body-part:hover { fill: var(--md-sys-color-primary-container); }
+        .svg-label { font-size: 8px; font-family: 'Roboto', sans-serif; fill: var(--md-sys-color-on-surface-variant); pointer-events: none; text-anchor: middle; }
+        .label { font-family: 'Roboto', sans-serif; font-size: 16px; font-weight: 500; fill: #5F6368; pointer-events: none; text-anchor: middle; dominant-baseline: central; transition: fill 0.2s ease-in-out; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
+        .btn-tertiary { border: 1px solid var(--md-sys-color-outline); color: var(--md-sys-color-primary); }
+        .btn-tertiary:hover { background-color: var(--md-sys-color-surface-container-low); }
+        .btn-secondary { background-color: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-secondary-container); }
+        .btn-secondary:hover:not(:disabled) { background-color: #dcd3f0; }
+        .btn-sm { padding: 0.25rem 0.75rem; font-size: 0.875rem; }
+
+        /* Modal */
+        #modal-container { background-color: rgba(0, 0, 0, 0.6); }
+
+        /* Schmerzfrei Icon */
+        .schmerzfrei-svg-circle {
+            fill: transparent;
+            stroke: #d1d5db; /* gray-300 */
+            stroke-width: 2;
+            transition: all 0.3s ease-in-out;
+        }
+        .schmerzfrei-svg-icon-primary {
+            fill: #6b7280; /* gray-500 */
+            font-size: 50px;
+            transition: fill 0.3s ease-in-out;
+            font-family: 'Material Symbols Outlined';
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+        .schmerzfrei-svg-icon-secondary-bg {
+            fill: #ffffff; /* white */
+            stroke: #d1d5db; /* gray-300 */
+            stroke-width: 2;
+            transition: all 0.3s ease-in-out;
+        }
+        .schmerzfrei-svg-icon-secondary {
+            fill: #6b7280; /* gray-500 */
+            font-size: 24px;
+            transition: fill 0.3s ease-in-out;
+             font-family: 'Material Symbols Outlined';
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+        .schmerzfrei-active .schmerzfrei-svg-circle {
+            fill: #86efac; /* green */
+            stroke: #86efac;
+        }
+        .schmerzfrei-active .schmerzfrei-svg-icon-primary {
+            fill: white;
+        }
+        .schmerzfrei-active .schmerzfrei-svg-icon-secondary-bg {
+            fill: #86efac; /* green */
+            stroke: white;
+        }
+        .schmerzfrei-active .schmerzfrei-svg-icon-secondary {
+            fill: white;
+        }
+
+        .draggable-item.dragging {
+            opacity: 0.5;
+            background-color: var(--md-sys-color-surface-container-highest);
+        }
+        .draggable-item.over {
+            border: 2px dashed var(--md-sys-color-primary);
+        }
+
+    </style>
+</head>
+<body class="antialiased pb-20">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200">
+        <div class="container mx-auto max-w-4xl px-4 py-3 flex justify-between items-center">
+            <div id="header-left">
+                <button id="nav-home" onclick="App.router('home')" class="nav-btn">
+                    <span class="material-symbols-outlined text-3xl">home</span>
+                </button>
+            </div>
+            <div id="header-right">
+                 <nav id="main-nav" class="flex items-center gap-2">
+                     <button id="nav-pain" onclick="App.router('pain')" class="nav-btn rounded-full" title="Schmerzen eintragen">
+                        <span class="material-symbols-outlined">personal_injury</span>
+                    </button>
+                    <button id="nav-settings" onclick="App.router('settings')" class="nav-btn rounded-full" title="Einstellungen">
+                        <span class="material-symbols-outlined">settings</span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="app-container" class="container mx-auto max-w-4xl px-2 pt-4">
+        <!-- Content injected here -->
+    </main>
+
+    <!-- Modal -->
+    <div id="modal-container" onclick="if (event.target === this) { App.modal.hide() }" class="hidden fixed inset-0 flex items-center justify-center p-4 z-50">
+        <div id="modal-content" class="bg-white rounded-3xl p-6 shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        </div>
+    </div>
+
+<script>
+const App = {
+    state: {
+        activePage: 'home',
+        painView: 'back', // back, front, other
+        currentPainPart: null,
+        metrics: [], // We will use a simple array for this prototype
+        painTypes: [ // Custom pain types
+            { id: "tinitus", name: "Tinitus", icon: "hearing" },
+            { id: "sodbrennen", name: "Sodbrennen", icon: "water_drop" }
+        ],
+        reorderMode: false,
+        dragSrcEl: null
+    },
+    config: {
+        PAIN_LEVELS: {
+            0: { label: "Kein Schmerz", short: "-", color: "#86efac" },
+            1: { label: "Leicht", short: "L", color: "#bfdbfe" },
+            2: { label: "Unangenehm", short: "U", color: "#fde047" },
+            3: { label: "Stark", short: "S", color: "#fb923c" },
+            4: { label: "Fürchterlich", short: "F", color: "#ef4444" },
+            5: { label: "Vernichtend", short: "X", color: "#9333ea" },
+        },
+        DEFAULT_BODY_COLOR: '#E6E0E9'
+    },
+
+    init() {
+        // Load initial state if needed
+        const storedMetrics = localStorage.getItem('proto_metrics');
+        if (storedMetrics) {
+            this.state.metrics = JSON.parse(storedMetrics);
+        }
+
+        // Load custom pain types
+        const storedPainTypes = localStorage.getItem('proto_painTypes');
+        if (storedPainTypes) {
+             this.state.painTypes = JSON.parse(storedPainTypes);
+        }
+
+        this.router('pain'); // Start at pain view for convenience
+    },
+
+    router(page) {
+        this.state.activePage = page;
+
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        if(page === 'home') document.getElementById('nav-home').classList.add('active');
+        if(page === 'pain') document.getElementById('nav-pain').classList.add('active');
+        if(page === 'settings') document.getElementById('nav-settings').classList.add('active');
+
+        const container = document.getElementById('app-container');
+        container.innerHTML = '';
+
+        if (page === 'home') {
+            this.renderHome(container);
+        } else if (page === 'pain') {
+            this.renderPain(container);
+        } else if (page === 'settings') {
+            this.renderSettings(container);
+        }
+    },
+
+    renderHome(container) {
+        let html = '<h2 class="text-2xl font-bold mb-4">Erfasste Metriken</h2>';
+        html += '<div class="space-y-2">';
+
+        const sortedMetrics = [...this.state.metrics].sort((a,b) => b.timestamp - a.timestamp);
+
+        if (sortedMetrics.length === 0) {
+            html += '<p class="text-gray-500">Keine Einträge vorhanden.</p>';
+        } else {
+            sortedMetrics.forEach(m => {
+                const date = new Date(m.timestamp).toLocaleString();
+                let displayValue = m.value;
+                if(m.metric.startsWith('pain_') && m.value > 0) {
+                     const color = this.config.PAIN_LEVELS[m.value].color;
+                     displayValue = `<span class="px-2 py-1 rounded" style="background-color: ${color}">Stufe ${m.value}</span>`;
+                }
+
+                html += `
+                    <div class="card p-3 flex justify-between items-center bg-white">
+                        <div>
+                            <div class="font-semibold">${m.labels.name || m.metric}</div>
+                            <div class="text-xs text-gray-500">${date}</div>
+                        </div>
+                        <div class="font-mono">${displayValue}</div>
+                    </div>
+                `;
+            });
+        }
+
+        html += '</div>';
+        html += `<button onclick="App.clearMetrics()" class="btn btn-tertiary mt-4 w-full">Metriken löschen</button>`;
+        container.innerHTML = html;
+    },
+
+    clearMetrics() {
+        this.state.metrics = [];
+        this.saveMetrics();
+        this.router('home');
+    },
+
+    renderPain(container) {
+        const view = this.state.painView;
+
+        const html = `
+            <div class="card pt-2 mb-4 sticky top-[60px] z-10 bg-white/90 backdrop-blur">
+                <div class="flex justify-center gap-2">
+                    <button onclick="App.setPainView('front')" class="view-toggle-btn px-4 py-2 rounded-full text-sm font-medium ${view === 'front' ? 'active' : ''}">Vorderseite</button>
+                    <button onclick="App.setPainView('back')" class="view-toggle-btn px-4 py-2 rounded-full text-sm font-medium ${view === 'back' ? 'active' : ''}">Rückseite</button>
+                    <button onclick="App.setPainView('other')" class="view-toggle-btn px-4 py-2 rounded-full text-sm font-medium ${view === 'other' ? 'active' : ''}">Weitere</button>
+                </div>
+            </div>
+
+            <div id="pain-content" class="flex justify-center">
+                <!-- Content will be injected by setPainView -->
+            </div>
+        `;
+        container.innerHTML = html;
+        this.updatePainContent();
+    },
+
+    setPainView(view) {
+        this.state.painView = view;
+        this.router('pain'); // Re-render to update classes
+    },
+
+    updatePainContent() {
+        const contentDiv = document.getElementById('pain-content');
+        if (!contentDiv) return;
+
+        if (this.state.painView === 'front') {
+             contentDiv.innerHTML = this.getFrontSvg();
+        } else if (this.state.painView === 'back') {
+             contentDiv.innerHTML = this.getBackSvg();
+        } else if (this.state.painView === 'other') {
+             contentDiv.innerHTML = this.getOtherContent();
+        }
+
+        this.applyPainColors();
+    },
+
+    getFrontSvg() {
+        return `
+        <svg width="400" height="650" viewBox="0 0 400 650">
+            <g id="body-front">
+                <circle   id="front_head"          data-name="Kopf" class="body-part" cx="200" cy="50" r="45"><title>Kopf</title></circle>
+                <rect     id="front_neck"          data-name="Hals" class="body-part" x="180" y="99" width="40" height="45" rx="10"><title>Hals</title></rect>
+                <rect     id="front_shoulder_left" data-name="Schulter (L)" class="body-part" x="55" y="99" width="121" height="45" rx="10"><title>Schulter (L)</title></rect>
+                <rect     id="front_shoulder_right"data-name="Schulter (R)" class="body-part" x="224" y="99" width="121" height="45" rx="10"><title>Schulter (R)</title></rect>
+
+                <!-- Split Chest -->
+                <rect     id="front_chest_left"    data-name="Brust (L)" class="body-part" x="125" y="148" width="73" height="80" rx="10"><title>Brust (L)</title></rect>
+                <rect     id="front_chest_right"   data-name="Brust (R)" class="body-part" x="202" y="148" width="73" height="80" rx="10"><title>Brust (R)</title></rect>
+
+                <!-- Split Abdomen -->
+                <rect     id="front_abdomen_left"  data-name="Bauch (L)" class="body-part" x="128" y="232" width="70" height="60" rx="10"><title>Bauch (L)</title></rect>
+                <rect     id="front_abdomen_right" data-name="Bauch (R)" class="body-part" x="202" y="232" width="70" height="60" rx="10"><title>Bauch (R)</title></rect>
+
+                <rect     id="front_pelvis_left"   data-name="Becken (L)" class="body-part" x="128" y="296" width="62" height="60" rx="10"><title>Becken (L)</title></rect>
+                <rect     id="front_pelvis_right"  data-name="Becken (R)" class="body-part" x="210" y="296" width="62" height="60" rx="10"><title>Becken (R)</title></rect>
+                <rect     id="front_groin"         data-name="Leiste" class="body-part" x="190" y="326" width="20" height="40" rx="10"><title>Leiste</title></rect>
+                <rect     id="front_upper_arm_left" data-name="Oberarm (L)" class="body-part" x="51" y="148" width="41" height="100" rx="10"><title>Oberarm (L)</title></rect>
+                <rect     id="front_lower_arm_left" data-name="Unterarm (L)" class="body-part" x="51" y="252" width="41" height="90" rx="10"><title>Unterarm (L)</title></rect>
+                <rect     id="front_hand_left"     data-name="Hand (L)" class="body-part" x="47" y="346" width="50" height="50" rx="10"><title>Hand (L)</title></rect>
+                <rect     id="front_upper_arm_right" data-name="Oberarm (R)" class="body-part" x="308" y="148" width="41" height="100" rx="10"><title>Oberarm (R)</title></rect>
+                <rect     id="front_lower_arm_right" data-name="Unterarm (R)" class="body-part" x="308" y="252" width="41" height="90" rx="10"><title>Unterarm (R)</title></rect>
+                <rect     id="front_hand_right"    data-name="Hand (R)" class="body-part" x="304" y="346" width="50" height="50" rx="10"><title>Hand (R)</title></rect>
+                <rect     id="front_upper_leg_left" data-name="Oberschenkel (L)" class="body-part" x="133" y="360" width="41" height="120" rx="10"><title>Oberschenkel (L)</title></rect>
+                <rect     id="front_lower_leg_left" data-name="Unterschenkel (L)" class="body-part" x="133" y="484" width="41" height="110" rx="10"><title>Unterschenkel (L)</title></rect>
+                <rect     id="front_upper_leg_right" data-name="Oberschenkel (R)" class="body-part" x="227" y="360" width="41" height="120" rx="10"><title>Oberschenkel (R)</title></rect>
+                <rect     id="front_lower_leg_right" data-name="Unterschenkel (R)" class="body-part" x="227" y="484" width="41" height="110" rx="10"><title>Unterschenkel (R)</title></rect>
+                <rect     id="front_foot_left"     data-name="Fuß (L)" class="body-part" x="128" y="598" width="50" height="40" rx="10"><title>Fuß (L)</title></rect>
+                <rect     id="front_foot_right"    data-name="Fuß (R)" class="body-part" x="222" y="598" width="50" height="40" rx="10"><title>Fuß (R)</title></rect>
+            </g>
+        </svg>`;
+    },
+
+    getBackSvg() {
+        return `
+        <svg width="400" height="650" viewBox="0 0 400 650">
+             <g id="body-back">
+                <circle   id="back_head"           data-name="Hinterkopf" class="body-part" cx="200" cy="50" r="45"><title>Hinterkopf</title></circle>
+                <rect     id="back_neck"           data-name="Nacken" class="body-part" x="180" y="99" width="40" height="45" rx="10"><title>Nacken</title></rect><text class="label" x="200" y="121.5">HWS</text>
+                <rect     id="back_shoulder_left"  data-name="Schulter (L, h)" class="body-part" x="55" y="99" width="121" height="45" rx="10"><title>Schulter (L, h)</title></rect>
+                <rect     id="back_shoulder_right" data-name="Schulter (R, h)" class="body-part" x="224" y="99" width="121" height="45" rx="10"><title>Schulter (R, h)</title></rect>
+                <rect     id="back_upper_back_left" data-name="Oberer Rücken (L)" class="body-part" x="125" y="148" width="56.25" height="80" rx="10"><title>Oberer Rücken (L)</title></rect>
+                <rect     id="back_upper_back_middle" data-name="Obere Wirbelsäule" class="body-part" x="181.25" y="148" width="37.5" height="80" rx="10"><title>Obere Wirbelsäule</title></rect><text class="label" x="200" y="188">BWS</text>
+                <rect     id="back_upper_back_right" data-name="Oberer Rücken (R)" class="body-part" x="218.75" y="148" width="56.25" height="80" rx="10"><title>Oberer Rücken (R)</title></rect>
+
+                <rect     id="back_lower_back_left" data-name="Unterer Rücken (L)" class="body-part" x="128" y="232" width="54" height="60" rx="10"><title>Unterer Rücken (L)</title></rect>
+
+                <rect     id="back_lower_back_middle_lws" data-name="LWS" class="body-part" x="182" y="232" width="36" height="62" rx="10"><title>LWS</title></rect>
+                <text class="label" x="200" y="263">LWS</text>
+
+                <rect     id="back_lower_back_middle_ksb" data-name="Kreuz & Steißbein" class="body-part" x="182" y="294" width="36" height="62" rx="10"><title>Kreuz & Steißbein</title></rect>
+                <text class="label" x="200" y="325" style="font-size: 10px;">Kreuz & Steißbein</text>
+
+                <rect     id="back_lower_back_right" data-name="Unterer Rücken (R)" class="body-part" x="218" y="232" width="54" height="60" rx="10"><title>Unterer Rücken (R)</title></rect>
+                <rect     id="back_glute_left"     data-name="Gesäß (L)" class="body-part" x="128" y="296" width="50" height="60" rx="10"><title>Gesäß (L)</title></rect>
+                <rect     id="back_glute_right"    data-name="Gesäß (R)" class="body-part" x="222" y="296" width="50" height="60" rx="10"><title>Gesäß (R)</title></rect>
+                <rect     id="back_upper_arm_left" data-name="Oberarm (L, h)" class="body-part" x="51" y="148" width="41" height="100" rx="10"><title>Oberarm (L, h)</title></rect>
+                <rect     id="back_lower_arm_left" data-name="Unterarm (L, h)" class="body-part" x="51" y="252" width="41" height="90" rx="10"><title>Unterarm (L, h)</title></rect>
+                <rect     id="back_hand_left"      data-name="Hand (L, h)" class="body-part" x="47" y="346" width="50" height="50" rx="10"><title>Hand (L, h)</title></rect>
+                <rect     id="back_upper_arm_right" data-name="Oberarm (R, h)" class="body-part" x="308" y="148" width="41" height="100" rx="10"><title>Oberarm (R, h)</title></rect>
+                <rect     id="back_lower_arm_right" data-name="Unterarm (R, h)" class="body-part" x="308" y="252" width="41" height="90" rx="10"><title>Unterarm (R, h)</title></rect>
+                <rect     id="back_hand_right"     data-name="Hand (R, h)" class="body-part" x="304" y="346" width="50" height="50" rx="10"><title>Hand (R, h)</title></rect>
+                <rect     id="back_upper_leg_left" data-name="Oberschenkel (L, h)" class="body-part" x="133" y="360" width="41" height="120" rx="10"><title>Oberschenkel (L, h)</title></rect>
+                <rect     id="back_lower_leg_left" data-name="Unterschenkel (L, h)" class="body-part" x="133" y="484" width="41" height="110" rx="10"><title>Unterschenkel (L, h)</title></rect>
+                <rect     id="back_upper_leg_right" data-name="Oberschenkel (R, h)" class="body-part" x="227" y="360" width="41" height="120" rx="10"><title>Oberschenkel (R, h)</title></rect>
+                <rect     id="back_lower_leg_right" data-name="Unterschenkel (R, h)" class="body-part" x="227" y="484" width="41" height="110" rx="10"><title>Unterschenkel (R, h)</title></rect>
+                <rect     id="back_foot_left"      data-name="Fuß (L, h)" class="body-part" x="128" y="598" width="50" height="40" rx="10"><title>Fuß (L, h)</title></rect>
+                <rect     id="back_foot_right"     data-name="Fuß (R, h)" class="body-part" x="222" y="598" width="50" height="40" rx="10"><title>Fuß (R, h)</title></rect>
+            </g>
+        </svg>`;
+    },
+
+    getOtherContent() {
+        const painFreeActive = this.isPainFreeActive();
+        const activeClass = painFreeActive ? 'schmerzfrei-active' : '';
+
+        const painFreeHtml = `
+            <div onclick="App.handlePainFreeClick()" class="cursor-pointer bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors ${activeClass} flex items-center gap-4 w-full">
+                <div class="relative w-12 h-12 flex-shrink-0">
+                    <svg viewBox="0 0 100 100" class="w-full h-full">
+                         <circle class="schmerzfrei-svg-circle" cx="50" cy="50" r="48"></circle>
+                         <text class="schmerzfrei-svg-icon-primary" x="50" y="52" style="font-size: 50px;">accessibility_new</text>
+                         <g transform="translate(70, 0)">
+                            <circle class="schmerzfrei-svg-icon-secondary-bg" cx="0" cy="0" r="20"></circle>
+                            <text class="schmerzfrei-svg-icon-secondary" x="0" y="0" style="font-size: 30px;">verified</text>
+                         </g>
+                    </svg>
+                </div>
+                <span class="text-xl font-bold">Schmerz Frei</span>
+            </div>
+        `;
+
+        let otherItemsHtml = '';
+        this.state.painTypes.forEach(pt => {
+             const painLevel = this.getPainLevel(pt.id);
+             let style = '';
+             let levelText = '';
+             if (painLevel > 0) {
+                 style = `background-color: ${this.config.PAIN_LEVELS[painLevel].color}; border-color: transparent;`;
+                 if (painLevel > 2 && painLevel < 6) style += ' color: white;';
+                 levelText = `<span class="text-sm font-normal ml-2 opacity-80">(Stufe ${painLevel})</span>`;
+             }
+
+             otherItemsHtml += `
+                <div onclick="App.handleBodyPartClick({target: {id: '${pt.id}', dataset: {name: '${pt.name}'}}})" class="cursor-pointer bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:bg-gray-50 transition-colors w-full flex items-center gap-3" style="${style}">
+                    <span class="material-symbols-outlined text-2xl">${pt.icon}</span>
+                    <span class="text-lg font-medium">${pt.name} ${levelText}</span>
+                </div>
+             `;
+        });
+
+        return `
+            <div class="w-full max-w-md space-y-3 px-4 pb-8">
+                ${painFreeHtml}
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    ${otherItemsHtml}
+                </div>
+            </div>
+        `;
+    },
+
+    applyPainColors() {
+        const bodyParts = document.querySelectorAll('.body-part');
+        bodyParts.forEach(part => {
+            const level = this.getPainLevel(part.id);
+            if (level > 0) {
+                part.setAttribute('fill', this.config.PAIN_LEVELS[level].color);
+            } else {
+                 part.setAttribute('fill', this.config.DEFAULT_BODY_COLOR);
+            }
+            part.onclick = (e) => this.handleBodyPartClick(e);
+        });
+    },
+
+    getPainLevel(partId) {
+        const now = Date.now();
+        const tenMinutesAgo = now - 600000;
+
+        const metricName = `pain_${partId}_level`;
+
+        const painFreeEntry = this.state.metrics.find(m => m.metric === 'pain_free_level' && m.timestamp >= tenMinutesAgo);
+
+        if (painFreeEntry) return 0;
+
+        const recentEntries = this.state.metrics.filter(m => m.metric === metricName && m.timestamp >= tenMinutesAgo);
+        if (recentEntries.length === 0) return 0;
+
+        recentEntries.sort((a,b) => b.timestamp - a.timestamp);
+        return recentEntries[0].value;
+    },
+
+    isPainFreeActive() {
+        const now = Date.now();
+        const tenMinutesAgo = now - 600000;
+        return this.state.metrics.some(m => m.metric === 'pain_free_level' && m.timestamp >= tenMinutesAgo);
+    },
+
+    handleBodyPartClick(event) {
+        let target = event.target;
+        if (target.classList && !target.classList.contains('body-part')) {
+             target = target.closest('.body-part');
+        }
+
+        if (!target && event.target && event.target.id) {
+            target = event.target;
+        }
+
+        if (!target) return;
+
+        const id = target.id;
+        const name = target.dataset.name;
+
+        this.state.currentPainPart = { id, name };
+
+        const content = this.getPainModalContent(name);
+        this.modal.show(content);
+    },
+
+    getPainModalContent(name) {
+        let buttons = '';
+        for (const [level, props] of Object.entries(this.config.PAIN_LEVELS)) {
+             buttons += `<button
+                onclick="App.setPainLevel(${level})"
+                class="btn w-full text-lg font-bold py-4 px-4 rounded-xl transition-all"
+                style="background-color:${props.color}; color: ${parseInt(level) > 2 && parseInt(level) < 6 ? 'white' : 'black'}"
+                >${props.short} (${props.label})</button>`;
+        }
+        return `<h3 class="text-xl font-semibold mb-6 text-center">Schmerz: <span class="font-bold">${name}</span></h3><div class="grid grid-cols-1 gap-4">${buttons}</div><button onclick="App.modal.hide()" class="btn btn-tertiary w-full mt-8">Abbrechen</button>`;
+    },
+
+    setPainLevel(level) {
+        const part = this.state.currentPainPart;
+        if (!part) return;
+
+        const now = Date.now();
+        const tenMinutesAgo = now - 600000;
+
+        this.state.metrics = this.state.metrics.filter(m => {
+            const isRecent = m.timestamp >= tenMinutesAgo;
+            const isPainFree = m.metric === 'pain_free_level';
+            const isSamePart = m.metric === `pain_${part.id}_level`;
+
+            if (isRecent && (isPainFree || isSamePart)) return false;
+            return true;
+        });
+
+        if (level > 0) {
+            this.state.metrics.push({
+                metric: `pain_${part.id}_level`,
+                timestamp: now,
+                labels: { body_part: part.id, name: part.name },
+                value: parseInt(level)
+            });
+        }
+
+        this.saveMetrics();
+        this.modal.hide();
+        this.updatePainContent();
+    },
+
+    handlePainFreeClick() {
+        const now = Date.now();
+        const tenMinutesAgo = now - 600000;
+
+        const recentPainEntries = this.state.metrics.some(m => m.metric.startsWith('pain_') && m.metric !== 'pain_free_level' && m.timestamp >= tenMinutesAgo);
+
+        if (recentPainEntries) {
+            this.modal.showConfirmation(
+                "Wieder Schmerzfrei?",
+                "Sollen die Schmerzeinträge der letzten 10 Minuten gelöscht und 'Schmerzfrei' gesetzt werden?",
+                () => this.setPainFree(true)
+            );
+        } else {
+            this.setPainFree(false);
+        }
+    },
+
+    setPainFree(clearRecent) {
+        const now = Date.now();
+        const tenMinutesAgo = now - 600000;
+
+        if (clearRecent) {
+             this.state.metrics = this.state.metrics.filter(m => !(m.metric.startsWith('pain_') && m.timestamp >= tenMinutesAgo));
+        } else {
+             const isPainFree = this.state.metrics.some(m => m.metric === 'pain_free_level' && m.timestamp >= tenMinutesAgo);
+             if (isPainFree) {
+                  this.state.metrics = this.state.metrics.filter(m => m.metric !== 'pain_free_level');
+                  this.saveMetrics();
+                  this.updatePainContent();
+                  return;
+             }
+        }
+
+        this.state.metrics.push({
+            metric: 'pain_free_level',
+            timestamp: now,
+            labels: { name: 'Schmerz Frei' },
+            value: 0
+        });
+
+        this.saveMetrics();
+        this.updatePainContent();
+    },
+
+    saveMetrics() {
+        localStorage.setItem('proto_metrics', JSON.stringify(this.state.metrics));
+    },
+
+    renderSettings(container) {
+         let listHtml = '';
+         this.state.painTypes.forEach((pt, index) => {
+             listHtml += `
+                <div
+                    class="draggable-item flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg mb-2"
+                    draggable="${this.state.reorderMode}"
+                    data-index="${index}"
+                    ondragstart="App.handleDragStart(event)"
+                    ondragover="App.handleDragOver(event)"
+                    ondrop="App.handleDrop(event)"
+                    ondragenter="App.handleDragEnter(event)"
+                    ondragleave="App.handleDragLeave(event)"
+                >
+                    <div class="flex items-center gap-3 pointer-events-none">
+                         ${this.state.reorderMode ? '<span class="material-symbols-outlined cursor-grab text-gray-400">drag_indicator</span>' : ''}
+                         <span class="material-symbols-outlined text-2xl text-gray-600">${pt.icon}</span>
+                         <div class="font-medium">${pt.name}</div>
+                    </div>
+                    ${!this.state.reorderMode ? `
+                    <div class="flex gap-2">
+                        <button onclick="App.editPainType(${index})" class="text-blue-500 hover:text-blue-700"><span class="material-symbols-outlined">edit</span></button>
+                        <button onclick="App.deletePainType(${index})" class="text-red-500 hover:text-red-700"><span class="material-symbols-outlined">delete</span></button>
+                    </div>` : ''}
+                </div>
+             `;
+         });
+
+         const reorderIcon = this.state.reorderMode ? 'lock' : 'link_off';
+         const reorderText = this.state.reorderMode ? 'Fertig' : 'Sortieren';
+
+         container.innerHTML = `
+            <div class="card p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Schmerzarten</h2>
+                    <button onclick="App.toggleReorder()" class="btn btn-secondary btn-sm gap-2">
+                        <span class="material-symbols-outlined">${reorderIcon}</span> ${reorderText}
+                    </button>
+                </div>
+
+                <div id="pain-type-list" class="${this.state.reorderMode ? 'opacity-100' : ''}">
+                    ${listHtml}
+                </div>
+
+                ${!this.state.reorderMode ? `
+                <button onclick="App.addPainType()" class="btn btn-secondary w-full mt-4">
+                    <span class="material-symbols-outlined mr-2">add</span>Hinzufügen
+                </button>` : ''}
+            </div>
+             ${this.state.reorderMode ? `<div class="fixed inset-0 bg-black/20 z-0" style="top: 70px;"></div>` : ''}
+         `;
+
+         if (this.state.reorderMode) {
+             const list = document.getElementById('pain-type-list');
+             if(list) {
+                list.style.position = 'relative';
+                list.style.zIndex = '10';
+             }
+             document.getElementById('nav-home').disabled = true;
+             document.getElementById('nav-pain').disabled = true;
+             document.getElementById('nav-settings').disabled = true;
+         } else {
+             document.getElementById('nav-home').disabled = false;
+             document.getElementById('nav-pain').disabled = false;
+             document.getElementById('nav-settings').disabled = false;
+         }
+    },
+
+    toggleReorder() {
+        // If we are exiting reorder mode, save the new order
+        if (this.state.reorderMode) {
+            const list = document.getElementById('pain-type-list');
+            if (list) {
+                const newOrder = [];
+                list.querySelectorAll('.draggable-item').forEach(item => {
+                    const index = parseInt(item.dataset.index);
+                    newOrder.push(this.state.painTypes[index]);
+                });
+
+                // Since indexes might change, this logic needs to be robust.
+                // Actually, if I just re-map based on the original array using data-index, it works because data-index corresponds to the state before drag.
+                // Wait, if I drag item 0 to position 1.
+                // List DOM: [Item 1 (idx 1), Item 0 (idx 0)].
+                // newOrder = [painTypes[1], painTypes[0]]. Correct.
+
+                this.state.painTypes = newOrder;
+                localStorage.setItem('proto_painTypes', JSON.stringify(this.state.painTypes));
+            }
+        }
+
+        this.state.reorderMode = !this.state.reorderMode;
+        this.renderSettings(document.getElementById('app-container'));
+    },
+
+    // Drag and Drop Handlers
+    handleDragStart(e) {
+        this.state.dragSrcEl = e.target;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', e.target.innerHTML);
+        e.target.classList.add('dragging');
+    },
+
+    handleDragOver(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        e.dataTransfer.dropEffect = 'move';
+        return false;
+    },
+
+    handleDragEnter(e) {
+        if (e.target.classList.contains('draggable-item')) {
+             e.target.classList.add('over');
+        }
+    },
+
+    handleDragLeave(e) {
+        if (e.target.classList.contains('draggable-item')) {
+             e.target.classList.remove('over');
+        }
+    },
+
+    handleDrop(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation();
+        }
+
+        let targetEl = e.target;
+        // Traverse up to find the draggable item if dropped on child
+        while(targetEl && !targetEl.classList.contains('draggable-item')) {
+            targetEl = targetEl.parentNode;
+        }
+
+        if (this.state.dragSrcEl !== targetEl && targetEl) {
+            // Swap DOM elements
+            // Note: simple swap of innerHTML or swapping nodes. Swapping nodes is better to keep event listeners but we re-render anyway on exit.
+            // However, for visual feedback during drag, we might want to swap.
+            // But standard HTML5 DnD usually involves swapping the actual nodes in DOM.
+
+            // Let's do node swapping.
+            const container = document.getElementById('pain-type-list');
+            const nodes = Array.from(container.children);
+            const srcIndex = nodes.indexOf(this.state.dragSrcEl);
+            const targetIndex = nodes.indexOf(targetEl);
+
+            if (srcIndex < targetIndex) {
+                targetEl.after(this.state.dragSrcEl);
+            } else {
+                targetEl.before(this.state.dragSrcEl);
+            }
+        }
+
+        if (targetEl) targetEl.classList.remove('over');
+        if (this.state.dragSrcEl) this.state.dragSrcEl.classList.remove('dragging');
+
+        return false;
+    },
+
+    addPainType() {
+        const name = prompt("Name der Schmerzart:");
+        if (!name) return;
+        const icon = prompt("Material Icon Name (z.B. star, face):", "help");
+        const id = name.toLowerCase().replace(/\s+/g, '_');
+
+        this.state.painTypes.push({ id, name, icon });
+        localStorage.setItem('proto_painTypes', JSON.stringify(this.state.painTypes));
+        this.renderSettings(document.getElementById('app-container'));
+    },
+
+    deletePainType(index) {
+        if(confirm("Löschen?")) {
+            this.state.painTypes.splice(index, 1);
+            localStorage.setItem('proto_painTypes', JSON.stringify(this.state.painTypes));
+            this.renderSettings(document.getElementById('app-container'));
+        }
+    },
+
+    editPainType(index) {
+        const pt = this.state.painTypes[index];
+        const name = prompt("Name:", pt.name);
+        if (name) {
+             pt.name = name;
+             pt.icon = prompt("Icon:", pt.icon) || pt.icon;
+             localStorage.setItem('proto_painTypes', JSON.stringify(this.state.painTypes));
+             this.renderSettings(document.getElementById('app-container'));
+        }
+    },
+
+    modal: {
+        show(content) {
+            document.getElementById('modal-content').innerHTML = content;
+            document.getElementById('modal-container').classList.remove('hidden');
+        },
+        hide() {
+            document.getElementById('modal-container').classList.add('hidden');
+        },
+        showConfirmation(title, message, onConfirm) {
+             const content = `
+                <h3 class="text-xl font-bold mb-4">${title}</h3>
+                <p class="mb-6">${message}</p>
+                <div class="flex justify-end gap-3">
+                    <button onclick="App.modal.hide()" class="btn btn-tertiary">Nein</button>
+                    <button id="confirm-btn" class="btn bg-red-500 text-white hover:bg-red-600">Ja</button>
+                </div>
+             `;
+             this.show(content);
+             document.getElementById('confirm-btn').onclick = () => {
+                 onConfirm();
+                 this.hide();
+             };
+        }
+    }
+};
+
+App.init();
+
+</script>
+</body>
+</html>
