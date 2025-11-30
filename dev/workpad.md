@@ -28,14 +28,15 @@ other items are generated from the list of extra painTypes a new array similar t
 
 - if "pain free" button is selected, it looks if there are set pain parts in the last 10 minutes, and if so it asks with a modal, "wieder Schmerzfrei ?" "Nein" und "Ja", if "ja" it goes back 10 minutes, and removes all pain entries from their to now. it then adds the pain_free metric, and colors the button if there was no question or the question was answered with ja.
 
-- create a settings "Schmerzarten" submenu, that allows creating, editing and deleting special pain entries, like EventTypes Edit. In addition to the button "hinzufügen", there is "Sortierung verändern", with an icon representing "Loosing Chains" for reorder, and "closed Chains" as the other icon once in reorder mode to freeze changes. clicking "Reorder" Icon blurs everything except the event type list, that gets grab icons on the left, and disables/greysout (modal type) all other user interface, so only the list and the icon "Closed Chains" are clickable, the user can reorder the event types, and either abort (clicked outside) aborts the reordering, or the click on "closed Chain" freezes the new reordering, after the paintype array gets resorted from the dom order and saved.
+- create a settings "Schmerzarten" submenu, that allows creating, editing and deleting special pain entries, like EventTypes Edit. 
 
 - create a test in tests that uses this prototype as file url open f"file://{basedir}/src/prototype/new-pain-entry.html" and take screenshots from painentry: back, front and other tab to mkdir `build/tests/new-pain-entry/`.
 then copy those screenshots using `mkdir jules-scratch/verify; cp build/tests/new-pain-entry/* jules-scratch/verify`.
 then verify those screenshots.
 
 ---
-
+In addition to the button "hinzufügen", there is "Sortierung verändern", with an icon representing "Loosing Chains" for reorder, and "closed Chains" as the other icon once in reorder mode to freeze changes. clicking "Reorder" Icon blurs everything except the event type list, that gets grab icons on the left, and disables/greysout (modal type) all other user interface, so only the list and the icon "Closed Chains" are clickable, the user can reorder the event types, and either abort (clicked outside) aborts the reordering, or the click on "closed Chain" freezes the new reordering, after the paintype array gets resorted from the dom order and saved.
+---
 
 ## nice to have
 
